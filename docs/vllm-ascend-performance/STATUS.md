@@ -2,9 +2,11 @@
 
 **State:** `BOOTSTRAPPED`
 
-**Blocking status:** `MATERIALS_RECEIVED; NORMALIZATION_INPUTS_INCOMPLETE`
+**Blocking status:** `MATERIALS_RECEIVED; NORMALIZATION_INPUTS_INCOMPLETE; STAGE0_DISCOVERY_PENDING`
 
 **Execution authorization:** no performance execution is ready. A read-only Stage 0 discovery Task is `READY / AWAITING EXPLICIT USER DISPATCH`; no A3/NPU test has been performed.
+
+**Hardware scope:** single Ascend A3/910C server, 8 cards / 16 NPU chips (target scope; server facts remain `PENDING_CODEX2_DISCOVERY`).
 
 ## Completed
 
@@ -13,6 +15,7 @@
 - User-provided XLSX/DOCX source records hashed and structured H100 cells extracted.
 - Public FlagOS/vLLM/vLLM-Ascend version evidence recorded; `FLAGOS_ALIGNED_BASELINE` and `LATEST_REFERENCE` tracks defined.
 - Stage 0 Server Fact Acquisition policy and Task created.
+- Project Model Pool separated from the current Single-A3 candidate set; MiniMax-M3 added.
 
 ## Pending gates
 
@@ -27,8 +30,11 @@
 | Model | Status | Execution task |
 |---|---|---|
 | GLM-5.2-W8A8 | `PENDING_CODEX2_DISCOVERY` | Stage 0 Task |
-| DeepSeek-V4-Pro-W8A8 | `PENDING_CODEX2_DISCOVERY` | Stage 0 Task |
+| DeepSeek-V4-Pro-W8A8 | `MULTI_NODE_CANDIDATE / NOT_SINGLE_A3_CANDIDATE` | None in current Stage 0 |
 | DeepSeek-V4-Flash-W8A8 | `PENDING_CODEX2_DISCOVERY` | Stage 0 Task |
+| MiniMax-M3 | `PENDING_CODEX2_DISCOVERY` | Stage 0 Task |
+
+DeepSeek-V4-Pro-W8A8 is `MULTI_NODE_CANDIDATE / NOT_SINGLE_A3_CANDIDATE` for this round: retained in the project pool, excluded from single-node Stage 0, and not a blocker for other candidates.
 
 ## Current source status
 

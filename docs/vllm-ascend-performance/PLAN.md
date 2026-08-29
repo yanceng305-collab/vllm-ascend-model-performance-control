@@ -2,7 +2,7 @@
 
 ## Stage 0: Server Fact Acquisition / Compatibility Discovery
 
-Codex2 performs a dispatched, read-only, non-destructive discovery of hardware, runtime tuple, model identity, installed capabilities, and aligned-version readiness. Gate: immutable discovery Result answers the required questions in `methodology/SERVER-FACT-ACQUISITION.md`.
+Codex2 performs a dispatched, read-only, non-destructive discovery of the single-node A3/910C target (8 cards / 16 NPU chips), runtime tuple, model identity, installed capabilities, and aligned-version readiness for GLM-5.2-W8A8, DeepSeek-V4-Flash-W8A8, and MiniMax-M3. DeepSeek-V4-Pro-W8A8 is retained as a multi-node candidate but is excluded from this Stage 0 execution scope. Gate: model-scoped immutable discovery Results answer the required questions in `methodology/SERVER-FACT-ACQUISITION.md`.
 
 ## Bootstrap prerequisite
 

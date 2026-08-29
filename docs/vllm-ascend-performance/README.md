@@ -8,14 +8,27 @@ The primary performance lane is `FLAGOS_ALIGNED`: vLLM `0.20.2` plus vLLM-Ascend
 
 The Control claim is bounded to the exact model/runtime/hardware/workload identity recorded in an accepted Result. A benchmark process reporting `PASS` is not itself an accepted baseline; Codex1 must complete an independent Formal Review.
 
-## Model namespaces
+## Project Model Pool
 
 - `models/glm-5.2-w8a8/`
 - `models/deepseek-v4-pro-w8a8/`
 - `models/deepseek-v4-flash-w8a8/`
+- `models/minimax-m3/`
 
 Additional models use the same slugged namespace after a User Decision.
+
+## Current Single-A3 Execution Candidates
+
+The current target is one Ascend A3/910C server with 8 cards / 16 NPU chips. Only these models enter the current single-node Stage 0 scope:
+
+- GLM-5.2-W8A8
+- DeepSeek-V4-Flash-W8A8
+- MiniMax-M3
+
+DeepSeek-V4-Pro-W8A8 remains in the Project Model Pool as `MULTI_NODE_CANDIDATE / NOT_SINGLE_A3_CANDIDATE`. It is retained for future multi-node resources, is excluded from the current Stage 0 execution scope, and cannot block the three single-node candidates.
 
 The next stage is the read-only [Stage 0 Server Fact Acquisition Task](tasks/VLLM-ASCEND-STAGE0-SERVER-FACT-ACQUISITION.md). It is `READY` for documentation but awaits explicit User dispatch.
 
 Reusable [Task](templates/TASK-TEMPLATE.md) and immutable [Result](templates/RESULT-TEMPLATE.md) templates are provided for later stages.
+
+The committed-prompt handoff sequence is defined in [ChatGPT Review and Handoff](methodology/CHATGPT-REVIEW-AND-HANDOFF.md).

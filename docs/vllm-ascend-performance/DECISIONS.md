@@ -10,7 +10,7 @@ For comparable higher-is-better metrics, the minimum target is `H100 metric * (A
 
 ## D-003 No guessed inputs
 
-Unknown model/runtime/hardware/compute/workload values remain unknown until supported by User materials, runtime inventory, or an auditable official source. Missing comparable compute prevents a normalized target from being calculated.
+Unknown public facts are researched by Codex1; unknown server-observable facts are `PENDING_CODEX2_DISCOVERY`; only policy, authorization, private material, engineering-reference approval, or true business decisions are `USER INPUT REQUIRED`. Missing comparable compute prevents a normalized target from being calculated.
 
 ## D-004 No execution at bootstrap
 
@@ -35,3 +35,15 @@ Use `STRICT_REFERENCE`, `ENGINEERING_REFERENCE`, or `NOT_COMPARABLE`. Platform i
 ## D-009 Stage 0 boundary
 
 Stage 0 is read-only/non-destructive Server Fact Acquisition and Compatibility Discovery. Stateful preparation, model launch, and benchmark require separate dispatched Tasks and explicit User authorization.
+
+## D-010 Single-A3 candidate scope
+
+The current single-node target is Ascend A3/910C, 8 cards / 16 NPU chips. The current Stage 0 candidate set is GLM-5.2-W8A8, DeepSeek-V4-Flash-W8A8, and MiniMax-M3. DeepSeek-V4-Pro-W8A8 remains in the project pool as `MULTI_NODE_CANDIDATE / NOT_SINGLE_A3_CANDIDATE`, is excluded from this round's Stage 0 execution scope, and cannot block the three candidates.
+
+## D-011 Prompt-as-Control-Artifact
+
+Any long Codex2 dispatch prompt must first be committed as a Markdown file in this Control repository. The committed GitHub file is the sole formal handoff artifact and must bind repo, Task, prompt path, Control commit, scope, allowed/prohibited actions, outputs, Evidence, and Result rules. Codex1 terminal output must link the file rather than substitute an uncommitted prompt.
+
+## D-012 ChatGPT review and handoff
+
+The workflow is Codex1 Task/prompt creation -> commit/push -> User gives the result to ChatGPT -> ChatGPT live-queries GitHub and independently reviews SHA, Task, prompt, scope, safety, and Evidence rules -> ChatGPT either returns the committed prompt unchanged to User or requests Codex1 revision -> User sends the reviewed Control artifact to Codex2. The committed prompt, not terminal text, is authoritative.

@@ -4,6 +4,8 @@
 
 Both pinned source trees contain DeepSeek V4 implementation files. The exact Flash architecture/config, weight quantization, and W8A8 path remain `PENDING_CODEX2_DISCOVERY`; the source H100 note about FP8 KV cache does not identify model-weight quantization.
 
+No pinned-lane patch requirement is established by public evidence. If a model-specific patch or newer-only support is found, it must be recorded as a separate decision and `LATEST_REFERENCE`, not folded into the aligned result.
+
 ## Track disposition
 
 `FLAGOS_ALIGNED`: pending Stage 0 with a quantization-resolution gate. Newer support, if needed, is a separate `LATEST_REFERENCE / NON_FLAGOS_ALIGNED_REFERENCE` and cannot replace the aligned lane.

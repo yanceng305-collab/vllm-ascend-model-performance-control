@@ -4,41 +4,59 @@
 
 **Track:** discovery only; no performance result and no FlagOS acceptance.
 
+**Hardware scope:** one Ascend A3/910C server, 8 cards / 16 NPU chips.
+
+## Control binding
+
+- Control repo: `yanceng305-collab/vllm-ascend-model-performance-control`
+- Task path: `docs/vllm-ascend-performance/tasks/VLLM-ASCEND-STAGE0-SERVER-FACT-ACQUISITION.md`
+- Formal dispatch prompt path: `docs/vllm-ascend-performance/tasks/CODEX2-VLLM-ASCEND-STAGE0-DISPATCH-PROMPT.md`
+- Control baseline before this revision: `17672b16f665f74ff6ad45ab344a8054fc75dc9b` (lineage anchor only)
+- Prompt artifact commit: resolve the current commit for the prompt path with `git log -1 --format=%H -- docs/vllm-ascend-performance/tasks/CODEX2-VLLM-ASCEND-STAGE0-DISPATCH-PROMPT.md`; this is the authoritative prompt SHA.
+- The exact prompt artifact is the committed file at the current Control SHA. Codex2 must live query/fetch the Control repo, record the current SHA as `CONTROL_SHA_VERIFIED`, verify the current prompt and Task, and stop for drift if their contents or scope differ.
+
 ## Authorization boundary
 
-Codex2 may execute this Task only after the User explicitly dispatches this exact Task. Until then, do not connect to or operate any server. This Task is read-only and non-destructive.
+Codex2 may execute this Task only after the User explicitly dispatches this exact Task and the committed prompt. Until then, do not connect to or operate any server. This Task is read-only and non-destructive.
+
+## Current Single-A3 candidates
+
+- `glm-5.2-w8a8`
+- `deepseek-v4-flash-w8a8`
+- `minimax-m3`
+
+`deepseek-v4-pro-w8a8` is retained in the project pool as `MULTI_NODE_CANDIDATE / NOT_SINGLE_A3_CANDIDATE`; it is excluded from this Task and cannot block these candidates.
 
 ## Objective
 
-Discover every server-observable fact required to assess the three planned native vLLM-Ascend models against the `FLAGOS_ALIGNED_BASELINE` (`vLLM 0.20.2` + `vLLM-Ascend 0.20.2rc1`) and to identify the next eligible stage.
-
-## Models
-
-- `glm-5.2-w8a8`
-- `deepseek-v4-pro-w8a8`
-- `deepseek-v4-flash-w8a8`
+Discover every server-observable fact required to assess the three current single-node candidates against the `FLAGOS_ALIGNED_BASELINE` (`vLLM 0.20.2` + `vLLM-Ascend 0.20.2rc1`) and to identify the next eligible stage, independently per model.
 
 ## Required read-only probes
 
 1. Hardware: SKU, NPU count, `npu-smi`, driver, firmware, HBM, topology, interconnect/network, OS, kernel.
-2. Runtime: Python, CANN, torch, torch_npu, vLLM, vLLM-Ascend, Triton Ascend, HCCL, installed packages, container/image ID and digest.
+2. Runtime: Python, CANN, torch, torch_npu, vLLM, vLLM-Ascend, Triton Ascend, HCCL, Mooncake, installed packages, container/image ID and digest.
 3. Version lane: whether the exact aligned tuple exists (`vLLM 0.20.2`, `vLLM-Ascend 0.20.2rc1`, Python >=3.10,<3.12, CANN 9.0.0, PyTorch/torch_npu 2.10.0, Triton Ascend 3.2.1, Mooncake v0.3.8.post1). If absent, record the observed tuple and a non-executed preparation gap.
-4. Model discovery: locate each model without modifying files; capture path, directory listing, `config.json`, architecture, model revision/SHA, file hashes, quantization config/method, dtype, KV-cache dtype, tokenizer identity, and availability.
-5. Capability: using only read-only imports/introspection, determine whether installed vLLM-Ascend recognizes each architecture and quantization; record registry/module/source origins and exact errors. Compare pinned `v0.20.2rc1` public support evidence with current/newer facts; do not infer pinned support from main.
+4. Model discovery for each candidate: locate the model without modifying files; capture path, directory listing, `config.json`, architecture, model revision/SHA, file hashes, quantization config/method, dtype, KV-cache dtype, tokenizer identity, and availability. Do not assume a download is complete or choose a path supplied by memory.
+5. Capability: with read-only imports/introspection, determine whether installed vLLM-Ascend recognizes each architecture and quantization; record registry/module/source origins and exact errors. Compare pinned `v0.20.2rc1` public evidence with current/newer facts; do not infer pinned support from main.
 6. Runtime capability: discover supported TP/DP/EP, launch flags, graph/eager options, and whether the current environment meets prerequisites. Do not launch a service.
+7. For MiniMax-M3 specifically, determine whether the actual model is BF16, W8A8, or another variant, and whether static 16-NPU capacity and the pinned runtime recognize it.
 
 ## Prohibited actions
 
 No `pip install/uninstall`, apt/yum, driver/CANN changes, file/model edits/deletes, image rebuild/commit/pull, model service launch, benchmark, long-running workload, or production-container mutation. Stop and report if a probe would require stateful action.
 
+## Evidence root and run ID
+
+Use the existing project evidence workspace only if it is discoverable by read-only inspection and clearly belongs to this Control project. Otherwise use the deterministic default `/tmp/vllm-ascend-model-performance-control/evidence`. Create a child directory named `VLLM-ASCEND-STAGE0-SERVER-FACT-ACQUISITION/YYYYMMDDTHHMMSSZ`, with the final component generated by Codex2 at execution start in UTC. Record how the root was selected. Do not overwrite other runs.
+
 ## Evidence requirements
 
-Create `<EVIDENCE_ROOT>/VLLM-ASCEND-STAGE0-SERVER-FACT-ACQUISITION/<RUN_ID>/` with manifest, exact commands, timestamps, stdout/stderr, environment/package/container/device/model inventories, probe outputs, checksums, and a draft Result. Do not put secrets or credentials in Evidence or Control.
+The run directory must contain a manifest, exact commands, timestamps, stdout/stderr, environment/package/container/device/model inventories, probe outputs, and checksums. Do not put secrets or credentials in Evidence or Control.
 
 ## Required immutable Result disposition
 
-For each model report one of `READY`, `BLOCKED_RUNTIME`, `BLOCKED_MODEL_SUPPORT`, `BLOCKED_QUANTIZATION`, `BLOCKED_MISSING_MODEL`, or `BLOCKED_UNKNOWN`, with evidence and next stage. Publish the first `RESULT-*.md` snapshot to Control; after publication it is immutable. Do not create a performance Result or claim PASS/FAIL.
+For each of the three candidates report one of `READY`, `BLOCKED_RUNTIME`, `BLOCKED_MODEL_SUPPORT`, `BLOCKED_QUANTIZATION`, `BLOCKED_MISSING_MODEL`, or `BLOCKED_UNKNOWN`, with evidence and next stage. Publish the first `RESULT-*.md` snapshot to Control; after publication it is immutable. Do not create a performance Result or claim PASS/FAIL. Do not assign a disposition to DeepSeek-V4-Pro in this Task.
 
 ## Return fields
 
-Include Task ID, Run ID, server Evidence root, exact runtime tuple, hardware identity, model identities, capability findings, aligned-lane status per model, first blockers, last successful probe, prohibited actions not taken, and the proposed next Task. Explicitly distinguish `PENDING_CODEX2_DISCOVERY` from User decisions.
+Include Task ID, Run ID, selected Evidence root and selection evidence, exact runtime tuple, hardware identity, model identities, capability findings, aligned-lane status per candidate, first blockers, last successful probe, prohibited actions not taken, and the proposed next Task. Explicitly distinguish `PENDING_CODEX2_DISCOVERY` from User decisions.

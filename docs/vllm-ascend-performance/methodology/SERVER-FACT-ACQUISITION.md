@@ -4,6 +4,8 @@
 
 Stage 0 is `Server Fact Acquisition / Compatibility Discovery`, not merely an environment inventory. It collects all server-observable facts needed before runtime preparation, model launch, correctness, or performance Tasks.
 
+For this revision the execution scope is one Ascend A3/910C server with 8 cards / 16 NPU chips and three independent candidates: GLM-5.2-W8A8, DeepSeek-V4-Flash-W8A8, and MiniMax-M3. DeepSeek-V4-Pro-W8A8 is a retained multi-node candidate and is out of scope.
+
 ## Default boundary
 
 Stage 0 is `READ-ONLY / NON-DESTRUCTIVE` and requires explicit User dispatch of a Codex2 Task.

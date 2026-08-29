@@ -20,12 +20,14 @@ No A3/NPU test has been run. No model/runtime/hardware identity is frozen yet.
 - [FlagOS-Aligned Version Baseline](docs/vllm-ascend-performance/methodology/VERSION-BASELINE.md)
 - [Comparison Classes](docs/vllm-ascend-performance/methodology/COMPARISON-CLASSES.md)
 - [Stage 0 Server Fact Acquisition](docs/vllm-ascend-performance/methodology/SERVER-FACT-ACQUISITION.md)
+- [ChatGPT Review and Handoff](docs/vllm-ascend-performance/methodology/CHATGPT-REVIEW-AND-HANDOFF.md)
 - [Stage 0 Codex2 Task](docs/vllm-ascend-performance/tasks/VLLM-ASCEND-STAGE0-SERVER-FACT-ACQUISITION.md)
 - [Source Materials](docs/vllm-ascend-performance/references/SOURCE-MATERIALS.md)
 - [H100 Reference Index](docs/vllm-ascend-performance/references/H100-REFERENCE-INDEX.md)
 - [GLM-5.2-W8A8](docs/vllm-ascend-performance/models/glm-5.2-w8a8/STATUS.md)
 - [DeepSeek-V4-Pro-W8A8](docs/vllm-ascend-performance/models/deepseek-v4-pro-w8a8/STATUS.md)
 - [DeepSeek-V4-Flash-W8A8](docs/vllm-ascend-performance/models/deepseek-v4-flash-w8a8/STATUS.md)
+- [MiniMax-M3](docs/vllm-ascend-performance/models/minimax-m3/STATUS.md)
 
 ## Lifecycle
 
@@ -36,3 +38,9 @@ User Decision -> Codex1 Formal Task -> explicit User dispatch
 ```
 
 An accepted result freezes model identity, quantization, runtime/image, versions, CANN/PyTorch stack, hardware, parallelism, launch configuration, benchmark cells, raw metrics, normalized targets, and Evidence pointers.
+
+## Current model scope
+
+**Project Model Pool:** GLM-5.2-W8A8, DeepSeek-V4-Flash-W8A8, DeepSeek-V4-Pro-W8A8, MiniMax-M3.
+
+**Current Single-A3 candidates:** GLM-5.2-W8A8, DeepSeek-V4-Flash-W8A8, MiniMax-M3 on one Ascend A3/910C server (8 cards / 16 NPU chips). DeepSeek-V4-Pro-W8A8 remains a `MULTI_NODE_CANDIDATE / NOT_SINGLE_A3_CANDIDATE` and is not part of the current Stage 0 execution scope.
