@@ -17,3 +17,5 @@ The Control claim is bounded to the exact model/runtime/hardware/workload identi
 Additional models use the same slugged namespace after a User Decision.
 
 The next stage is the read-only [Stage 0 Server Fact Acquisition Task](tasks/VLLM-ASCEND-STAGE0-SERVER-FACT-ACQUISITION.md). It is `READY` for documentation but awaits explicit User dispatch.
+
+Reusable [Task](templates/TASK-TEMPLATE.md) and immutable [Result](templates/RESULT-TEMPLATE.md) templates are provided for later stages.
