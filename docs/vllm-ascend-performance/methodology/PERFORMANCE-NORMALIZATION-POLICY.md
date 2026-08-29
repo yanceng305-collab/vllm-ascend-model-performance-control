@@ -4,7 +4,7 @@ This is the User-defined performance acceptance heuristic for comparable cells. 
 
 ## Comparable compute basis
 
-Only use `C_H100` and `C_ASCEND` when both are supported by User-approved data, official NVIDIA/Huawei specifications, official product documentation, or another auditable source. Both must use comparable precision and the model's main compute path; include device count; keep dense/sparse mode consistent; and never mix single-device with multi-device or different H100 SKUs. For W8A8, prefer a comparable W8A8-relevant compute basis. Record source URL, access date, SKU, precision, dense/sparse mode, per-device value, device count, and system total.
+Only use `C_H100` and `C_ASCEND` when both are supported by User-approved data, official NVIDIA/Huawei specifications, official product documentation, or another auditable source. Both must use a defensible precision and model compute path; include device count; keep dense/sparse mode consistent; and never mix single-device with multi-device or different H100 SKUs. For W8A8, prefer a comparable W8A8-relevant compute basis. Record source URL, access date, SKU, precision, dense/sparse mode, per-device value, device count, and system total. `ENGINEERING_REFERENCE` permits a documented precision difference in the performance cell, but does not make the compute basis identical by assertion.
 
 ```text
 C_system = C_per_device * device_count
@@ -14,6 +14,8 @@ R = C_ASCEND_system / C_H100_system
 If a credible comparable basis cannot be established, target is `UNKNOWN / USER INPUT REQUIRED` and the cell cannot pass the normalized gate.
 
 ## Higher-is-better metrics
+
+Default gate policy: output token throughput is `PRIMARY GATE`; total token throughput and request throughput are `SECONDARY REFERENCE` when applicable; TTFT, TPOT, ITL, and latency percentiles are `OBSERVATIONAL / GUARDRAIL` unless a future approved Contract explicitly promotes one to a gate.
 
 For throughput-like metrics such as tokens/s, output tokens/s, total throughput, request throughput, or samples/s:
 

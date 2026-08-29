@@ -37,4 +37,4 @@ The XLSX states 989 TFLOPS/device for H100, with totals 1,978 (Qwen, 2 cards), 1
 
 ## Comparability
 
-GLM is `NOT COMPARABLE` pending FP8-versus-INT8 identity resolution. DeepSeek-V4-Flash is pending exact model quantization resolution. DeepSeek-V4-Pro has no H100 reference cell and is `NOT COMPARABLE`. Any future cell must also freeze request rate, sampling, EOS/cache assumptions, MTP, graph/eager mode, benchmark tool/version, repetitions/statistic, and metric gate class.
+GLM is a candidate `ENGINEERING_REFERENCE` pending FP8-versus-INT8 identity resolution and explicit User approval; it must not be described as strict apples-to-apples. DeepSeek-V4-Flash is a candidate engineering reference pending exact model quantization resolution. DeepSeek-V4-Pro has no H100 reference cell and is `NOT_COMPARABLE` until one is supplied. Any future cell must also freeze request rate, sampling, EOS/cache assumptions, MTP, graph/eager mode, benchmark tool/version, repetitions/statistic, and metric gate class.

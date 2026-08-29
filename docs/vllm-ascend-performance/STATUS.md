@@ -4,29 +4,31 @@
 
 **Blocking status:** `MATERIALS_RECEIVED; NORMALIZATION_INPUTS_INCOMPLETE`
 
-**Execution authorization:** `NO EXECUTION READY`; no Codex2 performance Task exists and no A3/NPU test has been performed.
+**Execution authorization:** no performance execution is ready. A read-only Stage 0 discovery Task is `READY / AWAITING EXPLICIT USER DISPATCH`; no A3/NPU test has been performed.
 
 ## Completed
 
 - Multi-model Control structure created.
 - Benchmark contract, metric definitions, source ingestion rules, Evidence rules, and compute-normalization policy drafted.
 - User-provided XLSX/DOCX source records hashed and structured H100 cells extracted.
+- Public FlagOS/vLLM/vLLM-Ascend version evidence recorded; `FLAGOS_ALIGNED_BASELINE` and `LATEST_REFERENCE` tracks defined.
+- Stage 0 Server Fact Acquisition policy and Task created.
 
 ## Pending gates
 
 1. Resolve source identity conflicts and approve the extracted benchmark method/cells.
 2. Freeze a User-approved benchmark contract and comparable compute basis for each cell.
 3. Record runtime inventory and model identity per model.
-4. Create a formal `READY` Task only after the preceding inputs are complete; still requires explicit User dispatch.
-5. Execute, publish immutable Results, review, and accept bounded baselines.
+4. User dispatches the read-only Stage 0 Task; Codex2 publishes immutable discovery Result.
+5. Create later runtime/model/performance Tasks only from Stage 0 evidence and explicit decisions.
 
 ## Model status
 
 | Model | Status | Execution task |
 |---|---|---|
-| GLM-5.2-W8A8 | `WAITING FOR INPUTS` | None |
-| DeepSeek-V4-Pro-W8A8 | `WAITING FOR INPUTS` | None |
-| DeepSeek-V4-Flash-W8A8 | `WAITING FOR INPUTS` | None |
+| GLM-5.2-W8A8 | `PENDING_CODEX2_DISCOVERY` | Stage 0 Task |
+| DeepSeek-V4-Pro-W8A8 | `PENDING_CODEX2_DISCOVERY` | Stage 0 Task |
+| DeepSeek-V4-Flash-W8A8 | `PENDING_CODEX2_DISCOVERY` | Stage 0 Task |
 
 ## Current source status
 

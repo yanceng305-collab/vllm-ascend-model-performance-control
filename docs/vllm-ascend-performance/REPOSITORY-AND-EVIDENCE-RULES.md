@@ -27,3 +27,7 @@ Keep these dimensions separate: experiment result (`PASS`, `FAIL`, `STOP`, `PART
 ## Claim boundaries
 
 Acceptance is per exact cell and identity. Do not extrapolate to other sequence lengths, concurrency, runtime versions, hardware SKUs, quantization, parallelism, or cache/MTP/graph modes.
+
+## Version lanes and discovery ownership
+
+Every Task and Result declares either `FLAGOS_ALIGNED` or `LATEST_REFERENCE`. The former is pinned to the official FlagOS-aligned tuple; the latter is `NON_FLAGOS_ALIGNED_REFERENCE` and cannot enter FlagOS acceptance. Codex1 owns public-source facts. Codex2 owns server-observable facts after explicit dispatch. User input is reserved for policy, authorization, private material, engineering-reference approval, and unresolved business decisions.

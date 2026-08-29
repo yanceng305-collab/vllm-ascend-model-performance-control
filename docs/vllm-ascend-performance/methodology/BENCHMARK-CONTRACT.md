@@ -33,4 +33,6 @@ The supplied DOCX shows one `vllm bench serve` case using a random dataset, inpu
 
 ## Cell comparability
 
-An H100 cell is a formal reference only when model variant, quantization, input/output lengths, concurrency, requests, request rate, sampling, EOS/cache assumptions, MTP, parallelism, benchmark type, and metric definition match the Ascend cell. Otherwise mark `NOT COMPARABLE` and do not calculate PASS/FAIL.
+An H100 cell is a reference when model identity/variant, input/output lengths, concurrency, prompt count, dataset/random generation rule, sampling, `ignore_eos`, benchmark type, and metric definition are aligned. TP, DP, EP, device count, graph/eager mode, kernel, scheduler, chunked prefill, communication, and platform-specific memory optimization may differ and must be recorded rather than used to reject comparability.
+
+Assign one [comparison class](COMPARISON-CLASSES.md): `STRICT_REFERENCE` when principal precision/quantization also matches; `ENGINEERING_REFERENCE` when the same model family/variant and workload align but precision differs and User approval is recorded; or `NOT_COMPARABLE` when model/workload/metric differences are too large. Only the first two classes may supply a normalized engineering target, and the Result must state the class and differences.
