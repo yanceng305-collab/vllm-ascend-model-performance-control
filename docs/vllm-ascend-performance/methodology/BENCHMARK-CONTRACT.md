@@ -27,6 +27,10 @@ This is the contract template. User-provided method material and an explicit Dec
 
 Each metric must declare a name, unit, direction (`HIGHER_IS_BETTER` or `LOWER_IS_BETTER`), gate class (`PRIMARY GATE`, `SECONDARY REFERENCE`, or `OBSERVATIONAL ONLY`), and exact aggregation rule. Unspecified fields remain unknown; suggestions are not frozen policy.
 
+## Source-observed method (not yet frozen)
+
+The supplied DOCX shows one `vllm bench serve` case using a random dataset, input length 4,096, output length 1,024, maximum concurrency 64, 256 prompts, and `ignore_eos`. Reported fields include request/s, output/peak/total tokens/s, and mean/median/P99 TTFT, TPOT, and ITL. These values are source observations only. Warm-up, repeat count, outlier handling, aggregation choice, request-rate sweep, sampling, prefix cache, MTP, and graph/eager mode are not specified and require User Decision before a Task is `READY`.
+
 ## Cell comparability
 
 An H100 cell is a formal reference only when model variant, quantization, input/output lengths, concurrency, requests, request rate, sampling, EOS/cache assumptions, MTP, parallelism, benchmark type, and metric definition match the Ascend cell. Otherwise mark `NOT COMPARABLE` and do not calculate PASS/FAIL.

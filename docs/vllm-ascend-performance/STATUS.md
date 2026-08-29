@@ -14,7 +14,7 @@
 
 ## Pending gates
 
-1. Confirm source hashes and extracted benchmark method/cells.
+1. Resolve source identity conflicts and approve the extracted benchmark method/cells.
 2. Freeze a User-approved benchmark contract and comparable compute basis for each cell.
 3. Record runtime inventory and model identity per model.
 4. Create a formal `READY` Task only after the preceding inputs are complete; still requires explicit User dispatch.

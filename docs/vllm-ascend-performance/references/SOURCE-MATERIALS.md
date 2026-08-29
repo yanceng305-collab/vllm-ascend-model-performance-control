@@ -7,7 +7,7 @@ The following files were present on the workstation on 2026-08-29. They remain o
 | ID | Role | Original path | SHA-256 | Status |
 |---|---|---|---|---|
 | `SRC-A` | Huawei end-to-end optimization data; candidate Ascend/runtime/workload evidence | `C:\Users\22477\Downloads\共享-华为端到端模型优化数据.xlsx` | `45f2759b85d8a271058c2928c33a3ab7ed70d801b2772dd6b8b4fdbf369ea268` | Received and ingested |
-| `SRC-B` | H100 vLLM benchmark reference | `D:\download_web\H100 baseline vllm benchmark_ Qwen,GLM,MiniMax,Hy,DeepSeek.docx` | `25E63FB5D30E7940D7E18E79A6F11852160B3D53C30BF1B3A5EDD940AFE8A6` | Present; extraction in progress |
+| `SRC-B` | H100 vLLM benchmark reference | `D:\download_web\H100 baseline vllm benchmark_ Qwen,GLM,MiniMax,Hy,DeepSeek.docx` | `25e63fb5d30e7940d7e18e79a6f11852160b3d53c30bf1b3a7a5edd940afe8a6` | Received and ingested |
 
 ## Provenance rules
 
