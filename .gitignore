@@ -1,0 +1,19 @@
+.agent-work/
+*.log
+*.out
+*.err
+*.trace
+*.prof
+*.jsonl
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.whl
+__pycache__/
+.venv/
+dist/
+build/
+
+# Keep local source-material copies outside Control; only manifests and hashes belong here.
+source-materials-local/
