@@ -40,6 +40,8 @@ Server project roots are fixed: `WORK_ROOT=/data/tiankuan/zyg`, `MODEL_ROOT=/dat
 
 The Single-A3 container contract is defined in `methodology/SINGLE-A3-CONTAINER-CONTRACT.md`. Do not use `/data:/data` or `/root/.cache:/root/.cache`. From Stage 1 onward, formal execution Tasks must include complete commands under `methodology/EXECUTION-COMMAND-COMPLETENESS.md`; Codex2 may not improvise core commands or permanently alter the contract.
 
+Stage 0A is environment-only and is the sole READY discovery Task. Stage 0B is deferred until downloads are complete enough for model inspection. Follow `methodology/MODEL-HASH-POLICY.md`: never hash large weights while downloads are active.
+
 ## Prompt-as-Control-Artifact
 
 Any long Codex2 dispatch prompt must be committed as a Markdown file in this repository before handoff. The committed GitHub file is the formal version and must bind the repository, Task ID/path, prompt path, Control commit, scope, allowed/prohibited actions, expected outputs, Evidence, and Result rules. Codex1 must not use terminal-only prompt text as the handoff. After push, ChatGPT independently live-queries and reviews the committed Task/prompt before returning it to User for Codex2 dispatch.

@@ -6,7 +6,7 @@ Codex2 performs a dispatched, read-only, non-destructive discovery of the single
 
 ## Stage 0B: Model Identity / Compatibility Completion
 
-After or alongside 0A, Codex2 performs a separate read-only discovery under the fixed `MODEL_ROOT` for GLM-5.2-W8A8, DeepSeek-V4-Flash-W8A8, and MiniMax-M3. A model directory that is present but incomplete is `DOWNLOAD_IN_PROGRESS`; it does not block 0A or a separately authorized Stage 1 preparation. Gate: model-scoped immutable Results record `MODEL_READY`, `DOWNLOAD_IN_PROGRESS`, `MODEL_MISSING`, or `MODEL_IDENTITY_UNKNOWN`, plus pinned-runtime recognition and next stage. DeepSeek-V4-Pro-W8A8 remains a multi-node candidate and is excluded from both current 0A/0B execution scope.
+After model downloads are complete enough for inspection, Codex2 performs a separate read-only discovery under the fixed `MODEL_ROOT` for GLM-5.2-W8A8, DeepSeek-V4-Flash-W8A8, and MiniMax-M3. A model directory that is present but incomplete is `DOWNLOAD_IN_PROGRESS`; it does not block 0A or a separately authorized Stage 1 preparation, but 0B remains deferred. Gate: model-scoped immutable Results record `MODEL_READY`, `DOWNLOAD_IN_PROGRESS`, `MODEL_MISSING`, or `MODEL_IDENTITY_UNKNOWN`, plus pinned-runtime recognition and next stage. DeepSeek-V4-Pro-W8A8 remains a multi-node candidate and is excluded from both current 0A/0B execution scope.
 
 ## Bootstrap prerequisite
 
