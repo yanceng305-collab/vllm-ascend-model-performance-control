@@ -2,9 +2,9 @@
 
 ## Purpose
 
-Stage 0 is `Server Fact Acquisition / Compatibility Discovery`, not merely an environment inventory. It collects all server-observable facts needed before runtime preparation, model launch, correctness, or performance Tasks.
+Stage 0 is split into `Stage 0A — Environment / Host / Container Fact Acquisition` and `Stage 0B — Model Identity / Compatibility Completion`, not merely an environment inventory. It collects all server-observable facts needed before runtime preparation, model launch, correctness, or performance Tasks.
 
-For this revision the execution scope is one Ascend A3/910C server with 8 cards / 16 NPU chips and three independent candidates: GLM-5.2-W8A8, DeepSeek-V4-Flash-W8A8, and MiniMax-M3. DeepSeek-V4-Pro-W8A8 is a retained multi-node candidate and is out of scope.
+For this revision the execution scope is one Ascend A3/910C server with 8 cards / 16 NPU chips and three independent candidates: GLM-5.2-W8A8, DeepSeek-V4-Flash-W8A8, and MiniMax-M3. DeepSeek-V4-Pro-W8A8 is a retained multi-node candidate and is out of scope. Stage 0A does not require model downloads to be complete; Stage 0B records incomplete downloads as `DOWNLOAD_IN_PROGRESS`.
 
 ## Default boundary
 
@@ -42,3 +42,7 @@ The immutable Stage 0 Result must answer:
 9. The next eligible stage.
 
 `SERVER-OBSERVABLE != USER INPUT REQUIRED`. Codex1 creates the discovery Task; Codex2 obtains these facts after dispatch.
+
+## Separate dispositions
+
+The environment disposition is independent of model acquisition: `ENV_READY`, `ENV_PREPARATION_REQUIRED`, or `ENV_BLOCKED`. Model acquisition is independent per candidate: `MODEL_READY`, `DOWNLOAD_IN_PROGRESS`, `MODEL_MISSING`, or `MODEL_IDENTITY_UNKNOWN`. Compatibility remains independently `READY`, `BLOCKED_RUNTIME`, `BLOCKED_MODEL_SUPPORT`, `BLOCKED_QUANTIZATION`, `BLOCKED_MISSING_MODEL`, or `BLOCKED_UNKNOWN`.

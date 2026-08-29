@@ -31,3 +31,9 @@ Acceptance is per exact cell and identity. Do not extrapolate to other sequence 
 ## Version lanes and discovery ownership
 
 Every Task and Result declares either `FLAGOS_ALIGNED` or `LATEST_REFERENCE`. The former is pinned to the official FlagOS-aligned tuple; the latter is `NON_FLAGOS_ALIGNED_REFERENCE` and cannot enter FlagOS acceptance. Codex1 owns public-source facts. Codex2 owns server-observable facts after explicit dispatch. User input is reserved for policy, authorization, private material, engineering-reference approval, and unresolved business decisions.
+
+## Persistent workspace and command completeness
+
+Use the User-approved roots `WORK_ROOT=/data/tiankuan/zyg`, `MODEL_ROOT=/data/tiankuan/zyg/model`, `EVIDENCE_ROOT=/data/tiankuan/zyg/evidence/vllm-ascend-model-performance-control`, and `TASK_WORK_ROOT=/data/tiankuan/zyg/work/vllm-ascend-model-performance-control`. Do not use `/tmp` as formal Evidence fallback, search beyond `MODEL_ROOT` for model discovery, reuse another project's run directory, or mount `/data:/data` / `/root/.cache:/root/.cache`.
+
+From Stage 1, every server-operation Task must include complete directly executable commands and resolved identities for its scope, logging, readiness, and cleanup. Abstract verbs without commands are not dispatch-ready. Stage 0 may write only task-owned Evidence bookkeeping; it may not create containers or change runtime.

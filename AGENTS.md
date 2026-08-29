@@ -34,6 +34,12 @@ Do not guess model paths, SHAs, vLLM/vLLM-Ascend/CANN versions, hardware SKU, ca
 
 Public facts are Codex1-owned research: official version matrices, release notes, model registries, support lists, hardware specifications, commits, tags, issues, and PRs. Server-observable facts are Codex2-owned discovery: devices, runtime packages, containers, model files/configuration, capability probes, and topology. Mark these `PENDING_CODEX2_DISCOVERY`, not User input. User decisions are limited to acceptance policy, private materials, engineering-reference approval, dispatch, stateful-change authorization, and unresolved business choices.
 
+## Workspace and command rules
+
+Server project roots are fixed: `WORK_ROOT=/data/tiankuan/zyg`, `MODEL_ROOT=/data/tiankuan/zyg/model`, `EVIDENCE_ROOT=/data/tiankuan/zyg/evidence/vllm-ascend-model-performance-control`, and `TASK_WORK_ROOT=/data/tiankuan/zyg/work/vllm-ascend-model-performance-control`. Codex2 must inspect model directories only under `MODEL_ROOT`; it must not search the whole server or guess subdirectory names. Model download state is independent from environment readiness.
+
+The Single-A3 container contract is defined in `methodology/SINGLE-A3-CONTAINER-CONTRACT.md`. Do not use `/data:/data` or `/root/.cache:/root/.cache`. From Stage 1 onward, formal execution Tasks must include complete commands under `methodology/EXECUTION-COMMAND-COMPLETENESS.md`; Codex2 may not improvise core commands or permanently alter the contract.
+
 ## Prompt-as-Control-Artifact
 
 Any long Codex2 dispatch prompt must be committed as a Markdown file in this repository before handoff. The committed GitHub file is the formal version and must bind the repository, Task ID/path, prompt path, Control commit, scope, allowed/prohibited actions, expected outputs, Evidence, and Result rules. Codex1 must not use terminal-only prompt text as the handoff. After push, ChatGPT independently live-queries and reviews the committed Task/prompt before returning it to User for Codex2 dispatch.

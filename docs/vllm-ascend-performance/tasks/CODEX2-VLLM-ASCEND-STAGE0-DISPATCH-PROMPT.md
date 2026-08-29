@@ -1,4 +1,4 @@
-# Codex2 Dispatch Prompt: Stage 0 Server Fact Acquisition
+# Codex2 Dispatch Prompt: Stage 0A/0B Server Fact Acquisition
 
 You are Codex2 executing `VLLM-ASCEND-STAGE0-SERVER-FACT-ACQUISITION` for Control repo `https://github.com/yanceng305-collab/vllm-ascend-model-performance-control`.
 
@@ -7,44 +7,62 @@ You are Codex2 executing `VLLM-ASCEND-STAGE0-SERVER-FACT-ACQUISITION` for Contro
 - Task ID: `VLLM-ASCEND-STAGE0-SERVER-FACT-ACQUISITION`
 - Task path: `docs/vllm-ascend-performance/tasks/VLLM-ASCEND-STAGE0-SERVER-FACT-ACQUISITION.md`
 - Prompt path: `docs/vllm-ascend-performance/tasks/CODEX2-VLLM-ASCEND-STAGE0-DISPATCH-PROMPT.md`
-- Control baseline before this revision: `17672b16f665f74ff6ad45ab344a8054fc75dc9b` (lineage anchor; the exact prompt artifact is the committed file at the current Control SHA verified below)
-- Prompt artifact commit: the commit returned by `git log -1 --format=%H -- docs/vllm-ascend-performance/tasks/CODEX2-VLLM-ASCEND-STAGE0-DISPATCH-PROMPT.md` after fetching `main`; this is the prompt's authoritative Control SHA.
-- Formal artifact rule: this Markdown file committed in the Control repo is the authoritative handoff; terminal text is not a substitute.
+- Control lineage anchor: `17672b16f665f74ff6ad45ab344a8054fc75dc9b`
+- Formal artifact rule: this committed Markdown file is the authoritative handoff; terminal text is not a substitute.
 
-At execution start, live query or fetch the Control repo and verify the current `main` HEAD, this prompt path, and the Task path. The current HEAD is the prompt's Control binding; record it as `CONTROL_SHA_VERIFIED` in Evidence and the immutable Result. Confirm that the prompt and Task still have the same scope and safety boundary. If the checked-out files differ from this committed artifact, or a newer HEAD changes the Task/prompt scope, report drift and STOP; do not silently execute an old artifact. The pre-revision SHA above is only the lineage anchor and must not be used as the execution SHA.
+At execution start, live query/fetch the Control repo, verify the current `main` HEAD, and read the current Task and this prompt from that checkout. Record the verified SHA as `CONTROL_SHA_VERIFIED`. If files differ from this artifact or a newer HEAD changes scope/safety, report drift and STOP; do not execute an old prompt.
 
-This prompt is dispatch-ready but is not authorization by itself. Execute only after the User explicitly dispatches this exact committed prompt and Task. Then execute only the read-only, non-destructive discovery below. Do not run a model service or benchmark. Do not install, uninstall, upgrade, rebuild, pull, modify, or delete anything.
+This prompt is dispatch-ready but is not authorization by itself. Execute only after the User explicitly dispatches this exact committed prompt and Task. Execute only read-only, non-destructive discovery; do not create containers, start models, benchmark, install, upgrade, pull images, or modify runtime.
 
-## Scope and lane
+## Scope and sequencing
 
-Hardware target: one Ascend A3/910C server with 8 cards / 16 NPU chips.
+Hardware target: one Ascend A3/910C server, 8 cards / 16 NPU chips.
 
-Models in scope: `glm-5.2-w8a8`, `deepseek-v4-flash-w8a8`, and `minimax-m3`.
+Current Single-A3 candidates: `glm-5.2-w8a8`, `deepseek-v4-flash-w8a8`, and `minimax-m3`. `deepseek-v4-pro-w8a8` is a project-pool `MULTI_NODE_CANDIDATE / NOT_SINGLE_A3_CANDIDATE` and is explicitly out of scope.
 
-`deepseek-v4-pro-w8a8` remains a project-pool `MULTI_NODE_CANDIDATE / NOT_SINGLE_A3_CANDIDATE` and is explicitly out of scope for this run.
+Run two independent discovery tracks:
 
-Target lane: `FLAGOS_ALIGNED`, defined by FlagOS `release/0.2`, vLLM `0.20.2`, vLLM-Ascend `0.20.2rc1`, Python >=3.10,<3.12, CANN 9.0.0, PyTorch/torch_npu 2.10.0/2.10.0, Triton Ascend 3.2.1, Mooncake v0.3.8.post1. Newer versions, if observed, are facts only and must be labeled `LATEST_REFERENCE / NON_FLAGOS_ALIGNED_REFERENCE`.
+### Stage 0A — Environment / Host / Container Fact Acquisition
 
-## Allowed probes
+Prioritize hardware, `/dev/davinci0`–`/dev/davinci15`, host OS/distribution, Docker version, driver, firmware, CANN, Python, torch/torch_npu, existing vLLM/vLLM-Ascend, existing images and containers, image IDs/digests/tags, container prerequisites, required host mount sources, `/data/tiankuan` existence/free space, `/home`, and the `FLAGOS_ALIGNED` runtime gap. Stage 0A does not require model downloads to be complete.
 
-Read files/configs; query `npu-smi`, `docker inspect`, package/version metadata, Python read-only imports/introspection, model directories and hashes, vLLM/vLLM-Ascend registries, architecture recognition, device/topology/HBM/network/OS/kernel/HCCL facts, and supported launch flags. Capture exact commands, timestamps, stdout/stderr, and exit codes.
+### Stage 0B — Model Identity / Compatibility Completion
 
-## Required answers
+Inspect only under `MODEL_ROOT` and do not search the entire server. For each in-scope model, locate actual directories without guessing names; capture path, directory listing, config, architecture, revision/SHA, file hashes, quantization config/method, dtype, KV-cache dtype, tokenizer, and completeness. If a directory exists but files are still arriving, record `DOWNLOAD_IN_PROGRESS`; do not convert that into an environment blocker. If absent, record `MODEL_MISSING`.
 
-For hardware/runtime: SKU, NPU count, driver, firmware, HBM, topology, OS/kernel, Python, CANN, torch, torch_npu, vLLM, vLLM-Ascend, Triton Ascend, HCCL, Mooncake, image/container ID/digest, and whether the exact aligned tuple exists.
+## Frozen workspace roots
 
-For each in-scope model: actual path, config, architecture, revision/SHA, file hashes, quantization method/config, dtype, KV-cache dtype, tokenizer, availability, registry recognition, import/module/source origins, exact capability errors, and supported TP/DP/EP/launch flags discoverable without launching. For MiniMax-M3 explicitly determine whether the actual downloaded variant is BF16, W8A8, or another quantization and whether static 16-NPU capacity is plausible from read-only facts.
+```text
+WORK_ROOT=/data/tiankuan/zyg
+MODEL_ROOT=/data/tiankuan/zyg/model
+EVIDENCE_ROOT=/data/tiankuan/zyg/evidence/vllm-ascend-model-performance-control
+TASK_WORK_ROOT=/data/tiankuan/zyg/work/vllm-ascend-model-performance-control
+```
 
-Assign one status per in-scope model: `READY`, `BLOCKED_RUNTIME`, `BLOCKED_MODEL_SUPPORT`, `BLOCKED_QUANTIZATION`, `BLOCKED_MISSING_MODEL`, or `BLOCKED_UNKNOWN`. State the next eligible stage and distinguish server facts from User decisions. Do not assign a Stage 0 disposition to DeepSeek-V4-Pro.
+Use `MODEL_ROOT` for model discovery and `TASK_WORK_ROOT` for any task-owned non-runtime scratch bookkeeping that is strictly necessary and safe. Do not ask the User to replace paths or IDs.
 
-## Prohibited
+## Allowed read-only probes
 
-No package or system changes, no driver/CANN changes, no model edits, no image pull/rebuild/commit, no service launch, no benchmark, and no long-running workload. Stop and report if a requested fact requires a prohibited action.
+Read files/configs; query `npu-smi`, `docker version`, `docker images --no-trunc`, `docker ps -a`, `docker inspect`, package/version metadata, Python imports/introspection, model directories/hashes, vLLM/vLLM-Ascend registries, architecture recognition, device/topology/HBM/network/OS/kernel/HCCL facts, supported launch flags, filesystem existence, and disk capacity. Capture exact commands, timestamps, stdout/stderr, and exit codes.
+
+For image readiness, public official evidence currently shows vLLM-Ascend `v0.20.2rc1` workflow carriers `Dockerfile.a3` and `Dockerfile.a3.openEuler`, and tag-triggered version image publishing. It does not establish a final usable image digest for this server. Record local image inventory and mark image selection unresolved unless both official evidence and server evidence support it. If no direct aligned A3 image is usable, record `NO_DIRECT_ALIGNED_IMAGE`; do not silently select a newer image.
+
+## Required answers and independent dispositions
+
+Record environment disposition separately as `ENV_READY`, `ENV_PREPARATION_REQUIRED`, or `ENV_BLOCKED`.
+
+For each in-scope model record acquisition state `MODEL_READY`, `DOWNLOAD_IN_PROGRESS`, `MODEL_MISSING`, or `MODEL_IDENTITY_UNKNOWN`, plus compatibility status `READY`, `BLOCKED_RUNTIME`, `BLOCKED_MODEL_SUPPORT`, `BLOCKED_QUANTIZATION`, `BLOCKED_MISSING_MODEL`, or `BLOCKED_UNKNOWN`. One model's state must not automatically fail another.
+
+Compare pinned `vLLM 0.20.2` / `vLLM-Ascend 0.20.2rc1` facts separately from any newer `LATEST_REFERENCE / NON_FLAGOS_ALIGNED_REFERENCE`. Do not infer pinned support from current main.
+
+## Prohibited actions
+
+No `docker pull`, `docker run`, image build/commit, service launch, benchmark, pip/apt/yum changes, driver/CANN changes, model edits/deletes, runtime configuration changes, or long-running workload. Stage 0 may create only its own Evidence directory and files; it must not modify or delete other Evidence.
 
 ## Evidence root and run ID
 
-First inspect read-only whether a project evidence workspace already exists. If one is clearly discoverable, use it and record the path-selection evidence. Otherwise use `/tmp/vllm-ascend-model-performance-control/evidence`. Generate the run ID automatically at execution start as a UTC timestamp in `YYYYMMDDTHHMMSSZ` form. Create the run directory under `VLLM-ASCEND-STAGE0-SERVER-FACT-ACQUISITION/YYYYMMDDTHHMMSSZ`, replacing the final component with the generated timestamp, without overwriting another run. Do not ask the User to choose or replace a path or ID.
+Use `EVIDENCE_ROOT` above. If a clearly belonging project Evidence workspace already exists under that root, record the read-only selection evidence; never reuse another project's run. Otherwise use the same fixed root. Generate a UTC run ID automatically at execution start in `YYYYMMDDTHHMMSSZ` form and create `EVIDENCE_ROOT/VLLM-ASCEND-STAGE0-SERVER-FACT-ACQUISITION/YYYYMMDDTHHMMSSZ/` without overwriting an existing run. Creating this task-owned directory and writing Evidence files is allowed bookkeeping.
 
-## Evidence and immutable Result
+## Immutable Result
 
-The run directory must contain a manifest, verified Control SHA, exact commands, timestamps, logs, inventories, probes, and checksums. Publish one immutable `RESULT-*.md` to the Control repo after execution. Do not include credentials or secrets. Do not rewrite the Result after publication; use a supplement for corrections. Do not create a performance Result or claim PASS/FAIL.
+Write manifest, verified Control SHA, exact commands, timestamps, logs, inventories, probes, selected Evidence root, environment disposition, model-scoped states, checksums, first blockers, last successful probes, prohibited actions not taken, and next eligible stages. Publish one immutable `RESULT-*.md` to Control after execution. Do not include secrets. Do not rewrite the Result; use a supplement for corrections. Do not create a performance Result or claim PASS/FAIL.

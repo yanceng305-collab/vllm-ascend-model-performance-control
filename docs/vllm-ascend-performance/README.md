@@ -27,8 +27,12 @@ The current target is one Ascend A3/910C server with 8 cards / 16 NPU chips. Onl
 
 DeepSeek-V4-Pro-W8A8 remains in the Project Model Pool as `MULTI_NODE_CANDIDATE / NOT_SINGLE_A3_CANDIDATE`. It is retained for future multi-node resources, is excluded from the current Stage 0 execution scope, and cannot block the three single-node candidates.
 
-The next stage is the read-only [Stage 0 Server Fact Acquisition Task](tasks/VLLM-ASCEND-STAGE0-SERVER-FACT-ACQUISITION.md). It is `READY` for documentation but awaits explicit User dispatch.
+The next stage is the read-only [Stage 0A/0B Server Fact Acquisition Task](tasks/VLLM-ASCEND-STAGE0-SERVER-FACT-ACQUISITION.md). It is `READY` for documentation but awaits explicit User dispatch. Stage 0A is environment-first and does not require model downloads to be complete; Stage 0B completes model identity/compatibility after inspecting `MODEL_ROOT`.
 
 Reusable [Task](templates/TASK-TEMPLATE.md) and immutable [Result](templates/RESULT-TEMPLATE.md) templates are provided for later stages.
 
 The committed-prompt handoff sequence is defined in [ChatGPT Review and Handoff](methodology/CHATGPT-REVIEW-AND-HANDOFF.md).
+
+Server path policy, the Single-A3 container contract, and complete-command requirements are defined in [Workspace and Evidence Paths](methodology/WORKSPACE-AND-EVIDENCE-PATHS.md), [Single-A3 Container Contract](methodology/SINGLE-A3-CONTAINER-CONTRACT.md), and [Execution Command Completeness](methodology/EXECUTION-COMMAND-COMPLETENESS.md).
+
+Official A3 image carrier evidence and the unresolved tag/digest boundary are recorded in [Image Identity Evidence](methodology/IMAGE-IDENTITY-EVIDENCE.md).
