@@ -68,3 +68,55 @@ Stage 0A is the sole current READY Task and covers read-only environment/host/co
 ## D-017 Model download/hash policy
 
 During `DOWNLOAD_IN_PROGRESS`, do not hash large weights or issue compatibility verdicts. After `MODEL_DOWNLOAD_COMPLETE`, Stage 0B may produce identity hashes and a reusable weight manifest; full weight SHA-256 is optional and separately justified. Never use hashes captured while files are being written as formal provenance.
+
+## D-018 Agent role naming
+
+Effective 2026-09-01, the formal agent role names are **PerfControl** (Control plane agent) and **A3PerfRunner** (A3 execution agent). These supersede the bootstrap names "Codex1" and "Codex2" respectively.
+
+- **PerfControl** = Control repo, planning, methodology, Task/prompt authoring, Result review, Acceptance, status governance, GitHub source-of-truth maintenance.
+- **A3PerfRunner** = A3 server execution, command execution, Evidence collection, raw log preservation, Result reporting.
+
+Historical references: "Codex1" is PerfControl's historical alias; "Codex2" is A3PerfRunner's historical alias. Existing immutable Results, submitted prompts, and Evidence pointers retain their original naming and are not rewritten. All active/current documentation, README, PLAN, STATUS, methodology, future Tasks, future prompts, and future Results use the new formal names.
+
+Future prompt filenames should use the pattern `A3PERFRUNNER-<TASK>-PROMPT.md` rather than `CODEX2-<TASK>-PROMPT.md`.
+
+## D-019 GLM-5.2-W8A8 User-verified baseline override
+
+Effective 2026-09-01, GLM-5.2-W8A8 has a **USER-VERIFIED KNOWN-GOOD BASELINE** that supersedes the FlagOS-aligned 0.20.2 discovery-first approach for this model only.
+
+User has completed on A3:
+1. Container creation with verified image `quay.io/ascend/vllm-ascend:nightly-releases-v0.24.0rc-a3`
+2. vLLM 0.24.0+empty / vLLM-Ascend 0.19.1rc2.dev1157+g6443b2a38 runtime verification
+3. GLM-5.2-W8A8 TP16 successful launch with FULL_DECODE_ONLY graph mode
+4. Graph compilation success
+5. 64K input + 1K output + C64 benchmark completion
+6. Real baseline performance measurement
+7. A3 FP16 compute measurement via ascend-dmi
+
+GLM-5.2-W8A8 execution mode: **USER-VERIFIED KNOWN-GOOD BASELINE → FAST PREFLIGHT → RUN FROZEN COMMANDS/SCRIPTS → EVIDENCE → RESULT → OPTIMIZATION**.
+
+Stage 0 discovery capability is retained for new servers, new hardware, unknown runtimes, and unverified models (DeepSeek, MiniMax), but does not block GLM-5.2-W8A8 current performance work.
+
+Baseline artifacts (container command, server launch command, benchmark workload, scripts) are frozen as model-specific known-good references. Optimizations are tracked as separate OPT Tasks with independent Results compared against the frozen baseline.
+
+The FlagOS-aligned 0.20.2 track remains as historical/migration reference but does not gate GLM-5.2-W8A8 native 0.24-based performance testing.
+
+## D-020 GLM-5.2-W8A8 hardware compute basis
+
+Effective 2026-09-01, the **User-approved unified hardware compute basis** for GLM-5.2-W8A8 normalization:
+
+**A3/910C**: 756 TFLOPS per physical card @ FP16 (suitable precision for W8A8 comparison)  
+**A3 system**: 8 physical cards × 756 = **6048 TFLOPS**
+
+**H100**: 989 TFLOPS per physical card @ FP8 (customer baseline precision)  
+**H100 system**: 16 cards × 989 = **15824 TFLOPS**
+
+**Measured A3 compute** (ascend-dmi -f -t fp16): 6019.718 TFLOPS (recorded as measured evidence; 6048 TFLOPS is the official normalization basis).
+
+**Comparison class**: `ENGINEERING_REFERENCE` (GLM-5.2 precision differs: customer H100 uses FP8, Ascend uses W8A8).
+
+**Primary acceptance metric**: Normalized Total Token Throughput  
+**Formula**: `NormalizedThroughput = TotalTokenThroughput / PhysicalCardCount / UnifiedHardwareComputePerCard`  
+**Pass condition**: `(A3_Normalized / H100_Normalized) >= 0.80`
+
+This is model-specific and does not automatically apply to DeepSeek, MiniMax, or future models.

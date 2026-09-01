@@ -8,7 +8,7 @@ For this revision the execution scope is one Ascend A3/910C server with 8 cards 
 
 ## Default boundary
 
-Stage 0 is `READ-ONLY / NON-DESTRUCTIVE` and requires explicit User dispatch of a Codex2 Task.
+Stage 0 is `READ-ONLY / NON-DESTRUCTIVE` and requires explicit User dispatch of an A3PerfRunner Task.
 
 ### Allowed
 
@@ -41,7 +41,7 @@ The immutable Stage 0 Result must answer:
 8. Aligned status: `READY`, `BLOCKED_RUNTIME`, `BLOCKED_MODEL_SUPPORT`, `BLOCKED_QUANTIZATION`, `BLOCKED_MISSING_MODEL`, or `BLOCKED_UNKNOWN`.
 9. The next eligible stage.
 
-`SERVER-OBSERVABLE != USER INPUT REQUIRED`. Codex1 creates the discovery Task; Codex2 obtains these facts after dispatch.
+`SERVER-OBSERVABLE != USER INPUT REQUIRED`. PerfControl creates the discovery Task; A3PerfRunner obtains these facts after dispatch.
 
 ## Separate dispositions
 
