@@ -10,11 +10,13 @@ For comparable higher-is-better metrics, the minimum target is `H100 metric * (A
 
 ## D-003 No guessed inputs
 
-Unknown public facts are researched by Codex1; unknown server-observable facts are `PENDING_CODEX2_DISCOVERY`; only policy, authorization, private material, engineering-reference approval, or true business decisions are `USER INPUT REQUIRED`. Missing comparable compute prevents a normalized target from being calculated.
+Unknown public facts are researched by PerfControl; unknown server-observable facts are `PENDING_A3PERFRUNNER_DISCOVERY`; only policy, authorization, private material, engineering-reference approval, or true business decisions are `USER INPUT REQUIRED`. Missing comparable compute prevents a normalized target from being calculated.
+
+Historical note: `PENDING_CODEX2_DISCOVERY` was the original term for `PENDING_A3PERFRUNNER_DISCOVERY` (per D-018 effective 2026-09-01). Immutable historical artifacts preserve the original terminology.
 
 ## D-004 No execution at bootstrap
 
-Bootstrap performs no A3/NPU operation, package installation, model launch, or benchmark. Codex2 execution requires a READY Task and explicit User dispatch.
+Bootstrap performs no A3/NPU operation, package installation, model launch, or benchmark. A3PerfRunner execution requires a READY Task and explicit User dispatch.
 
 ## D-005 FlagOS-aligned version baseline
 
@@ -26,7 +28,7 @@ The primary baseline is `flagos-ai/vllm-plugin-FL@release/0.2` aligned to `vLLM 
 
 ## D-007 Fact ownership
 
-Codex1 retrieves public facts. Codex2 retrieves server-observable facts after User dispatch through a read-only Stage 0 Task. User is asked only for policy, private material, authorization, engineering-reference approval, or true business decisions.
+PerfControl retrieves public facts. A3PerfRunner retrieves server-observable facts after User dispatch through a read-only Stage 0 Task. User is asked only for policy, private material, authorization, engineering-reference approval, or true business decisions.
 
 ## D-008 Comparison classes
 
@@ -42,16 +44,16 @@ The current single-node target is Ascend A3/910C, 8 cards / 16 NPU chips. The cu
 
 ## D-011 Prompt-as-Control-Artifact
 
-Any long Codex2 dispatch prompt must first be committed as a Markdown file in this Control repository. The committed GitHub file is the sole formal handoff artifact and must bind repo, Task, prompt path, Control commit, scope, allowed/prohibited actions, outputs, Evidence, and Result rules. Codex1 terminal output must link the file rather than substitute an uncommitted prompt.
+Any long A3PerfRunner dispatch prompt must first be committed as a Markdown file in this Control repository. The committed GitHub file is the sole formal handoff artifact and must bind repo, Task, prompt path, Control commit, scope, allowed/prohibited actions, outputs, Evidence, and Result rules. PerfControl terminal output must link the file rather than substitute an uncommitted prompt.
 
 ## D-012 ChatGPT review and handoff
 
-The workflow is Codex1 Task/prompt creation -> commit/push -> User gives the result to ChatGPT -> ChatGPT live-queries GitHub and independently reviews SHA, Task, prompt, scope, safety, and Evidence rules -> ChatGPT either returns the committed prompt unchanged to User or requests Codex1 revision -> User sends the reviewed Control artifact to Codex2. The committed prompt, not terminal text, is authoritative.
+The workflow is PerfControl Task/prompt creation -> commit/push -> User gives the result to ChatGPT -> ChatGPT live-queries GitHub and independently reviews SHA, Task, prompt, scope, safety, and Evidence rules -> ChatGPT either returns the committed prompt unchanged to User or requests PerfControl revision -> User sends the reviewed Control artifact to A3PerfRunner. The committed prompt, not terminal text, is authoritative.
 
 
 ## D-013 Persistent workspace and Evidence paths
 
-Freeze `WORK_ROOT=/data/tiankuan/zyg`, `MODEL_ROOT=/data/tiankuan/zyg/model`, `EVIDENCE_ROOT=/data/tiankuan/zyg/evidence/vllm-ascend-model-performance-control`, and `TASK_WORK_ROOT=/data/tiankuan/zyg/work/vllm-ascend-model-performance-control` as the project workspace policy. Stage 0 uses the persistent Evidence root and never `/tmp` as formal fallback. Codex2 inspects candidate models only under `MODEL_ROOT`; incomplete downloads are `DOWNLOAD_IN_PROGRESS` and do not block environment-first preparation.
+Freeze `WORK_ROOT=/data/tiankuan/zyg`, `MODEL_ROOT=/data/tiankuan/zyg/model`, `EVIDENCE_ROOT=/data/tiankuan/zyg/evidence/vllm-ascend-model-performance-control`, and `TASK_WORK_ROOT=/data/tiankuan/zyg/work/vllm-ascend-model-performance-control` as the project workspace policy. Stage 0 uses the persistent Evidence root and never `/tmp` as formal fallback. A3PerfRunner inspects candidate models only under `MODEL_ROOT`; incomplete downloads are `DOWNLOAD_IN_PROGRESS` and do not block environment-first preparation.
 
 ## D-014 Single-A3 Container Contract
 
@@ -59,7 +61,7 @@ For one A3/910C server with 8 cards / 16 NPU chips, freeze the privileged host-n
 
 ## D-015 Execution Command Completeness
 
-From Stage 1 onward, every server-operation Task must include complete, directly executable commands, resolved paths/identities, logging, readiness checks, and cleanup. This applies to runtime preparation, model launch, functional smoke, performance cells, and optimization/retest. Stage 6 formal review requires no server command. Codex2 may not improvise or replace abstract instructions with unrecorded commands, and Stage 4 Results are never overwritten.
+From Stage 1 onward, every server-operation Task must include complete, directly executable commands, resolved paths/identities, logging, readiness checks, and cleanup. This applies to runtime preparation, model launch, functional smoke, performance cells, and optimization/retest. Stage 6 formal review requires no server command. A3PerfRunner may not improvise or replace abstract instructions with unrecorded commands, and Stage 4 Results are never overwritten.
 
 ## D-016 Environment-first Stage 0 split
 

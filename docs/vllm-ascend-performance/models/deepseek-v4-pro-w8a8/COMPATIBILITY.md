@@ -2,7 +2,7 @@
 
 ## Pinned lane (`vLLM 0.20.2` + `vLLM-Ascend 0.20.2rc1`)
 
-Both pinned source trees contain DeepSeek V4 implementation files (`vllm/model_executor/models/deepseek_v4.py` and `vllm_ascend/models/deepseek_v4.py`). This is source-level architecture evidence, not proof that the exact Pro config or W8A8 method is recognized. Exact support is `PENDING_CODEX2_DISCOVERY`.
+Both pinned source trees contain DeepSeek V4 implementation files (`vllm/model_executor/models/deepseek_v4.py` and `vllm_ascend/models/deepseek_v4.py`). This is source-level architecture evidence, not proof that the exact Pro config or W8A8 method is recognized. Exact support is `PENDING_A3PERFRUNNER_DISCOVERY`.
 
 ## Track disposition
 

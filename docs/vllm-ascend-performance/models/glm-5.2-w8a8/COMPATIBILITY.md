@@ -1,14 +1,18 @@
 # GLM-5.2-W8A8 Compatibility
 
-## Pinned lane (`vLLM 0.20.2` + `vLLM-Ascend 0.20.2rc1`)
+## User-verified runtime (Decision D-019)
 
-Public `v0.20.2rc1` support matrix lists `GLM-5` as experimental and marks W8A8 supported. This establishes family-level source evidence only; exact GLM-5.2 architecture/config and installed capability are `PENDING_CODEX2_DISCOVERY`.
+GLM-5.2-W8A8 uses **User-verified vLLM 0.24.0 / vLLM-Ascend 0.19.1rc2** as the known-good baseline (Decision D-019, effective 2026-09-01). This supersedes the FlagOS-aligned discovery track for GLM baseline performance work.
 
-No pinned-lane patch requirement is established by public evidence. Any required model patch must be discovered and separately authorized; a newer-only implementation cannot be silently backported into this baseline.
+The FlagOS-aligned `vLLM 0.20.2` + `vLLM-Ascend 0.20.2rc1` lane is retained as a **historical reference** and potential migration target, but does not gate GLM baseline establishment or optimization.
+
+## Pinned lane (`vLLM 0.20.2` + `vLLM-Ascend 0.20.2rc1`) - Historical Reference
+
+Public `v0.20.2rc1` support matrix lists `GLM-5` as experimental and marks W8A8 supported. This establishes family-level source evidence only; exact GLM-5.2 architecture/config and 0.20.2 compatibility remain unverified. No pinned-lane patch requirement is established by public evidence.
 
 ## Track disposition
 
-`FLAGOS_ALIGNED`: pending Stage 0. `LATEST_REFERENCE`: prohibited as a substitute; may be opened only by a separate Decision/Task if pinned support is blocked.
+`USER_VERIFIED_BASELINE`: vLLM 0.24 (active, per D-019). `FLAGOS_ALIGNED`: historical reference, not required for current GLM work. `LATEST_REFERENCE`: prohibited as a substitute; may be opened only by a separate Decision/Task if needed.
 
 ## Evidence
 

@@ -2,7 +2,7 @@
 
 ## Pinned lane (`vLLM 0.20.2` + `vLLM-Ascend 0.20.2rc1`)
 
-Both pinned source trees contain DeepSeek V4 implementation files. The exact Flash architecture/config, weight quantization, and W8A8 path remain `PENDING_CODEX2_DISCOVERY`; the source H100 note about FP8 KV cache does not identify model-weight quantization.
+Both pinned source trees contain DeepSeek V4 implementation files. The exact Flash architecture/config, weight quantization, and W8A8 path remain `PENDING_A3PERFRUNNER_DISCOVERY`; the source H100 note about FP8 KV cache does not identify model-weight quantization.
 
 No pinned-lane patch requirement is established by public evidence. If a model-specific patch or newer-only support is found, it must be recorded as a separate decision and `LATEST_REFERENCE`, not folded into the aligned result.
 

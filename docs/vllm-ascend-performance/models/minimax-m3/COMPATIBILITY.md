@@ -6,7 +6,7 @@ Live GitHub tree queries on 2026-08-29 show vLLM `v0.20.2` model files `minimax_
 
 ## Track disposition
 
-`FLAGOS_ALIGNED`: `PENDING_CODEX2_DISCOVERY`; if the exact model is unsupported, status becomes `FLAGOS_ALIGNED_BASELINE_BLOCKED_MODEL_UNSUPPORTED`. A newer implementation, if investigated, must be a separate `LATEST_REFERENCE / NON_FLAGOS_ALIGNED_REFERENCE` and cannot replace the aligned lane.
+`FLAGOS_ALIGNED`: `PENDING_A3PERFRUNNER_DISCOVERY`; if the exact model is unsupported, status becomes `FLAGOS_ALIGNED_BASELINE_BLOCKED_MODEL_UNSUPPORTED`. A newer implementation, if investigated, must be a separate `LATEST_REFERENCE / NON_FLAGOS_ALIGNED_REFERENCE` and cannot replace the aligned lane.
 
 ## Evidence
 
