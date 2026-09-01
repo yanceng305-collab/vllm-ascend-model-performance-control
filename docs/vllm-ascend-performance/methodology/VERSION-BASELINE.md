@@ -1,5 +1,17 @@
 # FlagOS-Aligned Version Baseline
 
+## Model-Specific Exception (Decision D-019)
+
+**GLM-5.2-W8A8 current native performance baseline** is governed by Decision D-019 and uses the User-verified vLLM 0.24 runtime:
+
+- **Image**: `quay.io/ascend/vllm-ascend:nightly-releases-v0.24.0rc-a3`
+- **vLLM**: `0.24.0+empty`
+- **vLLM-Ascend**: `0.19.1rc2.dev1157+g6443b2a38` (commit `6443b2a38b95390e4f5174ff7ad2f8c3751e040f`)
+- **Container**: `model-test-zyg-a3`
+- **Track**: `USER_VERIFIED_BASELINE` (not FlagOS-aligned)
+
+The FlagOS-aligned 0.20.2 lane below is retained as a historical/migration reference for GLM and remains the primary lane for DeepSeek/MiniMax.
+
 ## Frozen target
 
 `FLAGOS_ALIGNED_BASELINE` is the primary acceptance lane for results intended to be reused by a later FlagOS migration:

@@ -2,6 +2,16 @@
 
 This is the contract template. User-provided method material and an explicit Decision must fill or approve every field before a performance Task can become `READY`.
 
+## Model-Specific Frozen Workloads
+
+**GLM-5.2-W8A8** (Decision D-019): Has a frozen benchmark matrix. See:
+- `models/glm-5.2-w8a8/BASELINE.md`
+- `models/glm-5.2-w8a8/RUNBOOK.md`
+- `models/glm-5.2-w8a8/scripts/bench-glm52-matrix.sh`
+- `models/glm-5.2-w8a8/scripts/summarize-runs.py`
+
+GLM workload: input 1024/4096/16384/65536, output 1024, max concurrency 64, 256 prompts, `ignore_eos=true`, 4 runs (run1 discarded, mean of runs 2-4).
+
 ## Required workload identity
 
 | Field | Value |

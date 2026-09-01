@@ -40,14 +40,16 @@ The placeholders are allowed only in this methodology contract. A formal Stage 1
 
 The device mapping, privileged mode, host network, shared memory, driver/DCMI/HCCN mounts, `/data/tiankuan:/data/tiankuan`, and `/home:/home` are fixed. Do not add `/root/.cache:/root/.cache` or use the legacy `/data:/data` mount.
 
-Normally only the container name and approved image identity vary per model. If an image/model requires another argument, Codex2 records the reason and STOPs or proposes a Control revision; it cannot permanently change this contract without a new Decision and User authorization.
+Normally only the container name and approved image identity vary per model. If an image/model requires another argument, A3PerfRunner records the reason and STOPs or proposes a Control revision; it cannot permanently change this contract without a new Decision and User authorization.
 
 ## Container names
 
-| Model | Fixed name |
-|---|---|
-| GLM-5.2-W8A8 | `vllm-ascend-glm5.2-zyg` |
-| DeepSeek-V4-Flash-W8A8 | `vllm-ascend-deepseek-v4-flash-zyg` |
-| MiniMax-M3 | `vllm-ascend-minimax-m3-zyg` |
+| Model | Fixed name | Notes |
+|---|---|---|
+| GLM-5.2-W8A8 | `model-test-zyg-a3` | Current User-verified baseline (D-019). Historical: `vllm-ascend-glm5.2-zyg` |
+| DeepSeek-V4-Flash-W8A8 | `vllm-ascend-deepseek-v4-flash-zyg` | FlagOS-aligned discovery track |
+| MiniMax-M3 | `vllm-ascend-minimax-m3-zyg` | FlagOS-aligned discovery track |
 
 Future models use `vllm-ascend-<normalized-model-name>-zyg`. Do not change a model's name across later Tasks unless a Task/Decision documents a naming conflict and User authorization.
+
+**Note**: GLM-5.2-W8A8 container name is governed by Decision D-019 User-verified baseline, not this generic contract.

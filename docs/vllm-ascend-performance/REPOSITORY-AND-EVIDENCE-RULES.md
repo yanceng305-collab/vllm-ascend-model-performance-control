@@ -14,15 +14,15 @@ Every formal Result links to:
 
 ## Task and dispatch
 
-Codex1 writes a bounded Task after identities and contract inputs are frozen. `READY` means the document is complete enough for dispatch; it is not authorization. Codex2 may execute only after explicit User dispatch naming the Task.
+PerfControl writes a bounded Task after identities and contract inputs are frozen. `READY` means the document is complete enough for dispatch; it is not authorization. A3PerfRunner may execute only after explicit User dispatch naming the Task.
 
 ## Result immutability
 
-Codex2 publishes the first `RESULT-*.md` snapshot once. It must include raw values and exact normalized calculations. Never rewrite it. Append a supplement or create a follow-up Result for corrections/additional evidence. Codex1 Acceptance changes the index, Status, Review, and Decision records only.
+A3PerfRunner publishes the first `RESULT-*.md` snapshot once. It must include raw values and exact normalized calculations. Never rewrite it. Append a supplement or create a follow-up Result for corrections/additional evidence. PerfControl Acceptance changes the index, Status, Review, and Decision records only.
 
 ## Acceptance states
 
-Keep these dimensions separate: experiment result (`PASS`, `FAIL`, `STOP`, `PARTIAL`), Control sync (`SYNCED` or `PENDING`), and Codex1 disposition (`ACCEPTED`, `REJECTED`, `NEEDS-FOLLOWUP`, or `PENDING`).
+Keep these dimensions separate: experiment result (`PASS`, `FAIL`, `STOP`, `PARTIAL`), Control sync (`SYNCED` or `PENDING`), and PerfControl disposition (`ACCEPTED`, `REJECTED`, `NEEDS-FOLLOWUP`, or `PENDING`).
 
 ## Claim boundaries
 
@@ -30,7 +30,9 @@ Acceptance is per exact cell and identity. Do not extrapolate to other sequence 
 
 ## Version lanes and discovery ownership
 
-Every Task and Result declares either `FLAGOS_ALIGNED` or `LATEST_REFERENCE`. The former is pinned to the official FlagOS-aligned tuple; the latter is `NON_FLAGOS_ALIGNED_REFERENCE` and cannot enter FlagOS acceptance. Codex1 owns public-source facts. Codex2 owns server-observable facts after explicit dispatch. User input is reserved for policy, authorization, private material, engineering-reference approval, and unresolved business decisions.
+Every Task and Result declares either `FLAGOS_ALIGNED` or `LATEST_REFERENCE`. The former is pinned to the official FlagOS-aligned tuple; the latter is `NON_FLAGOS_ALIGNED_REFERENCE` and cannot enter FlagOS acceptance. PerfControl owns public-source facts. A3PerfRunner owns server-observable facts after explicit dispatch. User input is reserved for policy, authorization, private material, engineering-reference approval, and unresolved business decisions.
+
+**Model-specific exception (Decision D-019)**: GLM-5.2-W8A8 current native performance work uses User-verified vLLM 0.24 runtime, not the FlagOS-aligned 0.20.2 baseline.
 
 ## Persistent workspace and command completeness
 
