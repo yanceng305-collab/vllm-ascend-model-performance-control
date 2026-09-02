@@ -188,7 +188,7 @@ To prevent AI transcription errors in Formal Results (runtime identity, benchmar
 3. **Result generator script**: `scripts/generate_result.py`
    - Consumes validated Evidence JSON and normalization config
    - Auto-generates all factual Result fields (no manual transcription)
-   - Machine-computes achievement percentage per Decision D-020
+   - Machine-computes achievement percentage from the authoritative `hardware-normalization-config.yaml`. For GLM-5.2-W8A8, the active A3 compute basis is governed by D-024, which supersedes the A3 compute-basis portion of D-020.
    - AI authoring limited to: analysis, Formal Review rationale, Next Steps
 
 4. **Pre-commit Result validator**: `scripts/validate_result.py`

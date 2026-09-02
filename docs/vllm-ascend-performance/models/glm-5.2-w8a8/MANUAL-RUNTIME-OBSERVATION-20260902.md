@@ -159,13 +159,13 @@ Boundary on capture=64 (confounded, not isolated):
 - under this manual runtime variant (`max_cudagraph_capture_size=64` plus the other manual deviations: jemalloc LD_PRELOAD, PYTORCH_NPU_ALLOC_CONF, OMP settings, explicit mp backend, served-model-name/port, capture max 64), the 16K/C64 exploratory run gave 960.45 tok/s — essentially flat vs the accepted 957.94 tok/s.
 - classification: **NO MATERIAL CHANGE OBSERVED FOR THE COMBINED MANUAL VARIANT** — NOT `capture64 isolated PASS`; the variant is confounded and no single-parameter conclusion is drawn.
 
-This is a MANUAL EXPLORATORY MICROGATE. It is NOT formal OPT-01 screening, NOT A3Per output formal Evidence, NOT a Formal Result, and it does not unlock OPT-01.
+This is a MANUAL EXPLORATORY MICROGATE. It is NOT formal OPT-01 screening, NOT A3PerfRunner formal Evidence, NOT a Formal Result, and it does not unlock OPT-01.
 
 ---
 
 ## 8. Future candidate families (record only, no authorization)
 
-No winner is selected and no next server execution is authorized while the manual 16K result is pending:
+Following review of the completed manual 16K exploratory result, no winner is selected and no next server execution is authorized by this observation record:
 
 - **A — Scheduler candidate**: `max_num_batched_tokens=4096`. Source: upstream official GLM-5.2-W8A8 reference (verified). Status: `REFERENCE CANDIDATE ONLY`.
 - **B — Graph/scheduler alignment**: `max_num_seqs=64` combined with `max_cudagraph_capture_size=64`. Rationale: the accepted project benchmark uses max concurrency 64; runtime warning shows capture 64 < potential decode requirement 256. Status: `CANDIDATE FOR CONTROLLED TEST ONLY`.
