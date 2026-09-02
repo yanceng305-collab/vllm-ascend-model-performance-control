@@ -25,9 +25,18 @@ Four source cells extracted from User-provided materials (XLSX/DOCX):
 |---|---|---|
 | Input tokens | 1024 | tokens |
 | Output tokens | 1024 | tokens |
-| Total token throughput | TBD | tok/s |
+| Max concurrency | 64 | requests |
+| Num prompts | 256 | prompts |
+| **Total token throughput** | **2688.71** | **tok/s** |
+| Output token throughput | 1344.35 | tok/s |
+| Mean TTFT | 1222.68 | ms |
+| P99 TTFT | 3152.29 | ms |
+| Mean TPOT | 46.42 | ms |
 
-(User source material extraction pending or available in SOURCE-MATERIALS.md)
+**H100 normalized throughput** (1K cell):
+```
+2688.71 tok/s / 16 cards / 989 TFLOPS/card = 0.169913 tok/s per TFLOPS
+```
 
 ### SRC-B-GLM-4K (4096 input)
 
@@ -35,7 +44,18 @@ Four source cells extracted from User-provided materials (XLSX/DOCX):
 |---|---|---|
 | Input tokens | 4096 | tokens |
 | Output tokens | 1024 | tokens |
-| Total token throughput | TBD | tok/s |
+| Max concurrency | 64 | requests |
+| Num prompts | 256 | prompts |
+| **Total token throughput** | **4063.45** | **tok/s** |
+| Output token throughput | 812.69 | tok/s |
+| Mean TTFT | 6640.72 | ms |
+| P99 TTFT | 29472.86 | ms |
+| Mean TPOT | 69.09 | ms |
+
+**H100 normalized throughput** (4K cell):
+```
+4063.45 tok/s / 16 cards / 989 TFLOPS/card = 0.256790 tok/s per TFLOPS
+```
 
 ### SRC-B-GLM-16K (16384 input)
 
@@ -43,7 +63,18 @@ Four source cells extracted from User-provided materials (XLSX/DOCX):
 |---|---|---|
 | Input tokens | 16384 | tokens |
 | Output tokens | 1024 | tokens |
-| Total token throughput | TBD | tok/s |
+| Max concurrency | 64 | requests |
+| Num prompts | 256 | prompts |
+| **Total token throughput** | **4379.60** | **tok/s** |
+| Output token throughput | 257.62 | tok/s |
+| Mean TTFT | 163707.95 | ms |
+| P99 TTFT | 227645.14 | ms |
+| Mean TPOT | 65.78 | ms |
+
+**H100 normalized throughput** (16K cell):
+```
+4379.60 tok/s / 16 cards / 989 TFLOPS/card = 0.276769 tok/s per TFLOPS
+```
 
 ### SRC-B-GLM-64K (65536 input)
 
@@ -67,7 +98,8 @@ Four source cells extracted from User-provided materials (XLSX/DOCX):
 
 ## Notes
 
-- Full extraction of 1K/4K/16K cells from User source materials may be completed separately
-- 64K cell is used as primary reference for current baseline Result
+- All four cells (1K/4K/16K/64K) extracted from User-provided XLSX file (sheet: "推理glm5.2 int8", column: "NV-H100原生-fp8")
+- Source ingestion date: 2026-09-02
+- H100 configuration: 16 cards, FP8 precision, 989 TFLOPS per card
 - See Decision D-020 for compute basis and normalization policy
 - See `references/SOURCE-MATERIALS.md` for original source hash and ingestion record

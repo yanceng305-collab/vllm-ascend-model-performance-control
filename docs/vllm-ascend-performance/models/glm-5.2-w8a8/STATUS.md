@@ -14,19 +14,27 @@
 2. vLLM 0.24 runtime verification
 3. GLM-5.2-W8A8 TP16 successful launch with FULL_DECODE_ONLY graph mode
 4. Graph compilation success
-5. 64K input + 1K output + C64 benchmark completion
-6. Baseline performance measurement: 927.45 tok/s total throughput
-7. A3 FP16 compute measurement: 6019.718 TFLOPS (via ascend-dmi)
+5. **Complete baseline matrix measurement** (1K/4K/16K/64K input + 1K output + C64)
+6. A3 FP16 compute measurement: 6019.718 TFLOPS (via ascend-dmi)
 
 ## Current Performance
 
-**64K baseline** (User-measured):
+**Baseline matrix** (User-measured and User-provided matrix summary):
+
+| Cell | A3 Total Throughput (tok/s) | H100 Reference (tok/s) | Achievement | Disposition | Status |
+|---|---|---|---|---|---|
+| 1K | 676.60 | 2688.71 | 65.84% | BELOW TARGET | User-provided matrix summary, Evidence pending |
+| 4K | 820.76 | 4063.45 | 52.85% | BELOW TARGET | User-provided matrix summary, Evidence pending |
+| 16K | 957.94 | 4379.60 | 57.23% | BELOW TARGET | User-provided matrix summary, Evidence pending |
+| 64K | 927.45 | 5054.66 | 48.01% | BELOW TARGET | User-measured baseline (see RESULT below) |
+
+**Target**: ≥80% normalized throughput for each cell
+
+**64K baseline detail** (User-measured 2026-09-01):
 - Total token throughput: 927.45 tok/s
 - Normalized A3 throughput: 0.153373 tok/s per TFLOPS
-- Normalized H100 reference: 0.319431 tok/s per TFLOPS
+- Normalized H100 reference: 0.319430 tok/s per TFLOPS
 - Achievement: 48.01%
-- Target: ≥80%
-- **Disposition**: BELOW TARGET
 
 See [RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED](results/RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED.md)
 
@@ -39,11 +47,13 @@ See [RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED](results/RESULT-GLM52-W8A8-64K
 
 ## Next Steps
 
-1. **Complete baseline matrix**: A3PerfRunner executes 1K/4K/16K/64K cells using frozen scripts
-2. **Evidence collection**: Formal Evidence-backed Results to supplement User-measured baseline
-3. **Root cause analysis**: Profiling to identify bottlenecks (observed symptoms: KV cache ~85%, scheduling constraints)
-4. **Optimization track**: Separate OPT Tasks (HCCL tuning, memory tuning, KV cache tuning, scheduler tuning, etc.) with controlled parameter changes
-5. **Target achievement**: ≥80% normalized throughput
+1. **Evidence formalization**: A3PerfRunner executes Evidence Acquisition Task (GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION) to extract and formalize raw benchmark Evidence from existing container without re-running benchmarks
+2. **Evidence-backed Results**: Create formal Results for all four baseline matrix cells (1K/4K/16K/64K) with complete provenance
+3. **Baseline matrix review**: PerfControl reviews Evidence-backed Results and performs Formal Acceptance
+4. **Cross-cell performance analysis**: Analyze performance trends across input lengths (1K→4K→16K→64K)
+5. **Root cause analysis**: Profiling to identify bottlenecks (observed symptoms: KV cache ~85%, scheduling constraints)
+6. **Optimization track**: Separate OPT Tasks (HCCL tuning, memory tuning, KV cache tuning, scheduler tuning, etc.) with controlled parameter changes
+7. **Target achievement**: ≥80% normalized throughput for all cells
 
 ## Notes
 
