@@ -34,7 +34,7 @@ docker run -itd \
   /bin/bash
 ```
 
-The placeholders are allowed only in this methodology contract. A formal Stage 1 Task must resolve them to a deterministic container name and approved image tag/digest before dispatch; no User hand-editing or Codex2 improvisation is allowed.
+The placeholders are allowed only in this methodology contract. A formal Stage 1 Task must resolve them to a deterministic container name and approved image tag/digest before dispatch; no User hand-editing or A3PerfRunner improvisation is allowed.
 
 ## Fixed mounts and prohibitions
 

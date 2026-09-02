@@ -20,7 +20,11 @@ After model downloads are complete enough for inspection, A3PerfRunner performs 
 
 ## Bootstrap prerequisite
 
-Control structure, public-source evidence, benchmark contract, normalization policy, source records, and model placeholders are maintained continuously. No performance execution-ready Task is created before Stage 0.
+Control structure, public-source evidence, benchmark contract, normalization policy, source records, and model placeholders are maintained continuously. 
+
+For **DeepSeek-V4-Flash-W8A8, MiniMax-M3, and future unverified models**, no performance execution-ready Task is created before their respective Stage 0 discovery gates are satisfied.
+
+**GLM-5.2-W8A8** operates under Decision D-019 User-verified known-good baseline and is not subject to this discovery-first prerequisite.
 
 ## Stage 1: FlagOS-aligned runtime preparation
 

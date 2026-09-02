@@ -50,7 +50,7 @@ Every formal performance Result must show raw Ascend value, raw H100 value, both
 
 **Hardware compute basis**:
 - A3: 8 cards × 756 TFLOPS (FP16) = **6048 TFLOPS**
-- H100: 16 cards × 989 TFLOPS (FP16) = **15824 TFLOPS**
+- H100: 16 cards × 989 TFLOPS (FP8) = **15824 TFLOPS**
 
 **Primary acceptance metric**: **Normalized Total Token Throughput** (not Output Token Throughput)
 

@@ -4,7 +4,18 @@
 
 Stage 0 is split into `Stage 0A — Environment / Host / Container Fact Acquisition` and `Stage 0B — Model Identity / Compatibility Completion`, not merely an environment inventory. Stage 0A is the current environment-first task; Stage 0B is deferred until downloads are complete enough for inspection. Together they collect all server-observable facts needed before runtime preparation, model launch, correctness, or performance Tasks.
 
-For this revision the execution scope is one Ascend A3/910C server with 8 cards / 16 NPU chips and three independent candidates: GLM-5.2-W8A8, DeepSeek-V4-Flash-W8A8, and MiniMax-M3. DeepSeek-V4-Pro-W8A8 is a retained multi-node candidate and is out of scope. Stage 0A does not require model downloads to be complete; Stage 0B records incomplete downloads as `DOWNLOAD_IN_PROGRESS`.
+## Applicability
+
+**Stage 0 required / normal path:**
+- DeepSeek-V4-Flash-W8A8
+- MiniMax-M3
+- Future unverified models
+- New or unknown server environments
+
+**GLM-5.2-W8A8:**  
+Stage 0 capability is retained for new servers, hardware changes, unknown runtimes, or when provenance re-acquisition is required. However, under Decision D-019 User-verified known-good baseline on the current server/runtime, Stage 0 does NOT gate GLM-5.2-W8A8 performance execution.
+
+**Current execution scope:** One Ascend A3/910C server with 8 cards / 16 NPU chips. DeepSeek-V4-Pro-W8A8 is a retained multi-node candidate and is out of Stage 0 scope. Stage 0A does not require model downloads to be complete; Stage 0B records incomplete downloads as `DOWNLOAD_IN_PROGRESS`.
 
 ## Default boundary
 
