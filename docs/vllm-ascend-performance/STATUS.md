@@ -12,12 +12,12 @@
 
 **Hardware scope:** single Ascend A3/910C server, 8 cards / 16 NPU chips (GLM verified; other models pending discovery).
 
-## Agent Roles (Effective 2026-09-01)
+## Agent Roles (Effective 2026-09-01; final architecture frozen 2026-09-02 per D-021)
 
-- **PerfControl** (formerly Codex1): Control repo, planning, methodology, Task/prompt authoring, Result review, Acceptance, status governance, GitHub source-of-truth maintenance
-- **A3PerfRunner** (formerly Codex2): A3 server execution, command execution, Evidence collection, raw log preservation, Result reporting
+- **PerfControl** (formerly Codex1): sole writer of the formal GitHub Control repo — Control repo, GitHub, Decisions, Tasks, Prompts, STATUS/INDEX, formal Result authoring, Formal Review, Formal Acceptance, commit, push
+- **A3PerfRunner** (formerly Codex2): A3 server execution, container operation/inspection, benchmark (Task-authorized only), raw data collection, runtime identity, logs, SHA256, Evidence manifest/summary/report/bundle. No Control Git commits, no GitHub push, no server Git SHA parity requirement, no formal Result authoring, no Acceptance.
 
-See Decision D-018 for role naming. Historical references use "Codex1" and "Codex2" as aliases.
+**Result authorship split**: Runner produces Evidence; PerfControl produces formal Results (see Decision D-021). Historical references use "Codex1" and "Codex2" as aliases.
 
 ## Completed
 
@@ -47,16 +47,20 @@ See Decision D-018 for role naming. Historical references use "Codex1" and "Code
 - **Disposition**: BELOW TARGET
 
 **Next steps**:
-1. Complete baseline matrix (1K/4K/16K/64K) via A3PerfRunner with frozen scripts
-2. Root cause analysis and profiling
-3. Optimization track (separate OPT Tasks)
+1. Complete baseline matrix (1K/4K/16K/64K) Evidence Acquisition via A3PerfRunner (User dispatch with Task ID + DISPATCH_CONTROL_SHA + Authorization: EXECUTE)
+2. A3PerfRunner produces Evidence (raw artifacts, MANIFEST, COMMANDS, SHA256SUMS, runtime identity, Run2/3/4 calculations, comparison summary, final report)
+3. PerfControl receives Evidence, independently recalcs, authors four formal Evidence-backed `RESULT-*.md` (one per cell), updates INDEX/STATUS
+4. Formal Review and Formal Acceptance per cell (PerfControl)
+5. Root cause analysis and profiling
+6. Optimization track (separate OPT Tasks)
 
 Stage 0 discovery is NOT required for GLM baseline performance work. GLM uses vLLM 0.24 as User-verified runtime. FlagOS-aligned 0.20.2 remains as historical reference only.
 
 ## Pending Gates
 
 1. **GLM-5.2-W8A8**: 
-   - Complete baseline matrix (1K/4K/16K cells)
+   - Evidence Acquisition Task (GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION) `READY` — awaiting User dispatch (Task ID + DISPATCH_CONTROL_SHA + Authorization: EXECUTE) for A3PerfRunner Evidence capture
+   - PerfControl then authors formal Evidence-backed Results (1K/4K/16K/64K), reviews and accepts per cell
    - Root cause analysis (observed: KV cache ~85%, scheduling constraints)
    - Optimization Tasks to achieve ≥80% target
 2. **DeepSeek-V4-Flash / MiniMax-M3**: 
@@ -85,3 +89,4 @@ See [DECISIONS.md](DECISIONS.md) for all formal decisions, including:
 - D-018: Agent role naming (PerfControl / A3PerfRunner)
 - D-019: GLM-5.2-W8A8 User-verified baseline override
 - D-020: GLM-5.2-W8A8 hardware compute basis and normalization policy
+- D-021: Local PerfControl / Remote A3PerfRunner Separation (final role architecture; Runner produces Evidence, PerfControl produces formal Results)

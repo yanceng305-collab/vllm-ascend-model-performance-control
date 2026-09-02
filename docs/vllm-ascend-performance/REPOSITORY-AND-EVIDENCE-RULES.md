@@ -14,11 +14,11 @@ Every formal Result links to:
 
 ## Task and dispatch
 
-PerfControl writes a bounded Task after identities and contract inputs are frozen. `READY` means the document is complete enough for dispatch; it is not authorization. A3PerfRunner may execute only after explicit User dispatch naming the Task.
+PerfControl writes a bounded Task after identities and contract inputs are frozen. `READY` means the document is complete enough for dispatch; it is not authorization. Before dispatch, PerfControl verifies `local Control HEAD == origin/main == DISPATCH_CONTROL_SHA`, then User supplies the explicit dispatch authorization (Task ID, `DISPATCH_CONTROL_SHA`, `Authorization: EXECUTE`). A3PerfRunner may execute only after this explicit User dispatch. The Runner is not required to hold a local Control repo and does not verify server Git state against `DISPATCH_CONTROL_SHA`; the SHA is Evidence provenance, not a server Git-state identity.
 
-## Result immutability
+## Result authorship and immutability
 
-A3PerfRunner publishes the first `RESULT-*.md` snapshot once. It must include raw values and exact normalized calculations. Never rewrite it. Append a supplement or create a follow-up Result for corrections/additional evidence. PerfControl Acceptance changes the index, Status, Review, and Decision records only.
+Runner produces Evidence; PerfControl produces formal Results. A3PerfRunner's Evidence root, manifest, commands, checksums, and runtime identity are immutable once created; never rewrite them. Corrections or additional evidence are supplements or new Evidence captures. After receiving Evidence, PerfControl independently recalcs the values, authors the formal `RESULT-*.md` snapshot once, and afterwards never rewrites it; corrections are supplement documents or follow-up Results. PerfControl Acceptance changes only the index, Status, Review, and Decision records. The server never commits or pushes the Control repo.
 
 ## Acceptance states
 

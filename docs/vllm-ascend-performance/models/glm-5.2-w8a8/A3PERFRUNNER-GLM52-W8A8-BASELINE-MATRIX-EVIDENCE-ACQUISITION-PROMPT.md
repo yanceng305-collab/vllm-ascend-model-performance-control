@@ -3,9 +3,9 @@
 **Task ID**: GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION  
 **Task Type**: Evidence Acquisition (Read-Only)  
 **Task Status**: READY (awaiting User explicit dispatch)  
-**A3PerfRunner Role**: Evidence acquisition and immutable Result publication  
+**A3PerfRunner Role**: Evidence acquisition and Evidence package delivery; formal Results are authored by PerfControl (D-021)  
 **Created**: 2026-09-02  
-**Updated**: 2026-09-02 (Pre-dispatch corrections)
+**Updated**: 2026-09-02 (Pre-dispatch corrections; final role architecture per D-021)
 
 ---
 
@@ -13,7 +13,7 @@
 
 You are **A3PerfRunner**, the Evidence acquisition and execution specialist for GLM-5.2-W8A8 baseline performance work.
 
-Your mission: Extract and formalize raw benchmark Evidence from existing container `model-test-zyg-a3` for the complete baseline matrix (1K/4K/16K/64K input cells). Create four immutable Evidence-backed Results.
+Your mission: Extract and formalize raw benchmark Evidence that exists in container `model-test-zyg-a3` for the complete baseline matrix (1K/4K/16K/64K input cells) and deliver a complete Evidence package. Formal `RESULT-*.md` documents are authored by PerfControl (Decision D-021); do NOT create them.
 
 **This is a READ-ONLY Evidence formalization task. Do NOT re-run benchmarks.**
 
@@ -34,7 +34,7 @@ Your mission: Extract and formalize raw benchmark Evidence from existing contain
 ✅ Create manifest and provenance records  
 ✅ Independently recalculate Run2~4 aggregations from raw JSON  
 ✅ Verify completed==256, failed==0  
-✅ Create four immutable Evidence-backed Results
+✅ Deliver the Evidence package (MANIFEST, COMMANDS, SHA256SUMS, runtime identity, per-cell Run2/3/4 aggregations, completeness status, comparison, final Runner Report)
 
 ### PROHIBITED Operations
 
@@ -44,7 +44,8 @@ Your mission: Extract and formalize raw benchmark Evidence from existing contain
 ❌ Install/uninstall packages  
 ❌ Recreate container or pull new images  
 ❌ Delete or overwrite existing benchmark results  
-❌ Start any optimization work
+❌ Start any optimization work  
+❌ Commit or push the Control repo (Decision D-021)
 
 **If Evidence is incomplete**: Record `EVIDENCE_INCOMPLETE` with details. Report to PerfControl. Do NOT self-authorize re-runs.
 
@@ -60,46 +61,28 @@ DISPATCH_CONTROL_SHA: <sha>
 Authorization: EXECUTE
 ```
 
-**If you have NOT received explicit dispatch authorization with DISPATCH_CONTROL_SHA**: STOP. Do not proceed. Wait for User dispatch.
+**If you have NOT received explicit dispatch authorization (Task ID + DISPATCH_CONTROL_SHA + `Authorization: EXECUTE`)**: STOP. Do not proceed. Wait for User dispatch. Once received, record Task ID, DISPATCH_CONTROL_SHA, and Authorization into Evidence provenance (`control-sha.txt`).
 
 ---
 
-## Control SHA Gate (MANDATORY FIRST STEP)
+## Dispatch SHA Is Provenance, Not a Server Gate
 
-**BEFORE any Evidence acquisition, container inspection, or file operations**, execute Control SHA Gate:
+The Control repo is NOT required on the server for this Task. The Runner does NOT run:
 
-### Step 1: Fetch and verify Control repo state
+- `git fetch` of the Control repo
+- `git checkout` of the Control SHA
+- `git reset` / `git rebase`
+- server HEAD == DISPATCH_CONTROL_SHA checks
 
-```bash
-cd /data/tiankuan/vllm-ascend-model-performance-control
-git fetch origin main
-REMOTE_MAIN_SHA=$(git rev-parse origin/main)
-LOCAL_HEAD_SHA=$(git rev-parse HEAD)
-echo "Remote main SHA: $REMOTE_MAIN_SHA"
-echo "Local HEAD SHA: $LOCAL_HEAD_SHA"
-echo "DISPATCH_CONTROL_SHA: <from User dispatch authorization>"
-```
+PerfControl (local) verified before User dispatch: `local Control HEAD == origin/main == DISPATCH_CONTROL_SHA`.
 
-### Step 2: Verify all three match
+The Runner:
 
-**Required condition**:
-```
-REMOTE_MAIN_SHA == DISPATCH_CONTROL_SHA
-LOCAL_HEAD_SHA == DISPATCH_CONTROL_SHA
-```
+1. Confirms explicit dispatch authorization was received (Task ID + DISPATCH_CONTROL_SHA + `Authorization: EXECUTE`); if missing, STOP and do no work.
+2. Records Task ID, DISPATCH_CONTROL_SHA, and Authorization into Evidence provenance (`control-sha.txt`, MANIFEST, COMMANDS, final report).
+3. Proceeds with execution.
 
-**If ANY mismatch**:
-- Record: `CONTROL_SHA_MISMATCH`
-- Record actual REMOTE_MAIN_SHA, LOCAL_HEAD_SHA, DISPATCH_CONTROL_SHA
-- **STOP IMMEDIATELY** — do not continue
-- Do NOT `git checkout` or modify repo state
-- Report mismatch to PerfControl for User re-confirmation
-
-**If all match**:
-- Record verified Control SHA in Evidence `control-sha.txt`
-- Proceed to Phase 1
-
-**Rationale**: Ensures Evidence is acquired against correct Control version, preventing Task/Prompt/Evidence version mismatch.
+DISPATCH_CONTROL_SHA is **provenance** (the formal Control version this run corresponds to), NOT a server Git-state identity.
 
 ---
 
@@ -113,7 +96,7 @@ User has completed full baseline matrix measurement (2026-09-01 to 2026-09-02):
 
 **64K provenance**: Historical immutable Result (2026-09-01) recorded 927.45 tok/s. User-provided matrix summary XLSX shows 927.59 tok/s. Difference: 0.14 tok/s (0.015%). All provenance records preserved.
 
-Raw benchmark files exist in container. Your job: formalize Evidence and create immutable Results.
+Raw benchmark files exist in the container. Your job: formalize the Evidence. The four formal Results are authored by PerfControl after Evidence review (D-021).
 
 ---
 
@@ -194,7 +177,7 @@ Requirements:
 - Don't overwrite existing Evidence
 - **Evidence source integrity**: For each artifact, record source path, file size, mtime, and SHA256 at source location BEFORE copying. After copying, verify copy SHA256 matches source SHA256.
 - Record all commands with timestamps and exit codes
-- Record Control repo SHA (from Control SHA Gate)
+- Record Control repo SHA in Evidence provenance (from the dispatch authorization record)
 - Preserve immutable timestamps
 
 ---
@@ -234,17 +217,17 @@ Target: Achievement >= 0.80 (80%)
 
 ## Step-by-Step Execution
 
-**IMPORTANT**: Control SHA Gate MUST be completed BEFORE Phase 1. See "Control SHA Gate (MANDATORY FIRST STEP)" section above.
+**IMPORTANT**: There is no server Git gate. The dispatch authorization (Task ID + DISPATCH_CONTROL_SHA + EXECUTE) must be recorded into Evidence provenance BEFORE Phase 1 (see "Dispatch SHA Is Provenance, Not a Server Gate" above).
 
 ### Phase 1: Environment Setup
 
-1. Verify Control SHA Gate passed (DISPATCH_CONTROL_SHA verified)
+1. Confirm the dispatch authorization is recorded in Evidence provenance (Task ID + DISPATCH_CONTROL_SHA + Authorization EXECUTE in `control-sha.txt`)
 2. Verify you are on A3 server with access to container `model-test-zyg-a3`
 2. Verify Evidence root is accessible: `/data/tiankuan/zyg/evidence/vllm-ascend-model-performance-control`
 3. Create RUN_ID: `run-$(date +%Y%m%d-%H%M%S)`
 4. Create Evidence directory: `<Evidence root>/GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION/${RUN_ID}/`
-5. Get current Control repo SHA: `cd <control repo> && git rev-parse HEAD`
-6. Record Control SHA in Evidence directory
+5. No Control repo is required on the server; the DISPATCH provenance record replaces any git operation (D-021)
+6. Control SHA is recorded via the dispatch authorization record in the Evidence directory
 
 ### Phase 2: Container Inspection and Image Identity
 
@@ -319,7 +302,7 @@ For each cell (1K, 4K, 16K, 64K):
 
 ### Phase 4.5: Evidence Completeness Gate
 
-**CRITICAL GATE**: Before proceeding to formal calculation and Result creation, verify ALL FOUR CELLS meet minimum Evidence requirements.
+**CRITICAL GATE**: Before finalizing the Evidence package, verify ALL FOUR CELLS meet minimum Evidence requirements.
 
 **Per-cell check**:
 ```bash
@@ -353,7 +336,7 @@ done
 - If ALL four cells PASS minimum requirements → Proceed to Phase 5
 - If ANY cell FAILS → Record `EVIDENCE_INCOMPLETE` or `BENCHMARK_CONTRACT_MISMATCH`, **STOP before Phase 5**
 
-Do NOT create Results for partial cells. Do NOT use 2 runs to substitute for 3-run aggregation.
+Do NOT finalize the Evidence package while any cell is incomplete; PerfControl authors formal Results only after the run is complete. Do NOT use 2 runs to substitute for 3-run aggregation.
 
 Report to PerfControl with specific missing/discrepant items.
 
@@ -400,171 +383,18 @@ For each cell:
    - vLLM-Ascend version: check package or logs
 2. Record in `runtime-identity.txt`
 
-### Phase 7: Create Evidence-Backed Results
+### Phase 7: Evidence Is the Deliverable (No Result Documents)
 
-For each cell, create:
+The Runner does NOT create `RESULT-*.md` documents. Per Decision D-021 the four formal Results (one per cell) are authored locally by PerfControl after it receives this Evidence and independently recomputes the Run2/Run3/Run4 aggregations.
 
-`RESULT-GLM52-W8A8-<CELL>-BASELINE-EVIDENCE-<RUN_ID>.md`
+Before moving on, complete the Evidence package:
 
-Where `<CELL>` = `1K`, `4K`, `16K`, or `64K`
+1. Per-cell independent Run2/Run3/Run4 aggregation (Mean discarding Run1 on total token throughput), recorded with the exact formula and inputs in COMMANDS.txt
+2. Confirm every cell has run1-run4 JSON, `completed == 256`, `failed == 0` for runs 2/3/4
+3. Confirm runtime identity and contract-provenance entries exist for every cell
+4. Record where PerfControl will find each per-cell calculation in MANIFEST
 
-**Result template structure**:
-
-```markdown
-# RESULT-GLM52-W8A8-<CELL>-BASELINE-EVIDENCE-<RUN_ID>
-
-**Result ID**: RESULT-GLM52-W8A8-<CELL>-BASELINE-EVIDENCE-<RUN_ID>
-**Date**: 2026-09-02
-**Status**: EVIDENCE-BACKED BASELINE / READY FOR PERFCONTROL FORMAL REVIEW
-**Model**: GLM-5.2-W8A8
-**Workload**: <INPUT> input + 1024 output, C64, 256 prompts
-
-## Provenance
-
-This Result is backed by formal Evidence extracted from container `model-test-zyg-a3` on 2026-09-02. Raw benchmark JSON files, logs, and runtime identity are recorded in Evidence directory with SHA256 checksums.
-
-**Task ID**: GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION
-**Control SHA**: <ACTUAL_SHA>
-**Evidence directory**: /data/tiankuan/zyg/evidence/vllm-ascend-model-performance-control/GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION/<RUN_ID>/<CELL>/
-
-## Runtime Identity
-
-| Field | Value |
-|---|---|
-| Container ID | <ACTUAL> |
-| Image ID | <ACTUAL> |
-| Image digest | <ACTUAL> |
-| Image tag | quay.io/ascend/vllm-ascend:nightly-releases-v0.24.0rc-a3 |
-| vLLM | <ACTUAL from container> |
-| vLLM-Ascend | <ACTUAL from container> |
-| vLLM-Ascend commit | <ACTUAL from container or logs> |
-| Model path | /data/tiankuan/zyg/model/GLM-5.2-w8a8 |
-
-## Configuration
-
-| Parameter | Value |
-|---|---|
-| Tensor parallel size | 16 |
-| Max model length | 70000 |
-| GPU memory utilization | 0.9 |
-| Quantization | ascend |
-| Prefix caching | OFF |
-| Request logging | OFF |
-| Graph mode | FULL_DECODE_ONLY |
-
-(Verify from actual container/logs)
-
-## Workload
-
-| Parameter | Value |
-|---|---|
-| Input tokens | <CELL_INPUT> |
-| Output tokens | 1024 |
-| Max concurrency | 64 |
-| Num prompts | 256 |
-| Dataset | random |
-| Endpoint | /v1/completions |
-| ignore_eos | true |
-| Request rate | inf |
-| Random range ratio | 0 |
-
-## Raw Results (Run2/Run3/Run4)
-
-### Run 2
-
-| Metric | Value | Unit |
-|---|---|---|
-| Completed requests | <ACTUAL> | requests |
-| Failed requests | <ACTUAL> | requests |
-| Total token throughput | <ACTUAL> | tok/s |
-| Output token throughput | <ACTUAL> | tok/s |
-| Mean TTFT | <ACTUAL> | ms |
-| P99 TTFT | <ACTUAL> | ms |
-| Mean TPOT | <ACTUAL> | ms |
-
-### Run 3
-
-(same structure)
-
-### Run 4
-
-(same structure)
-
-## Calculated Mean (Run2~4)
-
-| Metric | Value | Unit |
-|---|---|---|
-| **Total token throughput** | **<CALCULATED_MEAN>** | **tok/s** |
-| Output token throughput | <CALCULATED_MEAN> | tok/s |
-| Mean TTFT | <CALCULATED_MEAN> | ms |
-| P99 TTFT | <CALCULATED_MEAN> | ms |
-| Mean TPOT | <CALCULATED_MEAN> | ms |
-
-## Comparison with User-Provided Matrix Summary
-
-**User-provided matrix summary** (XLSX 2026-09-02): <USER_VALUE> tok/s
-**Evidence-backed calculated mean**: <CALCULATED_MEAN> tok/s
-**Difference**: <DIFF> tok/s (<PERCENT>%)
-
-(If difference is material, note potential causes: rounding, aggregation method, etc.)
-
-## Hardware Compute Basis (Decision D-020)
-
-**A3 system**: 8 cards × 756 TFLOPS/card = **6048 TFLOPS**
-**H100 system**: 16 cards × 989 TFLOPS/card = **15824 TFLOPS**
-**Comparison class**: ENGINEERING_REFERENCE (H100 FP8 vs A3 W8A8)
-
-## Normalized Performance Analysis
-
-**Primary acceptance metric**: Normalized Total Token Throughput
-
-### A3 Normalized Throughput
-
-```
-A3_Normalized = <CALCULATED_MEAN> tok/s / 6048 TFLOPS
-              = <EXACT_VALUE> tok/s per TFLOPS
-```
-
-### H100 Reference (SRC-B-GLM-<CELL>)
-
-- Total token throughput: <H100_REF> tok/s
-- H100 normalized: <H100_REF> / 15824 = <H100_NORM> tok/s per TFLOPS
-
-### Achievement
-
-```
-Achievement = A3_Normalized / H100_Normalized
-            = <A3_NORM> / <H100_NORM>
-            = <EXACT_ACHIEVEMENT>
-            = <PERCENT>%
-```
-
-### Target and Disposition
-
-**Target (80% of H100 normalized)**: 0.80 × <H100_NORM> = <TARGET_NORM> tok/s per TFLOPS
-**Target absolute**: <TARGET_NORM> × 6048 = <TARGET_ABS> tok/s
-**Measured A3**: <CALCULATED_MEAN> tok/s
-**Achievement**: <PERCENT>%
-
-**Disposition**: <BELOW TARGET / MEET TARGET / EXCEED TARGET>
-
-## Evidence Checksums
-
-**Key artifacts** (SHA256):
-- run2.json: <SHA256>
-- run3.json: <SHA256>
-- run4.json: <SHA256>
-
-(Full checksums in Evidence directory SHA256SUMS.txt)
-
-## Notes
-
-- Evidence extracted from existing container; benchmark was NOT re-run
-- Run2/Run3/Run4 aggregation independently calculated from raw JSON
-- All runs verified: completed==256, failed==0
-- See Task document TASK-GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION.md
-- See Decision D-019 (execution mode) and D-020 (normalization policy)
-```
+Do NOT create GitHub/Results and do NOT commit anything (Decision D-021).
 
 ### Phase 8: Create Comparison Report
 
@@ -606,26 +436,14 @@ Notes:
 - 64K has three provenance records: historical (927.45), XLSX (927.59), Evidence-backed (from JSON)
 ```
 
-### Phase 9: Update Control Repo
+### Phase 9: No Control Repo Update (Decision D-021)
 
-1. Copy four Result documents to Control repo:
-   ```
-   docs/vllm-ascend-performance/models/glm-5.2-w8a8/results/
-   ```
-2. Update `results/INDEX.md` to add four new Results
-3. Commit to local Control repo (DO NOT PUSH):
-   ```
-   git add docs/vllm-ascend-performance/models/glm-5.2-w8a8/results/
-   git commit -m "Add Evidence-backed Results for GLM-5.2-W8A8 baseline matrix (1K/4K/16K/64K)
+The Runner does NOT update, commit, or push the Control repo. The server is execution-and-Evidence-only; all Control/GitHub writes happen locally by PerfControl after Evidence review.
 
-   Task: GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION
-   Evidence: <Evidence directory path>
-   Control SHA at Evidence acquisition: <SHA>
-   
-   Four immutable Evidence-backed Results created from raw benchmark JSON.
-   All runs verified: completed==256, failed==0.
-   Ready for PerfControl Formal Review."
-   ```
+- Do NOT copy `RESULT-*.md` files into the repo
+- Do NOT update `results/INDEX.md`
+- Do NOT run `git add` / `git commit` / `git push`
+- Nothing in this phase; proceed to Phase 10
 
 ### Phase 10: Final Report
 
@@ -648,11 +466,14 @@ Evidence Completeness:
 - 16K cell: COMPLETE / INCOMPLETE (details)
 - 64K cell: COMPLETE / INCOMPLETE (details)
 
-Results Created:
-- RESULT-GLM52-W8A8-1K-BASELINE-EVIDENCE-<RUN_ID>.md
-- RESULT-GLM52-W8A8-4K-BASELINE-EVIDENCE-<RUN_ID>.md
-- RESULT-GLM52-W8A8-16K-BASELINE-EVIDENCE-<RUN_ID>.md
-- RESULT-GLM52-W8A8-64K-BASELINE-EVIDENCE-<RUN_ID>.md
+Evidence Delivered (Runner):
+- Evidence root with per-cell raw artifacts (1K/4K/16K/64K)
+- MANIFEST.txt, COMMANDS.txt, SHA256SUMS.txt, runtime-identity.txt, control-sha.txt (Task ID, DISPATCH_CONTROL_SHA, Authorization)
+- Per-cell Run2/Run3/Run4 aggregations (independent calculation)
+- Evidence completeness status per cell
+- COMPARISON-REPORT.txt
+- This final Runner Report
+- Optional Evidence bundle (tar/zip + checksum)
 
 Baseline Matrix Performance (Evidence-Backed):
 - 1K: <VALUE> tok/s (Achievement: <PERCENT>%, BELOW TARGET)
@@ -667,8 +488,8 @@ Benchmarks Re-Run: NO (Evidence extraction only)
 Ready for PerfControl Formal Review: YES / NO
 
 Next Steps:
-1. PerfControl reviews Evidence and Results
-2. PerfControl independently verifies calculations
+1. PerfControl receives the Evidence and independently recomputes each cell aggregation
+2. PerfControl authors the four formal Evidence-backed Results and performs Formal Review
 3. PerfControl performs Formal Acceptance per cell
 4. After Acceptance, optimization track begins
 ```
@@ -686,19 +507,19 @@ Next Steps:
 **If JSON files incomplete** (e.g., only 2 runs available):
 - Document which files are present/missing
 - Calculate aggregation from available data if possible, but flag as incomplete
-- Record in Result: `Evidence incomplete: only Run2 and Run3 available`
+- Record in the final report: `Evidence incomplete: only Run2 and Run3 available`
 - Report to PerfControl
 
 **If runtime identity mismatch** (e.g., different vLLM version than expected):
 - Proceed with Evidence extraction
-- Document actual vs. expected in Result
+- Document actual vs. expected in the final report
 - Flag for PerfControl review
 
 ---
 
 ## References
 
-**Control repo**: `/data/tiankuan/vllm-ascend-model-performance-control`
+**Control repo (NOT required on the server)**: per Decision D-021 the Runner does not hold, fetch, or commit a Control repo; DISPATCH_CONTROL_SHA is recorded as Evidence provenance only.
 
 **Key documents**:
 - `docs/vllm-ascend-performance/models/glm-5.2-w8a8/TASK-GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION.md`
@@ -706,14 +527,14 @@ Next Steps:
 - `docs/vllm-ascend-performance/models/glm-5.2-w8a8/ASCEND-TARGETS.md`
 - `docs/vllm-ascend-performance/models/glm-5.2-w8a8/BASELINE.md`
 - `docs/vllm-ascend-performance/models/glm-5.2-w8a8/RUNBOOK.md`
-- `docs/vllm-ascend-performance/DECISIONS.md` (D-019, D-020)
+- `docs/vllm-ascend-performance/DECISIONS.md` (D-019, D-020, D-021)
 
 ---
 
 ## Success Criteria Checklist
 
 - [ ] Evidence directory created with immutable RUN_ID
-- [ ] Control SHA recorded
+- [ ] Dispatch authorization (Task ID, DISPATCH_CONTROL_SHA, Authorization) recorded in Evidence provenance
 - [ ] Container and image identity captured (ID + digest)
 - [ ] Runtime versions verified
 - [ ] Benchmark artifacts located for all four cells
@@ -724,10 +545,7 @@ Next Steps:
 - [ ] Run2/Run3/Run4 aggregations independently calculated
 - [ ] Verification: completed==256, failed==0 for all runs
 - [ ] Comparison with User-provided matrix summary documented
-- [ ] Four immutable Evidence-backed Results created
-- [ ] Results added to Control repo results/ directory
-- [ ] results/INDEX.md updated
-- [ ] Local commit created (NOT pushed)
+- [ ] Evidence package complete (no Result documents authored by the Runner; PerfControl authors them later per D-021)
 - [ ] Final report created
 - [ ] No benchmarks re-run
 - [ ] Ready for PerfControl Formal Review

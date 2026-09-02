@@ -48,9 +48,9 @@
 
 ## Next Steps
 
-1. **Evidence formalization**: A3PerfRunner executes Evidence Acquisition Task (GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION) to extract and formalize raw benchmark Evidence from existing container without re-running benchmarks
-2. **Evidence-backed Results**: Create formal Results for all four baseline matrix cells (1K/4K/16K/64K) with complete provenance
-3. **Baseline matrix review**: PerfControl reviews Evidence-backed Results and performs Formal Acceptance
+1. **Evidence formalization**: A3PerfRunner executes Evidence Acquisition Task (GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION) after User dispatch (Task ID + DISPATCH_CONTROL_SHA + Authorization: EXECUTE) to extract and formalize raw benchmark Evidence from the existing container without re-running benchmarks. Runner output is Evidence only (raw artifacts, MANIFEST, COMMANDS, SHA256SUMS, runtime identity, Run2/3/4 calculations, comparison summary, final Runner Report)
+2. **Evidence review**: PerfControl receives the Evidence, independently reproduces the Run2/Run3/Run4 recalculation, and authors four formal Evidence-backed `RESULT-*.md` documents (one per cell: 1K/4K/16K/64K) with complete provenance
+3. **Baseline matrix review**: PerfControl performs Formal Review and Formal Acceptance per cell
 4. **Cross-cell performance analysis**: Analyze performance trends across input lengths (1K→4K→16K→64K)
 5. **Root cause analysis**: Profiling to identify bottlenecks (observed symptoms: KV cache ~85%, scheduling constraints)
 6. **Optimization track**: Separate OPT Tasks (HCCL tuning, memory tuning, KV cache tuning, scheduler tuning, etc.) with controlled parameter changes

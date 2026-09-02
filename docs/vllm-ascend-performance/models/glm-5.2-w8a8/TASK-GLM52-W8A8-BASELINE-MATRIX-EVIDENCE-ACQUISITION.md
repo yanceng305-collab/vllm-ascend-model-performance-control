@@ -4,11 +4,11 @@
 **Task Type**: Evidence Acquisition (Read-Only)  
 **Status**: READY  
 **Created**: 2026-09-02  
-**Updated**: 2026-09-02 (Pre-dispatch corrections)  
+**Updated**: 2026-09-02 (Pre-dispatch corrections; final role architecture per D-021)  
 **Assigned to**: A3PerfRunner  
 **Priority**: HIGH
 
-**READY status**: Task has passed Control preparation and is ready for User explicit dispatch. READY ≠ DISPATCHED. A3PerfRunner must wait for User authorization with explicit DISPATCH_CONTROL_SHA before execution.
+**READY status**: Task has passed Control preparation and is ready for User explicit dispatch. READY ≠ DISPATCHED. A3PerfRunner must wait for User authorization with explicit Task ID + DISPATCH_CONTROL_SHA + `Authorization: EXECUTE` before execution.
 
 ## Objective
 
@@ -28,7 +28,7 @@ Raw benchmark output files (JSON, logs, stdout) exist in container `model-test-z
 1. Independent verification of User-provided matrix summary values
 2. Calculation of exact Run2/Run3/Run4 aggregations from raw JSON
 3. Complete provenance chain (runtime identity, benchmark contract, checksums)
-4. Immutable Evidence-backed Results for all four cells
+4. Complete Evidence for PerfControl to author immutable Evidence-backed Results for all four cells
 5. PerfControl Formal Review and Acceptance
 
 ## Scope
@@ -46,7 +46,10 @@ Raw benchmark output files (JSON, logs, stdout) exist in container `model-test-z
 - Independently recalculate Run2/Run3/Run4 aggregations from raw JSON
 - Verify completed==256, failed==0 for each run
 - Compare calculated values with User-provided matrix summary
-- Create four immutable Evidence-backed Results (one per cell)
+- Report Evidence completeness status, comparison summary, and final Runner Report
+- Create an Evidence bundle when required
+
+**Result authorship split (D-021)**: The Runner produces Evidence; the formal `RESULT-*.md` documents are authored locally by PerfControl after Evidence review. The Runner does not create the four formal Results in this Task.
 
 **Verification**:
 - Runtime identity matches known baseline configuration (vLLM 0.24.0, vLLM-Ascend 0.19.1rc2, TP16, etc.)
@@ -72,7 +75,7 @@ Raw benchmark output files (JSON, logs, stdout) exist in container `model-test-z
 
 **If Evidence is incomplete**: Record `EVIDENCE_INCOMPLETE` with details. Do NOT self-authorize re-runs. PerfControl will review and User will decide whether to authorize specific re-runs.
 
-## Dispatch Control SHA Gate
+## Dispatch Authorization (DISPATCH_CONTROL_SHA)
 
 **REQUIRED FOR DISPATCH**: User must provide explicit dispatch authorization with:
 
@@ -82,23 +85,36 @@ DISPATCH_CONTROL_SHA: <sha>
 Authorization: EXECUTE
 ```
 
-**Before any Evidence acquisition or container inspection**, A3PerfRunner MUST:
+**PerfControl-side verification (local Control workstation, before User dispatch)**:
 
-1. Fetch remote main: `git fetch origin main`
-2. Get remote main SHA: `git rev-parse origin/main`
-3. Get local HEAD SHA: `git rev-parse HEAD`
-4. Verify:
-   - `remote main SHA == DISPATCH_CONTROL_SHA`
-   - `local HEAD SHA == DISPATCH_CONTROL_SHA`
+```text
+local Control HEAD
+==
+origin/main
+==
+DISPATCH_CONTROL_SHA
+```
 
-**If any verification fails**:
-- Record: `CONTROL_SHA_MISMATCH`
-- Record actual remote main SHA, local HEAD SHA, DISPATCH_CONTROL_SHA
-- **STOP** — do not continue Evidence acquisition
-- Do NOT self-checkout any version
-- Report to PerfControl for User re-confirmation
+Verification must pass on the Control workstation before the User dispatches.
 
-**Rationale**: Ensures Evidence is acquired against the correct Control version. Prevents Evidence/Task/Prompt version mismatch.
+**A3PerfRunner-side (server)**:
+
+The Runner does NOT perform any of:
+- git fetch of the Control repo
+- git checkout of the Control SHA
+- git reset / git rebase
+- server HEAD == DISPATCH_CONTROL_SHA checks
+
+The Runner only:
+
+1. Confirms the explicit User dispatch was received (Task ID + DISPATCH_CONTROL_SHA + `Authorization: EXECUTE`). If not received, STOP and wait; do no work.
+2. Records into Evidence provenance (control-sha.txt, MANIFEST, COMMANDS, final report): Task ID, DISPATCH_CONTROL_SHA, Authorization.
+3. Proceeds with Evidence acquisition.
+
+**Notes**:
+- The Runner does not need a local Control repo on the server; no Control checkout is required.
+- DISPATCH_CONTROL_SHA is provenance (which formal Control Task version this execution corresponds to), NOT a server Git-state identity.
+- Server Git state is neither verified nor modified by this Task.
 
 ## Evidence Completeness Gate
 
@@ -115,9 +131,9 @@ Authorization: EXECUTE
 - Record manifest and provenance
 - Record timestamps, file sizes, paths
 
-### Phase 2: Formal Calculation and Result Creation
+### Phase 2: Formal Calculation and Gate Decision
 
-**GATE REQUIREMENT**: Before creating any formal Evidence-backed Result, verify ALL FOUR CELLS meet minimum Evidence requirements:
+**GATE REQUIREMENT**: Before finalizing the Evidence package (comparison summary, completeness status, final Runner Report), verify ALL FOUR CELLS meet minimum Evidence requirements:
 
 **Per-cell minimum requirements**:
 - Run1.json present and parseable
@@ -133,8 +149,8 @@ Authorization: EXECUTE
 **If ANY cell fails minimum requirements**:
 - Record: `EVIDENCE_INCOMPLETE` or `BASELINE_IDENTITY_UNVERIFIED` or `BENCHMARK_CONTRACT_MISMATCH`
 - Document specific cell and missing/discrepant items
-- **STOP ENTIRE TASK before creating ANY formal Evidence-backed Results**
-- Do NOT create Results for "complete" cells while leaving incomplete cells undone
+- **STOP ENTIRE TASK; do not finalize the Evidence as complete and do not allow any Evidence-backed Result to be authored**
+- Do NOT present "complete" cells as a complete baseline while other cells are incomplete
 - Do NOT use 2 runs to substitute for 3-run aggregation
 - Preserve diagnostic logs, partial Evidence inventory, manifest
 - Report to PerfControl
@@ -156,7 +172,7 @@ Authorization: EXECUTE
 
 **Action**:
 - Record: `BASELINE_IDENTITY_UNVERIFIED` or `BENCHMARK_CONTRACT_MISMATCH`
-- **STOP before formal Result creation**
+- **STOP; do not finalize the Evidence as complete and do not allow any Evidence-backed Result to be authored**
 - Do NOT label contract-violating data as `EVIDENCE-BACKED BASELINE`
 - Report to PerfControl
 
@@ -243,7 +259,7 @@ where `<RUN_ID>` = `run-YYYYMMDD-HHMMSS` (e.g., `run-20260902-150000`)
 - Do not overwrite existing Evidence directories
 - Record all commands executed with timestamps and exit codes
 - SHA256 checksum all copied artifacts
-- Record Control repo SHA at time of Evidence acquisition
+- Record Task ID, DISPATCH_CONTROL_SHA, and Authorization into Evidence provenance (control-sha.txt)
 - Preserve immutable timestamps
 - **Evidence source integrity**: For each artifact, record source path, file size, mtime, and SHA256 at source location BEFORE copying. After copying to Evidence root, verify copy SHA256 matches source SHA256. This proves copy integrity.
 
@@ -253,54 +269,36 @@ where `<RUN_ID>` = `run-YYYYMMDD-HHMMSS` (e.g., `run-20260902-150000`)
 
 Complete Evidence directory at Evidence root with all raw artifacts, checksums, manifest, and provenance records.
 
-### 2. Four Immutable Evidence-Backed Results
+### 2. Evidence Package (Runner Deliverables)
 
-**CREATION CONDITION**: Results may ONLY be created after ALL of the following gates PASS:
-1. **Control SHA Gate**: DISPATCH_CONTROL_SHA verified (remote main == local HEAD == DISPATCH_CONTROL_SHA)
-2. **Evidence Completeness Gate**: All four cells meet minimum Evidence requirements (Run1/2/3/4 present, completed==256, failed==0, contract verifiable)
-3. **Baseline Identity Gate**: Runtime/container provenance sufficient to verify frozen baseline identity (TP16, model, image, versions)
-4. **Benchmark Contract Gate**: All cells comply with frozen benchmark contract (256 prompts, C64, correct input/output, ignore_eos=true)
+The Runner delivers Evidence only (Decision D-021):
 
-**If any gate fails**: STOP before creating Results. Report gate failure to PerfControl.
+- `MANIFEST.txt`, `COMMANDS.txt`, `SHA256SUMS.txt`, `runtime-identity.txt`
+- `control-sha.txt` recording Task ID, DISPATCH_CONTROL_SHA, and Authorization
+- Per-cell raw artifacts `1K/` `4K/` `16K/` `64K/` (run1/2/3/4 JSON, average_run2_4.json if present, logs)
+- Independent Run2/Run3/Run4 aggregation calculations (Mean discarding Run1) per cell
+- Evidence completeness status per cell (COMPLETE / INCOMPLETE / MISSING)
+- Comparison summary vs. User-provided matrix values (including the 64K three-way provenance)
+- Final Runner Report
+- Evidence bundle (tar/zip + checksum) when transfer is required
 
-Create one Result document for each cell:
+## 2b. Formal Results (authored by PerfControl, NOT by this Runner)
 
-- `RESULT-GLM52-W8A8-1K-BASELINE-EVIDENCE-<RUN_ID>.md`
-- `RESULT-GLM52-W8A8-4K-BASELINE-EVIDENCE-<RUN_ID>.md`
-- `RESULT-GLM52-W8A8-16K-BASELINE-EVIDENCE-<RUN_ID>.md`
-- `RESULT-GLM52-W8A8-64K-BASELINE-EVIDENCE-<RUN_ID>.md`
+Per Decision D-021 the Runner does NOT create the four formal `RESULT-*.md` documents and does NOT commit or push the Control repo.
 
-**Each Result must include**:
-- Exact Control repo SHA
-- Task ID (GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION)
-- Evidence root path
-- Model identity (path, quantization)
-- Container ID and image identity (ID, digest, tag)
-- Runtime versions (vLLM, vLLM-Ascend, commit SHA)
-- Hardware (A3/910C, 8 cards, 16 NPUs)
-- Parallelism (TP16/DP1)
-- Complete launch command (verified from container or logs)
-- Benchmark contract (input/output tokens, C64, 256 prompts, etc.)
-- Run2 raw metrics (from JSON)
-- Run3 raw metrics (from JSON)
-- Run4 raw metrics (from JSON)
-- Calculated Run2~4 mean (independently computed)
-- Completed/failed request counts
-- H100 reference value (from H100-REFERENCE.md)
-- A3 raw Total Token Throughput
-- A3 normalized throughput (exact calculation per D-020)
-- H100 normalized throughput (exact calculation per D-020)
-- 80% target (exact calculation)
-- Achievement (exact calculation)
-- Disposition (BELOW TARGET / MEET TARGET / EXCEED TARGET)
-- Evidence directory path
-- SHA256 checksums of key artifacts
+After this Runner delivers Evidence, **PerfControl (local)** will:
 
-**Result status**: `EVIDENCE-BACKED BASELINE / READY FOR PERFCONTROL FORMAL REVIEW`
+1. Independently recalculate per-cell aggregations (Mean of Run2/Run3/Run4 on total token throughput) from the raw JSON
+2. Author one Result per cell: `RESULT-GLM52-W8A8-1K-BASELINE-EVIDENCE-<RUN_ID>.md`, `RESULT-GLM52-W8A8-4K-BASELINE-EVIDENCE-<RUN_ID>.md`, `RESULT-GLM52-W8A8-16K-BASELINE-EVIDENCE-<RUN_ID>.md`, `RESULT-GLM52-W8A8-64K-BASELINE-EVIDENCE-<RUN_ID>.md`
+3. Update `results/INDEX.md` and STATUS
+4. Perform Formal Review, then Formal Acceptance per cell
+5. Commit and push to GitHub
 
-Do NOT mark Results as `ACCEPTED`. Formal Acceptance is performed by PerfControl after independent review.
+Gates PerfControl will verify before Result authoring: Evidence completeness (Run1/2/3/4 present, completed == 256, failed == 0, contract verifiable), baseline identity (TP16, model, image, versions), and benchmark contract (256 prompts, C64, correct input/output, ignore_eos=true). Any failure stops Result creation until User decides.
 
-**Important**: Do not mix cells into a single Result. Each cell must have an independent Result for individual review and Acceptance.
+**Each Result (authored by PerfControl) includes**: Control SHA (DISPATCH_CONTROL_SHA), Task ID (GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION), Evidence root, model identity, container ID, image ID/digest/tag, runtime versions (vLLM / vLLM-Ascend / commit), hardware, parallelism, launch command, benchmark contract, Run2/3/4 raw metrics plus calculated mean, completed/failed counts, H100 reference, A3 raw Total Token Throughput, A3/H100 normalized (D-020), 80% target, Achievement, Disposition, Evidence directory path, and SHA256 checksums of key artifacts.
+
+**Result status**: `EVIDENCE-BACKED BASELINE / READY FOR PERFCONTROL FORMAL REVIEW`. Do NOT mark Results as `ACCEPTED`; Formal Acceptance is a follow-up PerfControl step. Do not mix cells into a single Result; each cell gets its own Result.
 
 ### 3. Comparison Report
 
@@ -331,14 +329,14 @@ For each cell, report:
 ## Success Criteria
 
 1. All four cells have complete Evidence directories with checksums and manifest
-2. All four cells have immutable Evidence-backed Result documents
+2. All four cells have complete Evidence packages; the four formal Evidence-backed Result documents are authored by PerfControl after Evidence review (Decision D-021)
 3. Runtime identity verified and matches known baseline configuration
 4. Benchmark contract verified for all cells (256 prompts, C64, correct input/output, etc.)
 5. Run quality verified (completed==256, failed==0 for all runs)
 6. Independent Run2~4 aggregation calculated and documented
 7. Comparison with User-provided matrix summary documented
 8. No benchmarks re-run (unless specific missing Evidence confirmed and User-authorized)
-9. Control repo updated with four new Results
+9. Control repo NOT touched by the Runner; PerfControl authors, commits, and pushes the four Results locally (Decision D-021)
 10. Ready for PerfControl Formal Review
 
 ## Failure Modes and Recovery
@@ -357,14 +355,14 @@ For each cell, report:
 
 **If runtime identity does not match known baseline**:
 - Document actual vs. expected values
-- Flag discrepancy in Result
-- Proceed with Evidence acquisition but mark Result with identity mismatch note
+- Flag discrepancy in the final report
+- Proceed with Evidence acquisition but mark the report with an identity mismatch note
 - PerfControl will review whether to Accept or request clarification
 
 **If benchmark contract violation detected** (e.g., num_prompts != 256):
-- Document violation in Result
+- Document violation in the final report
 - Proceed with Evidence acquisition
-- Mark Result with contract violation note
+- Mark the report with a contract violation note
 - PerfControl will review and decide disposition
 
 ## Notes
@@ -373,13 +371,14 @@ For each cell, report:
 - The goal is to create immutable, checksummed, provenance-tracked Evidence that PerfControl can Formally Review and Accept.
 - Evidence-backed Results may have slightly different values than User-provided matrix summary due to exact JSON aggregation vs. spreadsheet summary. Both are valid historical records.
 - The 64K cell already has RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED.md. The new Evidence-backed 64K Result supplements (not replaces) it.
-- After this Task, PerfControl will perform Formal Review, independent recalculation verification, and Acceptance per cell.
+- After this Task, PerfControl will perform Formal Review, independent recalc verification, Formal Result authoring, and Acceptance per cell.
 - Optimization work begins AFTER baseline is formally Accepted, not before.
 
 ## References
 
 - Decision D-019: GLM-5.2-W8A8 User-verified baseline execution mode
 - Decision D-020: Hardware compute basis and normalization policy
+- Decision D-021: Local PerfControl / Remote A3PerfRunner Separation (Runner produces Evidence; PerfControl authors formal Results)
 - BASELINE.md: Frozen baseline configuration
 - RUNBOOK.md: Benchmark execution procedures
 - scripts/: Frozen benchmark scripts

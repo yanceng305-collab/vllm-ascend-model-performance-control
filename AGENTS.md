@@ -16,9 +16,13 @@ This repository is the Control plane for accepted native vLLM-Ascend model corre
 ## Roles and authorization
 
 - **User** owns model/runtime/hardware decisions, source materials, server authorization, acceptance policy, and explicit dispatch.
-- **PerfControl** (formerly Codex1) maintains this Control repo, contracts, targets, Tasks, Reviews, and stage gates. PerfControl does not run A3/NPU performance tests by default.
-- **A3PerfRunner** (formerly Codex2) may inventory servers, launch runtimes, benchmark, collect server Evidence, and publish an immutable Result only after receiving a `READY` Task and explicit User dispatch.
+- **PerfControl** (formerly Codex1) is the sole writer of the formal GitHub Control repo: it maintains the Control repo, GitHub, contracts, targets, Tasks, Prompts, STATUS/INDEX, Result documents, Reviews, Decisions, Formal Acceptance, commit, and push. PerfControl does not run A3/NPU performance tests.
+- **A3PerfRunner** (formerly Codex2) is execution-and-Evidence-only: it executes dispatched server Tasks, inspects/operates containers, benchmarks only when a Task explicitly authorizes it, collects raw data and runtime identity, computes SHA256, and produces the Evidence manifest/summary/bundle. It does not commit the Control repo, does not push GitHub, does not require server Git SHA parity with Control, does not perform Formal Acceptance, and does not author formal GitHub Results.
 - **ChatGPT** provides independent review and coordination; it is not the formal Acceptance authority.
+
+**DISPATCH_CONTROL_SHA** identifies the formal Control Task version for a Runner execution. PerfControl verifies it locally before dispatch (`local Control HEAD == origin/main == DISPATCH_CONTROL_SHA`); the Runner only records it in Evidence provenance and does not require a local Control repo or server Git parity.
+
+**Result authorship split**: Runner produces Evidence; PerfControl produces formal Results. After receiving Evidence, PerfControl independently reproduces calculations, authors formal `RESULT-*.md` documents, updates INDEX/STATUS, performs Formal Review/Acceptance, and commits/pushes.
 
 **Historical naming**: "Codex1" is PerfControl's historical alias; "Codex2" is A3PerfRunner's historical alias. Existing immutable Results, submitted prompts, and Evidence pointers retain their original naming. All active/current documentation uses the formal names PerfControl and A3PerfRunner.
 
@@ -26,7 +30,7 @@ This repository is the Control plane for accepted native vLLM-Ascend model corre
 
 ## Evidence and immutability
 
-Every formal run must preserve independent pointers to: (1) code/runtime source identity, (2) Control Task/Result/Review, and (3) server Evidence root and manifest. A3PerfRunner's first `RESULT-*.md` snapshot is immutable. Corrections or additional evidence are supplements or new Results; execution history is never rewritten. PerfControl Acceptance updates only the result index, status, Review, and Decision records.
+Every formal run must preserve independent pointers to: (1) code/runtime source identity, (2) Control Task/Result/Review, and (3) server Evidence root and manifest. A3PerfRunner's Evidence root and manifest are immutable once created; corrections or additional evidence are supplements or new Evidence captures, and execution history is never rewritten. Formal `RESULT-*.md` documents are authored locally by PerfControl after Evidence review; the first snapshot of each formal Result is immutable. PerfControl Acceptance updates only the result index, status, Review, and Decision records.
 
 ## Scope boundaries
 

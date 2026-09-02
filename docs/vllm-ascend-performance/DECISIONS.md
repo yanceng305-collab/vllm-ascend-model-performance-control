@@ -115,10 +115,37 @@ Effective 2026-09-01, the **User-approved unified hardware compute basis** for G
 
 **Measured A3 compute** (ascend-dmi -f -t fp16): 6019.718 TFLOPS (recorded as measured evidence; 6048 TFLOPS is the official normalization basis).
 
-**Comparison class**: `ENGINEERING_REFERENCE` (GLM-5.2 precision differs: customer H100 uses FP8, Ascend uses W8A8).
-
 **Primary acceptance metric**: Normalized Total Token Throughput  
 **Formula**: `NormalizedThroughput = TotalTokenThroughput / PhysicalCardCount / UnifiedHardwareComputePerCard`  
 **Pass condition**: `(A3_Normalized / H100_Normalized) >= 0.80`
 
-This is model-specific and does not automatically apply to DeepSeek, MiniMax, or future models.
+This is model-specific and does not apply automatically to DeepSeek, MiniMax, or future models.
+
+## D-021 Local PerfControl / Remote A3PerfRunner Separation
+
+Effective 2026-09-02, the final role architecture is frozen. Formal GitHub Control repo writes are local-only and are performed solely by PerfControl. The A3 server role is execution-and-Evidence-only. The Control repo and the server do not migrate between PerfControl and A3PerfRunner.
+
+Core rules:
+
+```text
+Control/GitHub writes are local-only.
+Runner/server is execution-and-Evidence-only.
+Server Git SHA parity with Control is not required.
+DISPATCH_CONTROL_SHA is provenance, not server Git-state identity.
+Formal Results are authored by PerfControl after Evidence review.
+```
+
+**PerfControl (local)**:
+- Owns the Control repo, GitHub, Decisions, Tasks, Prompts, STATUS/INDEX, formal `RESULT-*.md` authoring, Formal Review, Formal Acceptance, commit, and push.
+- PerfControl is the sole role allowed to write the formal GitHub Control repo.
+- Before dispatching a Task, PerfControl verifies `local Control HEAD == origin/main == DISPATCH_CONTROL_SHA`; only after verification may User dispatch.
+
+**A3PerfRunner (A3 server)**:
+- Owns server Task execution, container inspection, benchmark execution (only when the Task explicitly authorizes it), raw data collection, runtime identity, logs, SHA256, Evidence manifest, Evidence summary/report, and Evidence bundle.
+- Does not maintain formal Control Git history, does not require server HEAD to equal the GitHub SHA, does not commit the Control repo, does not push GitHub, does not perform Formal Acceptance, and does not create formal GitHub Results.
+
+**DISPATCH_CONTROL_SHA semantics**: it identifies the formal Control Task version that the Runner execution corresponds to. PerfControl verifies it locally before dispatch; the Runner records it into Evidence provenance. The Runner does not need to own the corresponding Git commit.
+
+**Result authorship**: Runner produces Evidence; PerfControl produces formal Results. After the Runner delivers Evidence, PerfControl independently reproduces the calculations, authors the one-per-cell formal `RESULT-*.md` documents, updates INDEX/STATUS, performs Formal Review, performs Formal Acceptance, and commits/pushes to GitHub.
+
+**Legacy**: The Stage 0A `CODEX2-...` prompt artifact explicitly remains historical per D-018 and the tasks `README`; immutable historical Results and records are not covered by this Decision and are not rewritten. Where earlier decisions describe A3PerfRunner actions such as "Result reporting," D-021 governs: the Runner delivers Evidence and a Runner Report; formal `RESULT-*.md` authoring belongs to PerfControl.
