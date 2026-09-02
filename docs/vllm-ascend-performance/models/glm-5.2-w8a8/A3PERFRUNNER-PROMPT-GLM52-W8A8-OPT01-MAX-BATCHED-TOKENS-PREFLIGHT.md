@@ -43,49 +43,72 @@ Do **not** hand-write `VLLM_PID=<...>`. Auto-scan `/proc` and bind the PID only 
 
 ```bash
 # Auto-scan every PID whose cmdline contains "serve" AND the exact model path.
+# IMPORTANT: MATCH_PIDS holds the NUMERIC PID only (e.g. 12345), never "/proc/12345".
 MODEL_PATH="/data/tiankuan/zyg/model/GLM-5.2-w8a8"
 MATCH_PIDS=""
 for d in /proc/[0-9]*/; do
-  cmd_text=$(tr '\0' ' ' 2>/dev/null < "${d}cmdline" 2>/dev/null || true)
+  pid="${d#/proc/}"
+  pid="${pid%/}"
+  case "$pid" in
+    ''|*[!0-9]*) continue ;;          # keep pure numeric PIDs only
+  esac
+  cmd_text=$(tr '\0' ' ' 2>/dev/null < "/proc/$pid/cmdline" 2>/dev/null || true)
   case "$cmd_text" in
-    *"serve"*"$MODEL_PATH"*) MATCH_PIDS="$MATCH_PIDS ${d%/}";;
+    *"serve"*"$MODEL_PATH"*) MATCH_PIDS="$MATCH_PIDS $pid" ;;
   esac
 done
-MATCH_PIDS=$(echo $MATCH_PIDS | tr '\n' ' ')
+MATCH_PIDS=$(echo $MATCH_PIDS)
 
 MATCH_COUNT=$(set -- $MATCH_PIDS; echo $#)
 echo "match-count: $MATCH_COUNT"
 echo "match-pids: ${MATCH_PIDS:-<none>}"
 
 VLLM_PID=""
-if [ "$MATCH_COUNT" -eq 1 ]; then
-  VLLM_PID=$(set -- $MATCH_PIDS; echo $1)
-  echo "VLLM_PID=$VLLM_PID"
+GATE_A="PASS"
+GATE_A_REASON=""
+if [ "$MATCH_COUNT" -eq 0 ]; then
+  GATE_A="FAIL"; GATE_A_REASON="NO_PROCESS"
+elif [ "$MATCH_COUNT" -gt 1 ]; then
+  GATE_A="FAIL"; GATE_A_REASON="AMBIGUOUS_PROCESS"
 else
-  echo "GATE A FAIL"
+  VLLM_PID=$(set -- $MATCH_PIDS; echo $1)
+  case "$VLLM_PID" in
+    ''|*[!0-9]*) VLLM_PID=""; GATE_A="FAIL"; GATE_A_REASON="NON_NUMERIC_PID" ;;
+  esac
 fi
+echo "GATE_A=$GATE_A reason=${GATE_A_REASON:-n/a}"
+echo "VLLM_PID=${VLLM_PID:-<unset>}"
 ```
 
 Resolution rules:
 
-- `0` matches → **STOP**. Outcome = `RUNTIME_IDENTITY_MISMATCH`, reason `NO_PROCESS`.
-- `>1` matches → **STOP**. Outcome = `RUNTIME_IDENTITY_MISMATCH`, reason `AMBIGUOUS_PROCESS` (list the PIDs).
-- exactly `1` → `VLLM_PID` bound automatically by the script. Confirm with:
+- `0` matches → `GATE_A=FAIL`, reason `NO_PROCESS` → **do not proceed to inference**.
+- `>1` matches → `GATE_A=FAIL`, reason `AMBIGUOUS_PROCESS` (list the PIDs) → **do not proceed to inference**.
+- exactly `1` → `VLLM_PID` bound automatically and re-checked as a pure integer `^[0-9]+$`.
+- A `VLLM_PID` that fails the integer check also flips `GATE_A=FAIL (NON_NUMERIC_PID)`.
+
+Confirm (only when `GATE_A=PASS`):
 
 ```bash
 ps -p "$VLLM_PID" -o pid=,user=,lstart=,args=
 ```
 
-If `VLLM_PID` is empty after GATE A, stop further observation (no cmdline/log reads with an empty PID) and go to Evidence packaging for a `RUNTIME_IDENTITY_MISMATCH` failure.
+If `GATE_A=FAIL`, do **not** read cmdline/log with an empty or non-numeric PID. Skip PID-dependent steps and proceed to the Evidence packaging path (Step 9 onwards) for `RUNTIME_IDENTITY_MISMATCH` — never `exit` before Evidence is packaged.
 
 ### 3. Read Process Command Line
 
-```bash
-# Read exact cmdline (null-separated, convert to spaces)
-cat /proc/$VLLM_PID/cmdline | tr '\0' ' ' | tee process-cmdline.txt
+Only executes when `GATE_A=PASS`; otherwise writes a placeholder (no missing files).
 
-# Verify readable
-cat process-cmdline.txt
+```bash
+if [ "$GATE_A" = "PASS" ]; then
+  # Read exact cmdline (null-separated, convert to spaces)
+  tr '\0' ' ' < /proc/$VLLM_PID/cmdline > process-cmdline.txt
+
+  # Verify readable
+  cat process-cmdline.txt
+else
+  echo "UNAVAILABLE (GATE_A_FAIL: ${GATE_A_REASON:-unknown})" > process-cmdline.txt
+fi
 ```
 
 Search output for `--max-num-batched-tokens`.
@@ -95,39 +118,46 @@ Search output for `--max-num-batched-tokens`.
 
 ### 4. Read Process Working Directory
 
-```bash
-# Get working directory
-WORK_DIR=$(readlink /proc/$VLLM_PID/cwd)
-echo "Working directory: $WORK_DIR" | tee process-cwd.txt
+Only executes when `GATE_A=PASS`; otherwise writes a placeholder.
 
-# Or alternative
-pwdx $VLLM_PID | tee -a process-cwd.txt
+```bash
+if [ "$GATE_A" = "PASS" ]; then
+  WORK_DIR=$(readlink /proc/$VLLM_PID/cwd 2>/dev/null || true)
+  echo "Working directory: $WORK_DIR" > process-cwd.txt
+  cat process-cwd.txt
+else
+  echo "UNAVAILABLE (GATE_A_FAIL: ${GATE_A_REASON:-unknown})" > process-cwd.txt
+fi
 ```
+
+`WORK_DIR` is also resolved again inside Step 5 for the log search.
 
 ### 5. Locate Server Log (deterministic)
 
 The frozen server is launched with `nohup ... > glm52_w8a8.log 2>&1`, so stdout/stderr resolve to the log file.
 
 ```bash
-if [ -z "$VLLM_PID" ]; then exit 0; fi
-WORK_DIR=$(readlink /proc/$VLLM_PID/cwd 2>/dev/null || true)
-echo "WORK_DIR=$WORK_DIR" > process-cwd.txt
-
 LOG_FILE=""
+if [ "$GATE_A" = "PASS" ]; then
+  WORK_DIR=$(readlink /proc/$VLLM_PID/cwd 2>/dev/null || true)
+  echo "WORK_DIR=$WORK_DIR" > process-cwd.txt
 
-# Priority 1: preferred log inside the working directory
-if [ -r "$WORK_DIR/glm52_w8a8.log" ]; then
-  LOG_FILE="$WORK_DIR/glm52_w8a8.log"
+  # Priority 1: preferred log inside the working directory
+  if [ -r "$WORK_DIR/glm52_w8a8.log" ]; then
+    LOG_FILE="$WORK_DIR/glm52_w8a8.log"
+  else
+    # Priority 2: resolve real stdout/stderr target through process file descriptors
+    fd1=$(readlink /proc/$VLLM_PID/fd/1 2>/dev/null || true)
+    fd2=$(readlink /proc/$VLLM_PID/fd/2 2>/dev/null || true)
+    echo "fd1=$fd1"; echo "fd2=$fd2"
+    for cand in "$fd1" "$fd2"; do
+      if [ -n "$cand" ] && [ -f "$cand" ] && [ -r "$cand" ]; then
+        LOG_FILE="$cand"; break
+      fi
+    done
+  fi
 else
-  # Priority 2: resolve real stdout/stderr target through process file descriptors
-  fd1=$(readlink /proc/$VLLM_PID/fd/1 2>/dev/null || true)
-  fd2=$(readlink /proc/$VLLM_PID/fd/2 2>/dev/null || true)
-  echo "fd1=$fd1"; echo "fd2=$fd2"
-  for cand in "$fd1" "$fd2"; do
-    if [ -n "$cand" ] && [ -f "$cand" ] && [ -r "$cand" ]; then
-      LOG_FILE="$cand"; break
-    fi
-  done
+  echo "SKIPPED_DUE_TO_GATE_A_FAIL" >> process-cwd.txt
 fi
 
 if [ -z "$LOG_FILE" ]; then
@@ -169,47 +199,118 @@ fi
 
 ### 7. (GATE B) Record and Cross-check Runtime Identity
 
-Capture and compare the observed runtime against the frozen baseline. Do **not** hard-code `Runtime verified: YES` — it is always a computed result.
+`runtime_verified` is always a computed result; it is never a hard-coded `YES`.
 
 ```bash
-# --- 0) capture raw identity ---
-{
-  echo "container=$(docker ps --filter name=model-test-zyg-a3 --format '{{.Names}}' | head -1)"
-  echo "image=$(docker inspect --format '{{.Image}}' model-test-zyg-a3 2>/dev/null)"
-  echo "vllm_version=$(docker exec model-test-zyg-a3 sh -c 'vllm --version 2>/dev/null' 2>/dev/null)"
-  echo "vllm_ascend_version=$(docker exec model-test-zyg-a3 sh -c 'python -c "import vllm_ascend as v;print(getattr(v,\"__version__\",\"n/a\"))" 2>/dev/null' 2>/dev/null)"
-  echo "model_path_present=$(grep -c '/data/tiankuan/zyg/model/GLM-5.2-w8a8' process-cmdline.txt)"
-  echo "tensor_parallel_size=$(grep -oE -- '--tensor-parallel-size[ =][0-9]+' process-cmdline.txt | grep -oE '[0-9]+' | tail -1)"
-  echo "max_model_len=$(grep -oE -- '--max-model-len[ =][0-9]+' process-cmdline.txt | grep -oE '[0-9]+' | tail -1)"
-  echo "cmdline_present=$([ -s process-cmdline.txt ] && echo yes || echo no)"
-} > runtime-identity.txt
-cat runtime-identity.txt
+# ---------------- helpers (no state change) ----------------
+chk_field() {   # $1 label  $2 expected  $3 observed  (exact match)
+  local label="$1" exp="$2" obs="$3" st
+  if [ -z "$obs" ] || [ "$obs" = "UNAVAILABLE" ]; then
+    st="UNAVAILABLE"
+  elif [ "$obs" = "$exp" ]; then
+    st="MATCH"
+  else
+    st="MISMATCH"
+  fi
+  echo "$label: EXPECTED=$exp OBSERVED=$obs STATUS=$st"
+  [ "$st" != "MATCH" ] && RID="MISMATCH"
+}
 
-# --- expected values from frozen baseline ---
-# required (must match exactly):
-#   model path present, tensor_parallel_size=16, max_model_len=70000, cmdline present
-# optional (compared only if observed; if missing record UNMEASURED, do not fail):
-#   container=model-test-zyg-a3, image=quay.io/ascend/vllm-ascend:nightly-releases-v0.24.0rc-a3
-#   vllm=0.24.0+empty, vllm_ascend=0.19.1rc2.dev1157+g6443b2a38
+chk_contains() {  # $1 label  $2 expected  $3 observed  (observed contains expected)
+  local label="$1" exp="$2" obs="$3" st
+  if [ -z "$obs" ] || [ "$obs" = "UNAVAILABLE" ]; then
+    st="UNAVAILABLE"
+  elif case "$obs" in *"$exp"*) true;; *) false;; esac; then
+    st="MATCH"
+  else
+    st="MISMATCH"
+  fi
+  echo "$label: EXPECTED=$exp OBSERVED=$obs STATUS=$st"
+  [ "$st" != "MATCH" ] && RID="MISMATCH"
+}
 
 RID="OK"
-[ "$(grep -c 'model/GLM-5.2-w8a8' process-cmdline.txt)" -ge 1 ] || { echo "MISMATCH: model path"; RID="MISMATCH"; }
-TP_NUM=$(grep -oE -- '--tensor-parallel-size[ =][0-9]+' process-cmdline.txt | grep -oE '[0-9]+' | tail -1)
-[ "$TP_NUM" = "16" ] || { echo "MISMATCH: TP=$TP_NUM expected 16"; RID="MISMATCH"; }
-MML=$(grep -oE -- '--max-model-len[ =][0-9]+' process-cmdline.txt | grep -oE '[0-9]+' | tail -1)
-[ "$MML" = "70000" ] || { echo "MISMATCH: max_model_len=$MML expected 70000"; RID="MISMATCH"; }
-[ -s process-cmdline.txt ] || { echo "MISMATCH: cmdline missing"; RID="MISMATCH"; }
+{
+  echo "GATE_A: ${GATE_A:-unknown} reason=${GATE_A_REASON:-n/a}"
+  echo "VLLM_PID: ${VLLM_PID:-<unset>}"
+} > runtime-identity.txt
 
-echo "RUNTIME_GATE=$RID"
-echo "runtime_verified=NO (computed gate)" >> runtime-identity.txt
-echo "runtime_identity_gate=$RID" >> runtime-identity.txt
+if [ "$GATE_A" = "PASS" ]; then
+  # ----- read-only capture -----
+  CN=$(docker inspect --format '{{.Name}}' model-test-zyg-a3 2>/dev/null)
+  CN=${CN#/}
+  IMG_NAME=$(docker inspect --format '{{.Config.Image}}' model-test-zyg-a3 2>/dev/null)
+  IMG_ID=$(docker inspect --format '{{.Image}}' model-test-zyg-a3 2>/dev/null)
+  VLLM_VER=$(docker exec model-test-zyg-a3 sh -c 'vllm --version 2>/dev/null' 2>/dev/null)
+  ASCEND_VER=$(docker exec model-test-zyg-a3 sh -c 'python -c "import vllm_ascend; print(vllm_ascend.__version__)"' 2>/dev/null)
+
+  MODEL_PRESENT=$(grep -c 'GLM-5.2-w8a8' process-cmdline.txt)
+  TP_OBS=$(grep -oE -- '--tensor-parallel-size[ =][0-9]+' process-cmdline.txt | grep -oE '[0-9]+' | tail -1)
+  MML_OBS=$(grep -oE -- '--max-model-len[ =][0-9]+' process-cmdline.txt | grep -oE '[0-9]+' | tail -1)
+
+  {
+    chk_field "container" "model-test-zyg-a3" "$CN"
+    echo "image_id: OBSERVED=$IMG_ID STATUS=CAPTURED (frozen baseline has no recorded ID)"
+    chk_field "image" "quay.io/ascend/vllm-ascend:nightly-releases-v0.24.0rc-a3" "$IMG_NAME"
+    chk_contains "vllm_version" "0.24.0+empty" "$VLLM_VER"
+    chk_contains "vllm_ascend_version" "0.19.1rc2.dev1157+g6443b2a38" "$ASCEND_VER"
+    chk_field "model_path" "present" "$( [ "${MODEL_PRESENT:-0}" -ge 1 ] && echo present || echo absent )"
+    chk_field "tensor_parallel_size" "16" "$TP_OBS"
+    chk_field "max_model_len" "70000" "$MML_OBS"
+    chk_field "cmdline_readable" "yes" "$( [ -s process-cmdline.txt ] && echo yes || echo no )"
+  } >> runtime-identity.txt
+else
+  {
+    echo "SKIPPED_DUE_TO_GATE_A_FAIL: no process identity observable"
+    echo "container: OBSERVED=UNAVAILABLE STATUS=UNAVAILABLE"
+    echo "image_id: OBSERVED=UNAVAILABLE STATUS=UNAVAILABLE"
+    echo "image: OBSERVED=UNAVAILABLE STATUS=UNAVAILABLE"
+    echo "vllm_version: OBSERVED=UNAVAILABLE STATUS=UNAVAILABLE"
+    echo "vllm_ascend_version: OBSERVED=UNAVAILABLE STATUS=UNAVAILABLE"
+    echo "model_path: OBSERVED=UNAVAILABLE STATUS=UNAVAILABLE"
+    echo "tensor_parallel_size: OBSERVED=UNAVAILABLE STATUS=UNAVAILABLE"
+    echo "max_model_len: OBSERVED=UNAVAILABLE STATUS=UNAVAILABLE"
+    echo "cmdline_readable: OBSERVED=UNAVAILABLE STATUS=UNAVAILABLE"
+    echo "runtime_verified=NO (cannot identify instance)"
+  } >> runtime-identity.txt
+  RID="MISMATCH"
+fi
+
+echo "RUNTIME_GATE=$RID" >> runtime-identity.txt
+if [ "$RID" = "OK" ]; then
+  echo "runtime_verified=YES (all required fields MATCH)" >> runtime-identity.txt
+else
+  echo "runtime_verified=NO (not all required identity fields matched)" >> runtime-identity.txt
+fi
+cat runtime-identity.txt
 ```
 
-Verify at minimum: container, image (and image ID/digest if available), vLLM version, vLLM-Ascend version, model path, TP=16, max-model-len=70000, process cmdline. Which and where possible these are already reflected above.
+Identity contract (frozen baseline from BASELINE.md):
 
-**If `RID=MISMATCH`**: STOP optimization inference. Still package and upload Evidence (as `RUNTIME_IDENTITY_MISMATCH`).
+| Field | Expected | Compare |
+|---|---|---|
+| container | `model-test-zyg-a3` | exact (`{{.Name}}` minus leading `/`) |
+| image name | `quay.io/ascend/vllm-ascend:nightly-releases-v0.24.0rc-a3` | exact (`{{.Config.Image}}`) |
+| image ID | none recorded | captured as `{{.Image}}`, CAPTURED only |
+| vLLM | `0.24.0+empty` | observed contains it |
+| vLLM-Ascend | `0.19.1rc2.dev1157+g6443b2a38` | observed contains it |
+| model path | present in cmdline | required |
+| tensor_parallel_size | `16` | exact |
+| max_model_len | `70000` | exact |
+| cmdline readable | yes | required |
+
+Guarantees:
+
+- Any `MISMATCH` or `UNAVAILABLE` in a required field -> `RID=MISMATCH`.
+- `runtime_verified=NO` when version/container capture is UNAVAILABLE (fail-closed).
+- `runtime_verified=YES` only when EVERY required field is `MATCH` - computed, never hard-coded.
+- GATE A failure => all fields UNAVAILABLE, `RID=MISMATCH`, outcome `RUNTIME_IDENTITY_MISMATCH`.
+
+**If `RID=MISMATCH`** (including GATE A fail): STOP optimization inference. Still package and upload Evidence (outcome `RUNTIME_IDENTITY_MISMATCH`).
 
 ### 8. Determine Outcome (integer-guaranteed value; GATE A + GATE B enforced)
+
+Do not let any of these commands abort the run before Evidence is packaged. No `exit` is allowed in this block.
 
 **Decision logic** — three and only three possible outcomes:
 
@@ -219,61 +320,74 @@ VALUE=""
 EVIDENCE_LINE=""
 SOURCE=""
 
-# cmdline: supports "--max-num-batched-tokens 8192" and "--max-num-batched-tokens=8192"
-RAW=$(grep -oE -- '--max-num-batched-tokens[[:space:]=]+[0-9]+' process-cmdline.txt | head -1)
-if [ -n "$RAW" ]; then
-  VALUE=$(printf '%s' "$RAW" | grep -oE '[0-9]+$')
-  EVIDENCE_LINE="$RAW"
-  SOURCE="process cmdline"
-fi
-
-# server log form: max_num_batched_tokens=8192  (only if log resolvable)
-if [ -z "$VALUE" ] && [ -n "$LOG_FILE" ] && [ -r "$LOG_FILE" ]; then
-  RAW=$(grep -n -i 'max_num_batched_tokens' "$LOG_FILE" | head -1)
+# 1) process cmdline: "--max-num-batched-tokens 8192" or "--max-num-batched-tokens=8192"
+if [ -n "$VLLM_PID" ] && [ -s process-cmdline.txt ]; then
+  RAW=$(grep -oE -- '--max-num-batched-tokens[[:space:]=]+[0-9]+' process-cmdline.txt | head -1)
   if [ -n "$RAW" ]; then
-    VALUE=$(printf '%s' "$RAW" | grep -oE '[0-9]+$')
-    [ -n "$VALUE" ] && { SOURCE="" ; EVIDENCE_LINE="$RAW" ; SOURCE="server log line ${RAW%%:*}" ; }
+    VALUE=$(printf '%s' "$RAW" | grep -oE '[0-9]+' | tail -1)
+    EVIDENCE_LINE="$RAW"
+    SOURCE="process cmdline"
   fi
 fi
 
-# integer purity: VALUE must match ^[0-9]+$ ; otherwise clear it -> UNVERIFIED
+# 2) server log: extract the key/value PAIR from the raw line
+#    (supports values embedded inside a larger config line)
+if [ -z "$VALUE" ] && [ -n "$LOG_FILE" ] && [ -r "$LOG_FILE" ]; then
+  RAW=$(grep -n -i 'max_num_batched_tokens' "$LOG_FILE" | head -1)
+  if [ -n "$RAW" ]; then
+    PAIR=$(printf '%s' "$RAW" | grep -oE 'max_num_batched_tokens[[:space:]]*[:=][[:space:]]*[0-9]+' | head -1)
+    if [ -n "$PAIR" ]; then
+      VALUE=$(printf '%s' "$PAIR" | grep -oE '[0-9]+' | tail -1)
+      EVIDENCE_LINE="$RAW"
+      SOURCE="server log: ${RAW%%:*}"
+    fi
+  fi
+fi
+
+# 3) integer purity: VALUE must match ^[0-9]+$ ; otherwise -> UNVERIFIED
 if [ -n "$VALUE" ] && ! printf '%s' "$VALUE" | grep -qE '^[0-9]+$'; then
   VALUE=""
 fi
 
 echo "VALUE=${VALUE:-<none>}"
 echo "EVIDENCE_LINE=${EVIDENCE_LINE:-<none>}"
+echo "SOURCE=${SOURCE:-<none>}"
 
 # ---- final three-way outcome ----
-if [ -z "${VLLM_PID:-}" ]; then
-  OUTCOME="RUNTIME_IDENTITY_MISMATCH"                    # GATE A FAIL: NO_PROCESS / AMBIGUOUS_PROCESS
-elif [ "${RID:-}" = "MISMATCH" ]; then
-  OUTCOME="RUNTIME_IDENTITY_MISMATCH"                   # GATE B FAIL: frozen identity not matched
+if [ "${GATE_A:-FAIL}" != "PASS" ]; then
+  OUTCOME="RUNTIME_IDENTITY_MISMATCH"          # NO_PROCESS / AMBIGUOUS_PROCESS / NON_NUMERIC_PID
+elif [ "${RID:-MISMATCH}" = "MISMATCH" ]; then
+  OUTCOME="RUNTIME_IDENTITY_MISMATCH"          # GATE B FAIL
 elif [ -n "$VALUE" ]; then
   OUTCOME="VALUE_VERIFIED"
 else
   OUTCOME="BASELINE_VALUE_UNVERIFIED"
 fi
-
 echo "Outcome: $OUTCOME"
 ```
 
 Rules:
 
-- Value extraction tolerates the space form, the `=` form, and the log form; `VALUE` must always end up `^[0-9]+$` (a pure integer).
-- If you can only find the token but not a reliably parse integer → `BASELINE_VALUE_UNVERIFIED` (never invent a number).
-- The raw evidence capture stays in `EVIDENCE_LINE` regardless of outcome.
-- `RUNTIME_IDENTITY_MISMATCH` means optimization inference is STOPPED (no candidate selection).
+- Command line accepts `--max-num-batched-tokens 8192` (space) and `--max-num-batched-tokens=8192` (equal).
+- Log accepts `max_num_batched_tokens=8192`, `max_num_batched_tokens = 8192`, `max_num_batched_tokens: 8192`, and a value embedded in a larger line such as `SchedulerConfig(... max_num_batched_tokens=8192, max_num_seqs=128)`.
+- `VALUE` must finally match `^[0-9]+$` (pure integer); anything else clears it -> `BASELINE_VALUE_UNVERIFIED` (never guess a number).
+- `EVIDENCE_LINE` always keeps the full raw line where the key was found.
+- If the key appears but no integer can be parsed reliably -> `BASELINE_VALUE_UNVERIFIED`.
+- Every outcome continues into Evidence packaging (Steps 9-14) and the D-022 upload. There is no exit before packaging on any branch.
 
 ### 9. Create Evidence Document
+
+Always created — on every outcome, including `RUNTIME_IDENTITY_MISMATCH` with a GATE A failure.
 
 ```bash
 {
   echo "STATUS: $OUTCOME"
+  echo "GATE_A: ${GATE_A:-n/a}"
+  echo "GATE_A_REASON: ${GATE_A_REASON:-n/a}"
+  echo "RUNTIME_GATE: ${RID:-n/a}"
   echo "VALUE: ${VALUE:-N/A}"
   echo "SOURCE: ${SOURCE:-N/A}"
   echo "EVIDENCE_LINE: ${EVIDENCE_LINE:-N/A}"
-  echo "RUNTIME_GATE: ${RID:-N/A}"
   echo "VLLM_PID: ${VLLM_PID:-N/A}"
   echo "LOG_FILE: ${LOG_FILE:-LOG_SOURCE_UNAVAILABLE}"
   echo "OBSERVATION_TIME: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
@@ -299,35 +413,50 @@ Replace `<actual_sha_from_dispatch>` with the SHA provided by User in dispatch.
 ### 11. Create Manifest
 
 ```bash
-cat > MANIFEST.txt <<EOF
-GLM52-W8A8-OPT01-MAX-BATCHED-TOKENS-PREFLIGHT Evidence Package
-Evidence Type: READ-ONLY OPTIMIZATION PREFLIGHT EVIDENCE
-Created: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-Server state: UNCHANGED (read-only observation)
-
-Files:
-EOF
-
-ls -lh runtime-identity.txt process-cmdline.txt process-cwd.txt scheduler-config-evidence.txt server-log-snippet.txt effective-max-num-batched-tokens.txt control-sha.txt >> MANIFEST.txt
+{
+  echo "GLM52-W8A8-OPT01-MAX-BATCHED-TOKENS-PREFLIGHT Evidence Package"
+  echo "Evidence Type: READ-ONLY OPTIMIZATION PREFLIGHT EVIDENCE"
+  echo "Created: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+  echo "Server state: UNCHANGED (read-only observation)"
+  echo "Outcome: $OUTCOME"
+  echo ""
+  echo "Files:"
+} > MANIFEST.txt
+for f in runtime-identity.txt process-cmdline.txt process-cwd.txt scheduler-config-evidence.txt server-log-snippet.txt effective-max-num-batched-tokens.txt control-sha.txt; do
+  if [ -f "$f" ]; then
+    ls -lh "$f"
+  else
+    echo "MISSING: $f"
+  fi
+done >> MANIFEST.txt
+cat MANIFEST.txt
 ```
 
 ### 12. Create SHA256 Checksums
 
 ```bash
-sha256sum runtime-identity.txt process-cmdline.txt process-cwd.txt scheduler-config-evidence.txt server-log-snippet.txt effective-max-num-batched-tokens.txt control-sha.txt MANIFEST.txt > SHA256SUMS.txt
+for f in runtime-identity.txt process-cmdline.txt process-cwd.txt scheduler-config-evidence.txt server-log-snippet.txt effective-max-num-batched-tokens.txt control-sha.txt MANIFEST.txt; do
+  if [ -f "$f" ]; then
+    sha256sum "$f"
+  else
+    echo "MISSING_FILE_FOR_HASH: $f"
+  fi
+done > SHA256SUMS.txt
 
 cat SHA256SUMS.txt
 ```
 
-### 13. Package Evidence
+### 13. Package Evidence (immutable)
 
 ```bash
 TIMESTAMP=$(date -u +"%Y%m%d-%H%M%S")
 EVIDENCE_DIR="GLM52-W8A8-OPT01-PREFLIGHT-run-$TIMESTAMP"
 
-# Create directory and move files
+# Create directory and move files (never abort on a missing file)
 mkdir -p "$EVIDENCE_DIR"
-mv runtime-identity.txt process-cmdline.txt process-cwd.txt scheduler-config-evidence.txt server-log-snippet.txt effective-max-num-batched-tokens.txt control-sha.txt MANIFEST.txt SHA256SUMS.txt "$EVIDENCE_DIR/"
+for f in runtime-identity.txt process-cmdline.txt process-cwd.txt scheduler-config-evidence.txt server-log-snippet.txt effective-max-num-batched-tokens.txt control-sha.txt MANIFEST.txt SHA256SUMS.txt; do
+  [ -f "$f" ] && mv "$f" "$EVIDENCE_DIR/"
+done
 
 # Create tarball
 tar -czf "$EVIDENCE_DIR.tar.gz" "$EVIDENCE_DIR"
@@ -337,6 +466,8 @@ sha256sum "$EVIDENCE_DIR.tar.gz" | tee "$EVIDENCE_DIR.tar.gz.sha256"
 
 echo "Evidence package: $EVIDENCE_DIR.tar.gz"
 ```
+
+Note: the required Evidence files are produced on every branch (placeholders when data is UNAVAILABLE / SKIPPED_DUE_TO_GATE_FAILURE), so the guards above are belt-and-suspenders.
 
 ### 14. Upload to GitHub Release
 
@@ -422,16 +553,17 @@ If the task inadvertently modifies server state:
 
 ## Success Criteria
 
-1. ✅ Deterministic PID resolution (0 / >1 / exactly 1 all handled; never a hand-written PID)
-2. ✅ Deterministic log resolution or explicit `LOG_SOURCE_UNAVAILABLE`
-3. ✅ Runtime identity actually cross-checked (no hard-coded "Runtime verified: YES")
-4. ✅ Outcome determined — one of `VALUE_VERIFIED` / `BASELINE_VALUE_UNVERIFIED` / `RUNTIME_IDENTITY_MISMATCH`
-5. ✅ Evidence captured (with integer-guarded VALUE, else UNVERIFIED)
-6. ✅ Evidence uploaded to GitHub Release (all three outcomes)
-7. ✅ Runner Report generated
-8. ✅ Server state unchanged (verified)
-
----
+1. ✅ PID resolution produces a pure numeric PID (`^[0-9]+$`); 0 matches => NO_PROCESS STOP, >1 => AMBIGUOUS_PROCESS STOP, exactly 1 => bind; never a hand-written `VLLM_PID`.
+2. ✅ No pre-packaging `exit` on `NO_PROCESS` / `AMBIGUOUS_PROCESS` / missing log / failed version command; every branch reaches Evidence packaging.
+3. ✅ Deterministic log resolution or explicit `LOG_SOURCE_UNAVAILABLE` (no grep on non-existent paths).
+4. ✅ Runtime identity actually compared field-by-field (container, image name, image ID captured, vLLM, vLLM-Ascend, model path, TP=16, max-model-len=70000, cmdline); no hard-coded `Runtime verified: YES`.
+5. ✅ Outcome is one of `VALUE_VERIFIED` / `BASELINE_VALUE_UNVERIFIED` / `RUNTIME_IDENTITY_MISMATCH`; the three-way gate (GATE A first, then GATE B) is enforced.
+6. ✅ `VALUE` is a pure integer `^[0-9]+$`; `EVIDENCE_LINE` keeps the full raw line; unparseable -> UNVERIFIED.
+7. ✅ All three outcomes produce the required Evidence files (with placeholders when unavailable), MANIFEST, SHA256SUMS, tar.gz, archive SHA256).
+8. ✅ Evidence uploaded to GitHub Release (D-022) for all three outcomes.
+9. ✅ Runner Report generated.
+10. ✅ Server state unchanged; strictly read-only (no benchmark, no stop/restart, no parameter change, no candidate selection).
+11. ✅ Shell snippets pass a static `bash -n` syntax check on the consolidated implementation (local review only, not an A3 execution).
 
 ## What to Report
 

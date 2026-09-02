@@ -151,20 +151,14 @@ DISPATCH_CONTROL_SHA: <from User>
 Authorization: EXECUTE
 ```
 
-### Step 2: Locate vLLM Process
+### Step 2: Locate vLLM Process (normative contract — implementation in Runner Prompt Section 2)
 
-```bash
-# Find vLLM serve process
-ps aux | grep "vllm serve" | grep -v grep
-
-# Capture PID
-VLLM_PID=<identified_pid>
-
-# Verify it's the GLM-5.2-w8a8 baseline service
-ps -p $VLLM_PID -f
-```
-
-Record PID and confirm model path matches `/data/tiankuan/zyg/model/GLM-5.2-w8a8`.
+- PID discovery is deterministic: scan `/proc`, match cmdline that contains `serve` AND model path `/data/tiankuan/zyg/model/GLM-5.2-w8a8`, keep **numeric PID only** (`^[0-9]+$`).
+- `0` matches → `NO_PROCESS` → STOP inference; Evidence still produced (outcome `RUNTIME_IDENTITY_MISMATCH`).
+- exactly `1` match → bind `VLLM_PID` (pure integer).
+- `>1` matches → `AMBIGUOUS_PROCESS` → STOP inference; Evidence still produced.
+- Manual selection (`VLLM_PID=<identified_pid>`) is FORBIDDEN — no hand-picked PID.
+- `NO_EXIT_BEFORE_EVIDENCE`: a failed PID resolution never skips Evidence packaging.
 
 ### Step 3: Read Process Command Line
 
@@ -193,71 +187,47 @@ ls -l /proc/$VLLM_PID/cwd
 
 Record working directory.
 
-### Step 5: Locate Server Log
+### Step 5: Locate Server Log (normative contract — implementation in Runner Prompt Section 5)
 
-```bash
-# Expected location from baseline
-WORK_DIR=$(pwdx $VLLM_PID | cut -d: -f2 | xargs)
-LOG_FILE="$WORK_DIR/glm52_w8a8.log"
-
-# Verify log exists
-ls -lh $LOG_FILE
-
-# Alternative: Check file descriptors
-ls -l /proc/$VLLM_PID/fd/ | grep -E "\.log|stdout|stderr"
-```
-
-Confirm log file identity and location.
+- Preferred log: `$WORK_DIR/glm52_w8a8.log` (resolved from `/proc/<PID>/cwd`).
+- If not readable, resolve the real stdout/stderr target through `/proc/<PID>/fd/1` and `/proc/<PID>/fd/2` and use the first readable target.
+- If none is readable → `LOG_SOURCE_UNAVAILABLE`; do NOT grep non-existent paths; the Evidence files still record `unavailable`.
+- `NO_EXIT_BEFORE_EVIDENCE`: a missing log never aborts before Evidence packaging.
 
 ### Step 6: Search Server Log for Scheduler Config
 
+Run only when the log is readable (see Runner Prompt Section 6); otherwise write placeholder Evidence files mentioning the log was unavailable. Example:
+
 ```bash
-# Search for scheduler-related initialization
-grep -n -i -E "scheduler|max_num_batched|batch.*token|chunked.*prefill" $LOG_FILE | head -100
-
-# Capture broader context around scheduler init (adjust line numbers as needed)
-# Look for early initialization phase
-head -500 $LOG_FILE | grep -A5 -B5 -i "scheduler"
-
-# Save relevant excerpts
-grep -n -i -E "scheduler|max_num_batched|batch.*token" $LOG_FILE > scheduler-config-evidence.txt
+if [ -n "$LOG_FILE" ] && [ -r "$LOG_FILE" ]; then
+  grep -n -i -E "scheduler|max_num_batched|batch.*token|chunked.*prefill" "$LOG_FILE" | head -100
+  head -500 "$LOG_FILE" > server-log-snippet.txt
+  grep -n -i -E "scheduler|max_num_batched|batch.*token" "$LOG_FILE" > scheduler-config-evidence.txt
+else
+  echo "LOG_SOURCE_UNAVAILABLE" > scheduler-config-evidence.txt
+fi
 ```
 
 Look for explicit logging of effective `max_num_batched_tokens` value.
 
-### Step 7: Record Runtime Identity
+### Step 7: Record and Cross-check Runtime Identity (normative contract — implementation in Runner Prompt Section 7)
 
-Capture:
-```bash
-# Container (if applicable)
-docker ps --filter "name=model-test-zyg-a3" --format "{{.ID}} {{.Image}} {{.Status}}"
+- Actually compare, field by field, against the frozen baseline: container name, image name, image ID (captured separately), vLLM version, vLLM-Ascend version, model path, TP=16, max-model-len=70000, cmdline readable.
+- Each field recorded as `EXPECTED / OBSERVED / STATUS=MATCH|MISMATCH|UNAVAILABLE` in `runtime-identity.txt`.
+- `runtime_verified=YES` only when EVERY required field is `MATCH` — never hard-coded.
+- Any `MISMATCH` or `UNAVAILABLE` in a required field → `RID=MISMATCH` → outcome `RUNTIME_IDENTITY_MISMATCH`; optimization inference STOPPED; Evidence still uploaded.
 
-# vLLM version (if accessible without disturbing service)
-# Only if safe and non-invasive
+### Step 8: Determine Outcome (normative contract — implementation in Runner Prompt Section 8)
 
-# Process start time
-ps -p $VLLM_PID -o lstart=
-```
+Three and only three possible outcomes:
 
-Save to `runtime-identity.txt`.
+1. `VALUE_VERIFIED` — pure integer `^[0-9]+$` observed (cmdline space/equal form, or log key=value / `:` / space form, including a value embedded in a larger config line); full raw line saved as `EVIDENCE_LINE`.
+2. `BASELINE_VALUE_UNVERIFIED` — key found but no reliable integer; or no key. Never guess.
+3. `RUNTIME_IDENTITY_MISMATCH` — GATE A failed (NO_PROCESS / AMBIGUOUS_PROCESS) or GATE B failed; optimization inference STOPPED; Evidence still uploaded.
 
-### Step 8: Determine Outcome
+Order of precedence: GATE A first, then GATE B, then value.
 
-**Decision logic**:
-
-```python
-if "--max-num-batched-tokens" in cmdline:
-    VALUE_VERIFIED
-    value = <extracted_from_cmdline>
-    source = "process cmdline"
-elif "max_num_batched_tokens" in server_log:
-    VALUE_VERIFIED
-    value = <extracted_from_log>
-    source = "server log line <N>"
-else:
-    BASELINE_VALUE_UNVERIFIED
-    reason = "parameter not in cmdline, not logged in server output"
-```
+`NO_EXIT_BEFORE_EVIDENCE`: every outcome (including failures) continues into packaging and the D-022 upload.
 
 ### Step 9: Create Evidence Package
 
@@ -277,24 +247,39 @@ GLM52-W8A8-OPT01-PREFLIGHT-run-<timestamp>/
 
 **effective-max-num-batched-tokens.txt** format:
 
+Common fields (all outcomes):
+```
+STATUS: <VALUE_VERIFIED | BASELINE_VALUE_UNVERIFIED | RUNTIME_IDENTITY_MISMATCH>
+GATE_A: <PASS | FAIL>
+GATE_A_REASON: <NO_PROCESS | AMBIGUOUS_PROCESS | NON_NUMERIC_PID | n/a>
+RUNTIME_GATE: <OK | MISMATCH | n/a>
+VLLM_PID: <pid | N/A>
+LOG_FILE: <path | LOG_SOURCE_UNAVAILABLE>
+OBSERVATION_TIME: <UTC>
+```
+
 If VALUE_VERIFIED:
 ```
-STATUS: VALUE_VERIFIED
 VALUE: <X>
 SOURCE: <cmdline / server log line N / other>
-EVIDENCE: <exact quoted line>
+EVIDENCE_LINE: <full raw line>
 ```
 
 If BASELINE_VALUE_UNVERIFIED:
 ```
-STATUS: BASELINE_VALUE_UNVERIFIED
 REASON: <specific reason>
 CMDLINE_CHECKED: YES
-SERVER_LOG_CHECKED: YES
-ALTERNATIVE_SOURCES_CHECKED: <list>
+SERVER_LOG_CHECKED: YES / LOG_SOURCE_UNAVAILABLE
+VALUE: N/A
 ```
 
-**MANIFEST.txt**: List all files with timestamps and sizes
+If RUNTIME_IDENTITY_MISMATCH:
+```
+REASON: <gate + specific fields>
+VALUE: N/A
+```
+
+**MANIFEST.txt**: List all files with timestamps and sizes (all required files exist on every branch — placeholders when unavailable)
 
 **SHA256SUMS.txt**: SHA256 hash of each file
 
@@ -306,7 +291,7 @@ Per D-022:
 3. Create GitHub Release: `preflight-opt01-<timestamp>`
 4. Upload as Release Asset
 
-**Upload regardless of outcome** (VALUE_VERIFIED or UNVERIFIED). PerfControl needs Evidence for review.
+**Upload regardless of outcome** (`VALUE_VERIFIED` / `BASELINE_VALUE_UNVERIFIED` / `RUNTIME_IDENTITY_MISMATCH`). PerfControl needs Evidence for review.
 
 **Evidence Type**: `READ-ONLY OPTIMIZATION PREFLIGHT EVIDENCE`
 
@@ -348,13 +333,15 @@ Per D-022:
 ## Success Criteria
 
 1. ✅ Preflight completes without modifying server state
-2. ✅ Runtime identity captured and verified against frozen baseline
-3. ✅ Process cmdline read
-4. ✅ Server log searched for scheduler config
-5. ✅ Outcome determined (VALUE_VERIFIED or UNVERIFIED)
-6. ✅ Evidence package created
-7. ✅ Evidence uploaded to GitHub Release
-8. ✅ Runner Report delivered to PerfControl
+2. ✅ Runtime identity actually cross-checked against frozen baseline (container, image, image ID, vLLM, vLLM-Ascend, model path, TP=16, max-model-len=70000, cmdline); no hard-coded "Runtime verified: YES"
+3. ✅ PID resolution deterministic, numeric-only `^[0-9]+$`; 0 matches => NO_PROCESS STOP, >1 => AMBIGUOUS_PROCESS STOP, exactly 1 => bind; never a hand-written PID
+4. ✅ No exit before Evidence packaging (NO_PROCESS / AMBIGUOUS_PROCESS / missing log / failed version command all reach packaging)
+5. ✅ Process cmdline read (or placeholder on GATE A fail)
+6. ✅ Server log searched for scheduler config (or placeholder `LOG_SOURCE_UNAVAILABLE`)
+7. ✅ Outcome determined — one of `VALUE_VERIFIED` / `BASELINE_VALUE_UNVERIFIED` / `RUNTIME_IDENTITY_MISMATCH`; VALUE is a pure integer or UNVERIFIED
+8. ✅ Evidence package created (all required files exist on every branch, placeholders allowed)
+9. ✅ Evidence uploaded to GitHub Release (all three outcomes)
+10. ✅ Runner Report delivered to PerfControl
 
 ---
 
