@@ -38,29 +38,33 @@
 
 ## GLM-5.2-W8A8 Current Status
 
-**Execution mode**: USER-VERIFIED KNOWN-GOOD BASELINE → FAST PREFLIGHT → RUN FROZEN COMMANDS → EVIDENCE → RESULT → OPTIMIZATION
+**Status**: BASELINE ESTABLISHED (Evidence-backed baseline matrix formally accepted 2026-09-02)
 
-**64K baseline** (User-measured):
-- Total token throughput: 927.45 tok/s
-- Normalized throughput: 0.153373 tok/s per TFLOPS
-- Achievement vs H100: 48.01% (target: ≥80%)
-- **Disposition**: BELOW TARGET
+**Execution mode**: USER-VERIFIED KNOWN-GOOD BASELINE → FAST PREFLIGHT → RUN FROZEN COMMANDS → EVIDENCE → RESULT → **OPTIMIZATION** (current phase)
+
+**Evidence-backed baseline matrix** (Evidence run: run-20260902-140958):
+- 1K: 676.59 tok/s, Achievement: 65.84% (BELOW TARGET)
+- 4K: 820.76 tok/s, Achievement: 52.85% (BELOW TARGET)
+- 16K: 957.93 tok/s, Achievement: 57.23% (BELOW TARGET)
+- 64K: 927.59 tok/s, Achievement: 48.01% (BELOW TARGET)
+
+**Evidence Archive**: `GLM52-W8A8-BASELINE-EVIDENCE-run-20260902-140958.tar.gz` (SHA256: `8818e4ffa...01816d2`)  
+**Evidence Location**: GitHub Release `evidence-test-glm52-run-20260902-140958` (Decision D-022)
+
+**Target**: ≥80% normalized throughput for all cells (Decision D-020)
 
 **Next steps**:
-1. Complete baseline matrix (1K/4K/16K/64K) Evidence Acquisition via A3PerfRunner (User dispatch with Task ID + DISPATCH_CONTROL_SHA + Authorization: EXECUTE)
-2. A3PerfRunner produces Evidence (raw artifacts, MANIFEST, COMMANDS, SHA256SUMS, runtime identity, Run2/3/4 calculations, comparison summary, final report)
-3. PerfControl receives Evidence, independently recalcs, authors four formal Evidence-backed `RESULT-*.md` (one per cell), updates INDEX/STATUS
-4. Formal Review and Formal Acceptance per cell (PerfControl)
-5. Root cause analysis and profiling
-6. Optimization track (separate OPT Tasks)
+1. Optimization track begins (separate OPT Tasks with controlled parameter changes)
+2. Root cause analysis and profiling
+3. Target achievement: ≥80% for all cells
 
-Stage 0 discovery is NOT required for GLM baseline performance work. GLM uses vLLM 0.24 as User-verified runtime. FlagOS-aligned 0.20.2 remains as historical reference only.
+Stage 0 discovery is NOT required for GLM baseline performance work. GLM uses vLLM 0.6.4.post1+ascend as verified runtime. FlagOS-aligned 0.20.2 remains as historical reference only.
 
 ## Pending Gates
 
 1. **GLM-5.2-W8A8**: 
-   - Evidence Acquisition Task (GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION) `READY` — awaiting User dispatch (Task ID + DISPATCH_CONTROL_SHA + Authorization: EXECUTE) for A3PerfRunner Evidence capture
-   - PerfControl then authors formal Evidence-backed Results (1K/4K/16K/64K), reviews and accepts per cell
+   - Baseline formally accepted (all four cells: 1K/4K/16K/64K)
+   - Optimization track ready to begin per cell
    - Root cause analysis (observed: KV cache ~85%, scheduling constraints)
    - Optimization Tasks to achieve ≥80% target
 2. **DeepSeek-V4-Flash / MiniMax-M3**: 
@@ -90,3 +94,4 @@ See [DECISIONS.md](DECISIONS.md) for all formal decisions, including:
 - D-019: GLM-5.2-W8A8 User-verified baseline override
 - D-020: GLM-5.2-W8A8 hardware compute basis and normalization policy
 - D-021: Local PerfControl / Remote A3PerfRunner Separation (final role architecture; Runner produces Evidence, PerfControl produces formal Results)
+- D-022: GitHub Release Asset Evidence Transport

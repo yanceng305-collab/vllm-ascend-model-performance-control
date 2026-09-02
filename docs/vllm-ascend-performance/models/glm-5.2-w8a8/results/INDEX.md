@@ -2,33 +2,40 @@
 
 ## Baseline Matrix Status
 
-**Complete baseline matrix measured by User** (2026-09-01 to 2026-09-02):
-- 1K input + 1K output, C64: 676.60 tok/s (User-provided matrix summary, Evidence confirmation pending)
-- 4K input + 1K output, C64: 820.76 tok/s (User-provided matrix summary, Evidence confirmation pending)
-- 16K input + 1K output, C64: 957.94 tok/s (User-provided matrix summary, Evidence confirmation pending)
-- 64K input + 1K output, C64: 927.59 tok/s (User-provided matrix summary, Evidence confirmation pending)
+**Complete Evidence-backed baseline matrix established** (Evidence run: run-20260902-140958):
+- 1K input + 1K output, C64: **676.59 tok/s** (Achievement: 65.84%, BELOW TARGET)
+- 4K input + 1K output, C64: **820.76 tok/s** (Achievement: 52.85%, BELOW TARGET)
+- 16K input + 1K output, C64: **957.93 tok/s** (Achievement: 57.23%, BELOW TARGET)
+- 64K input + 1K output, C64: **927.59 tok/s** (Achievement: 48.01%, BELOW TARGET)
 
-**64K historical immutable Result**: 927.45 tok/s (User-measured 2026-09-01, recorded in RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED.md)
+**Evidence Archive**: `GLM52-W8A8-BASELINE-EVIDENCE-run-20260902-140958.tar.gz`  
+**Archive SHA256**: `8818e4ffaf88a23989c36f0a17376843f8078adc522a32bddf682aed401816d2`  
+**Evidence Location**: GitHub Release Asset `evidence-test-glm52-run-20260902-140958`  
+**DISPATCH_CONTROL_SHA**: `26eb575430bc1494f7d8d964a7ba4e16a4e0a2c5`
 
-**Evidence formalization status**: A3PerfRunner Evidence Acquisition Task (GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION) will extract and formalize raw benchmark Evidence from the existing container after User dispatch (Task ID + DISPATCH_CONTROL_SHA + Authorization: EXECUTE). PerfControl then authors and accepts formal Evidence-backed Results locally (Runner produces Evidence; PerfControl produces formal Results — Decision D-021).
+**Target**: ≥80% normalized throughput (per Decision D-020). All four cells **BELOW TARGET**; formal baseline established for optimization tracking.
 
 ## Baseline Results
 
-| Result ID | Date | Status | Workload | Achievement | Disposition |
-|---|---|---|---|---|---|
-| [RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED](RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED.md) | 2026-09-01 | USER-PROVIDED MEASURED BASELINE | 64K input + 1K output, C64 | 48.01% | BELOW TARGET |
+| Result ID | Date | Status | Workload | Throughput | Achievement | Disposition |
+|---|---|---|---|---|---|---|
+| [RESULT-GLM52-W8A8-1K-BASELINE-EVIDENCE-run-20260902-140958](RESULT-GLM52-W8A8-1K-BASELINE-EVIDENCE-run-20260902-140958.md) | 2026-09-02 | ACCEPTED | 1K input + 1K output, C64 | 676.59 tok/s | 65.84% | BELOW TARGET |
+| [RESULT-GLM52-W8A8-4K-BASELINE-EVIDENCE-run-20260902-140958](RESULT-GLM52-W8A8-4K-BASELINE-EVIDENCE-run-20260902-140958.md) | 2026-09-02 | ACCEPTED | 4K input + 1K output, C64 | 820.76 tok/s | 52.85% | BELOW TARGET |
+| [RESULT-GLM52-W8A8-16K-BASELINE-EVIDENCE-run-20260902-140958](RESULT-GLM52-W8A8-16K-BASELINE-EVIDENCE-run-20260902-140958.md) | 2026-09-02 | ACCEPTED | 16K input + 1K output, C64 | 957.93 tok/s | 57.23% | BELOW TARGET |
+| [RESULT-GLM52-W8A8-64K-BASELINE-EVIDENCE-run-20260902-140958](RESULT-GLM52-W8A8-64K-BASELINE-EVIDENCE-run-20260902-140958.md) | 2026-09-02 | ACCEPTED | 64K input + 1K output, C64 | 927.59 tok/s | 48.01% | BELOW TARGET |
+| [RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED](RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED.md) | 2026-09-01 | HISTORICAL | 64K input + 1K output, C64 | 927.45 tok/s | 48.01% | BELOW TARGET |
 
 ## Notes
 
-- **RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED**: User-provided baseline measurement establishing current 64K performance. Not yet backed by formal A3PerfRunner Evidence. Serves as reference for future optimization Tasks.
-- **1K/4K/16K cells**: User-provided matrix summary from XLSX (2026-09-02). Raw benchmark files exist in container `model-test-zyg-a3`. Evidence Acquisition Task (GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION) will formalize Evidence; PerfControl will author formal Results after Evidence review.
-- **Evidence Acquisition Task**: Read-only Evidence formalization from existing container. Will NOT re-run benchmarks unless specific Evidence is confirmed missing after review.
-- Target: ≥80% normalized throughput relative to H100 reference (per Decision D-020)
-- Baseline execution mode: USER-VERIFIED KNOWN-GOOD BASELINE → FAST PREFLIGHT → RUN FROZEN COMMANDS → EVIDENCE → RESULT → OPTIMIZATION (per Decision D-019)
+- **Evidence-backed baseline matrix**: All four cells (1K/4K/16K/64K) formally established with Evidence-backed Results from A3PerfRunner Evidence Acquisition Task (GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION, run-20260902-140958).
+- **PerfControl Formal Review and Acceptance**: Completed 2026-09-02. Evidence completeness, workload contract, runtime identity, calculation integrity all verified. All four cells formally ACCEPTED.
+- **Historical 64K Result**: `RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED.md` (927.45 tok/s, 2026-09-01) remains valid historical provenance, unchanged and immutable.
+- **Performance Assessment**: All cells below 80% normalized target (Decision D-020), establishing performance gap for optimization work.
+- **Runtime**: Container `model-test-zyg-a3`, vLLM 0.6.4.post1, vLLM-Ascend 0.6.4.post1+ascend1.0.0rc1, CANN 8.0.0
+- **Evidence Transport**: Per Decision D-022 (GitHub Release Asset Evidence Transport)
 
-## Pending
+## Next Steps
 
-- Evidence Acquisition Task execution (GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION) by A3PerfRunner after User dispatch
-- PerfControl authors Evidence-backed Results for 1K/4K/16K/64K cells after Evidence review
-- PerfControl Formal Review and Acceptance
-- Optimization Tasks (separate OPT Results)
+- Baseline formally accepted; optimization track may begin
+- Optimization Tasks will produce separate OPT Results compared against these immutable baseline Results
+- Per Decision D-019: Baseline execution mode complete (USER-VERIFIED KNOWN-GOOD BASELINE → FAST PREFLIGHT → RUN FROZEN COMMANDS → EVIDENCE → RESULT → OPTIMIZATION)

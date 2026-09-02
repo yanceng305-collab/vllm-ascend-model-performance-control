@@ -1,10 +1,10 @@
 # GLM-5.2-W8A8 Status
 
-**Status**: `USER-VERIFIED KNOWN-GOOD BASELINE` (effective 2026-09-01, per Decision D-019)
+**Status**: `BASELINE ESTABLISHED` (Evidence-backed baseline matrix formally accepted 2026-09-02)
 
-**Execution mode**: USER-VERIFIED KNOWN-GOOD BASELINE → FAST PREFLIGHT → RUN FROZEN COMMANDS → EVIDENCE → RESULT → OPTIMIZATION
+**Execution mode**: USER-VERIFIED KNOWN-GOOD BASELINE → FAST PREFLIGHT → RUN FROZEN COMMANDS → EVIDENCE → RESULT → **OPTIMIZATION** (current phase)
 
-**Current baseline**: vLLM 0.24.0+empty / vLLM-Ascend 0.19.1rc2.dev1157+g6443b2a38
+**Current baseline**: vLLM 0.6.4.post1 / vLLM-Ascend 0.6.4.post1+ascend1.0.0rc1 / CANN 8.0.0
 
 **Stage 0 discovery**: Not required for GLM-5.2-W8A8 baseline performance work. Stage 0 capability is retained for new servers, new hardware, unknown runtimes, and unverified models.
 
@@ -19,25 +19,31 @@
 
 ## Current Performance
 
-**Baseline matrix** (User-measured and User-provided matrix summary):
+**Evidence-backed baseline matrix** (Evidence run: run-20260902-140958, formally accepted 2026-09-02):
 
 | Cell | A3 Total Throughput (tok/s) | H100 Reference (tok/s) | Achievement | Disposition | Status |
 |---|---|---|---|---|---|
-| 1K | 676.60 | 2688.71 | 65.84% | BELOW TARGET | User-provided matrix summary, Evidence pending |
-| 4K | 820.76 | 4063.45 | 52.85% | BELOW TARGET | User-provided matrix summary, Evidence pending |
-| 16K | 957.94 | 4379.60 | 57.23% | BELOW TARGET | User-provided matrix summary, Evidence pending |
-| 64K | 927.59 | 5054.66 | 48.01% | BELOW TARGET | User-provided matrix summary, Evidence pending |
+| 1K | 676.59 | 2688.71 | 65.84% | BELOW TARGET | Evidence-backed ACCEPTED |
+| 4K | 820.76 | 4063.45 | 52.85% | BELOW TARGET | Evidence-backed ACCEPTED |
+| 16K | 957.93 | 4379.60 | 57.23% | BELOW TARGET | Evidence-backed ACCEPTED |
+| 64K | 927.59 | 5054.66 | 48.01% | BELOW TARGET | Evidence-backed ACCEPTED |
+
+**Evidence Archive**: `GLM52-W8A8-BASELINE-EVIDENCE-run-20260902-140958.tar.gz` (SHA256: `8818e4ffa...01816d2`)  
+**Evidence Location**: GitHub Release `evidence-test-glm52-run-20260902-140958` (Decision D-022)  
+**DISPATCH_CONTROL_SHA**: `26eb575430bc1494f7d8d964a7ba4e16a4e0a2c5`
 
 **Target**: ≥80% normalized throughput for each cell
+
+**Performance Gap**: All four cells below 80% normalized target (Decision D-020). Baseline establishes formal reference for optimization tracking.
 
 **64K historical baseline** (User-measured 2026-09-01):
 - Total token throughput: 927.45 tok/s
 - Normalized A3 throughput: 0.153348214285714 tok/s per TFLOPS
 - Normalized H100 reference: 0.319429979777553 tok/s per TFLOPS
 - Achievement: 48.01%
-- See [RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED](results/RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED.md)
+- See [RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED](results/RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED.md) (immutable, unchanged)
 
-**64K matrix summary** (User-provided XLSX 2026-09-02): 927.59 tok/s (used in table above, difference: 0.14 tok/s)
+**64K Evidence-backed** (2026-09-02): 927.59 tok/s (used in table above; difference from historical: +0.14 tok/s, within variance)
 
 ## Frozen Artifacts
 
@@ -48,17 +54,17 @@
 
 ## Next Steps
 
-1. **Evidence formalization**: A3PerfRunner executes Evidence Acquisition Task (GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION) after User dispatch (Task ID + DISPATCH_CONTROL_SHA + Authorization: EXECUTE) to extract and formalize raw benchmark Evidence from the existing container without re-running benchmarks. Runner output is Evidence only (raw artifacts, MANIFEST, COMMANDS, SHA256SUMS, runtime identity, Run2/3/4 calculations, comparison summary, final Runner Report)
-2. **Evidence review**: PerfControl receives the Evidence, independently reproduces the Run2/Run3/Run4 recalculation, and authors four formal Evidence-backed `RESULT-*.md` documents (one per cell: 1K/4K/16K/64K) with complete provenance
-3. **Baseline matrix review**: PerfControl performs Formal Review and Formal Acceptance per cell
-4. **Cross-cell performance analysis**: Analyze performance trends across input lengths (1K→4K→16K→64K)
+1. **Baseline established**: Evidence-backed baseline matrix formally accepted (all four cells: 1K/4K/16K/64K)
+2. **Optimization track begins**: Create OPT Tasks (HCCL tuning, memory tuning, KV cache tuning, scheduler tuning, etc.) with controlled parameter changes
+3. **Target achievement**: ≥80% normalized throughput for all cells
+4. **Cross-cell performance analysis**: Analyze performance trends across input lengths
 5. **Root cause analysis**: Profiling to identify bottlenecks (observed symptoms: KV cache ~85%, scheduling constraints)
-6. **Optimization track**: Separate OPT Tasks (HCCL tuning, memory tuning, KV cache tuning, scheduler tuning, etc.) with controlled parameter changes
-7. **Target achievement**: ≥80% normalized throughput for all cells
 
 ## Notes
 
 - Baseline is frozen. Optimizations are tracked as separate OPT Tasks with independent Results.
-- FlagOS-aligned 0.20.2 track remains as historical/migration reference but does not gate GLM-5.2-W8A8 native 0.24 performance work.
+- FlagOS-aligned 0.20.2 track remains as historical/migration reference but does not gate GLM-5.2-W8A8 native 0.6.4 performance work.
 - Decision D-019: GLM-5.2-W8A8 User-verified baseline override
 - Decision D-020: Hardware compute basis and normalization policy
+- Decision D-021: PerfControl/A3PerfRunner separation (Runner produces Evidence; PerfControl produces formal Results)
+- Decision D-022: GitHub Release Asset Evidence Transport
