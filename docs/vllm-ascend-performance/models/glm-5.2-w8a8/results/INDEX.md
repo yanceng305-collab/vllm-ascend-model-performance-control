@@ -59,3 +59,6 @@ Notes:
 - Runner's original natural-language report transcribed the archive SHA incorrectly; integrity reconciliation confirmed `LOCAL_ARCHIVE == LOCAL_SIDECAR_VALUE == GITHUB_TARBALL_ASSET`, recorded as `REPORT_TRANSCRIPTION_ERROR` — NOT `EVIDENCE_ARCHIVE_MISMATCH`.
 - No other runner-narrative SHA values are adopted into this Control record.
 - `OPT-01 remains BLOCKED until the accepted GLM baseline runtime is restored (User-authorized) and effective max_num_batched_tokens is re-observed.`
+
+- Manual runtime observation (2026-09-02): see [MANUAL-RUNTIME-OBSERVATION-20260902.md](../MANUAL-RUNTIME-OBSERVATION-20260902.md) — non-formal; manual 16K exploratory microgate **IN PROGRESS / RESULT PENDING**; `max_num_batched_tokens` UNVERIFIED.
+- Official upstream reference (commit `6443b2a38b95390e4f5174ff7ad2f8c3751e040f`, GLM5.2.md) verified 2026-09-02: `--max-num-batched-tokens 4096` is a REFERENCE CANDIDATE ONLY, NOT a found effective value.

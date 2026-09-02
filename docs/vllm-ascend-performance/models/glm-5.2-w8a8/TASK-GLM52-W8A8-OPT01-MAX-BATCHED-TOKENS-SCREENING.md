@@ -10,6 +10,8 @@
 
 **BLOCKED status**: Preflight GLM52-W8A8-OPT01-MAX-BATCHED-TOKENS-PREFLIGHT completed 2026-09-02 with outcome `RUNTIME_IDENTITY_MISMATCH` (Gate A `NO_PROCESS`) — the accepted GLM-5.2-W8A8 baseline runtime was NOT active at observation time, so effective `max_num_batched_tokens` remains **UNVERIFIED**. Candidate selection is **NOT AUTHORIZED / NOT YET POSSIBLE**. Screening cannot start until the accepted GLM baseline runtime is restored (User-authorized server state change) and the effective value is re-observed and verified.
 
+**Status update (2026-09-02, later)**: preflight found NO_PROCESS (correct at that time). User since manually restored an operating GLM-5.2-W8A8 runtime variant, but it is NOT an exact replay of the accepted baseline; effective `max_num_batched_tokens` remains UNVERIFIED; a manual exploratory 16K microgate (Run1 warmup + Run2 measured) is IN PROGRESS /  RESULT PENDING; formal screening remains BLOCKED; candidate selection NOT YET POSSIBLE until review of the manual observation. See `MANUAL-RUNTIME-OBSERVATION-20260902.md`.
+
 ---
 
 ## Objective
