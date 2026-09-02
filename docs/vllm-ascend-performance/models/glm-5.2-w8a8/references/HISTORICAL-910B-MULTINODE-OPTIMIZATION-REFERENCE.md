@@ -20,30 +20,64 @@
 - **Concurrency range**: 3.9 - 15.5
 - **Output throughput**: 33.6 - 55.7 tok/s
 - **E2E throughput**: 2187.5 - 3619.8 tok/s
+- **Configuration**: 
+  - max-num-batched-tokens: 4096
+  - max-num-seqs: 16
+  - speculative tokens: 5
+  - cudagraph_mode: FULL_DECODE_ONLY (no explicit capture sizes)
 - **Observation**: Low baseline performance
 
 ### Stage 2: 池化 (Pooling)
 - **Concurrency range**: 3.9 - 15.1
 - **Output throughput**: 93.0 - 151.6 tok/s (2.77x - 2.72x improvement)
 - **E2E throughput**: 6048.8 - 9857.0 tok/s
+- **Configuration**:
+  - max-num-batched-tokens: 4096 (unchanged)
+  - max-num-seqs: 8 (changed from 16)
+  - speculative tokens: 5 (unchanged)
+  - Added: KV cache pooling infrastructure (Mooncake/AscendStore)
 - **Signal**: MAJOR PERFORMANCE IMPROVEMENT
-- **Note**: **CONFOUNDED** - "池化" may refer to multi-node resource pooling, KV cache pooling, memory pooling, or other 910B-specific infrastructure. NOT directly transferable to A3 single-node.
+- **Note**: **CONFOUNDED** - "池化" refers to multi-node KV cache disaggregation (Mooncake), combined with max-num-seqs reduction. NOT directly transferable to A3 single-node.
 
 ### Stage 3: 参数优化1+池化 (Parameter Optimization 1 + Pooling)
 - **Output throughput**: 100.3 - 170.5 tok/s
 - **Improvement over Stage 2**: +7.9% - +12.5%
+- **Configuration changes from Stage 2**:
+  - max-num-batched-tokens: 4096 → **2048**
+  - max-num-seqs: 8 (unchanged)
+  - speculative tokens: 5 → **4**
+  - cudagraph_capture_sizes: (none) → **[1,2,4,8,12,16]**
 - **Signal**: Incremental gain from parameter tuning
-- **Note**: **CONFOUNDED** - multiple parameters may have changed simultaneously
+- **Note**: **CONFOUNDED** - THREE parameters changed simultaneously (max-num-batched-tokens, speculative tokens, cudagraph sizes). Cannot attribute gain to any single change.
 
 ### Stage 4: 参数优化2+池化 (Parameter Optimization 2 + Pooling)
 - **Output throughput**: 105.1 - 167.1 tok/s
+- **Configuration changes from Stage 3**:
+  - max-num-batched-tokens: 2048 (unchanged)
+  - max-num-seqs: 8 (unchanged)
+  - speculative tokens: 4 (unchanged)
+  - **enable_fused_mc2**: (none) → **1** (NEW)
+  - **enable_npugraph_ex**: (none) → **true** (NEW)
+  - cudagraph_capture_sizes: [1,2,4,8,12,16] → **[1,2,4,8,12,16,24,32,48,64,80]** (expanded)
+  - **max_cudagraph_capture_size**: (none) → **80** (NEW)
 - **Observation**: Mixed results vs Stage 3 (some regression at high CC)
+- **Note**: **CONFOUNDED** - FOUR changes simultaneously (fused_mc2, npugraph_ex, expanded cudagraph sizes, max capture size)
 
 ### Stage 5: 参数优化3+池化（本周最优） (Parameter Optimization 3 + Pooling - Best)
 - **Output throughput**: 131.0 - 184.7 tok/s
 - **E2E throughput**: 8514.8 - 12005.8 tok/s
 - **Improvement over original**: 3.9x - 3.3x
-- **Observation**: Best historical result, but specific parameters unknown
+- **Configuration changes from Stage 4**:
+  - max-num-batched-tokens: 2048 (unchanged)
+  - max-num-seqs: 8 (unchanged)
+  - speculative tokens: 4 (unchanged)
+  - **enable_flashcomm1**: (none) → **true** (NEW)
+  - enable_fused_mc2: 1 (unchanged)
+  - enable_npugraph_ex: true (unchanged)
+  - cudagraph_capture_sizes: [1,2,4,8,12,16,24,32,48,64,80] → **[40,80]** (simplified)
+  - max_cudagraph_capture_size: 80 (unchanged)
+- **Observation**: Best historical result
+- **Note**: **CONFOUNDED** - TWO changes simultaneously (added flashcomm1, simplified cudagraph capture sizes)
 
 ---
 
@@ -83,13 +117,18 @@
 
 ### 1. **"池化" (Pooling) Had Major Impact**
 - **Signal**: 2.7x-2.9x throughput improvement (Stage 1 → Stage 2)
+- **Actual change**: max-num-seqs 16→8 + multi-node KV cache disaggregation (Mooncake/AscendStore)
 - **Hypothesis for A3**: Memory/resource pooling, KV cache management, or batching策略 may be important
-- **NOT TRANSFERABLE**: 910B multi-node pooling architecture ≠ A3 single-node architecture
+- **NOT TRANSFERABLE**: 910B multi-node pooling architecture (Mooncake) ≠ A3 single-node architecture
+- **CONFOUNDED**: Cannot separate max-num-seqs effect from pooling infrastructure effect
 
 ### 2. **Parameter Tuning Shows Incremental Gains**
 - **Signal**: 7-12% improvements in Stages 3-5 over pooling baseline
+- **Actual changes documented**: See stage-by-stage configuration diffs above
 - **Hypothesis for A3**: Scheduler, batching, graph, or communication parameters deserve systematic exploration
-- **CONFOUNDED**: Unknown which specific parameters changed in each stage
+- **CONFOUNDED**: Every historical optimization stage changed MULTIPLE parameters simultaneously
+- **Critical limitation**: Cannot determine which specific parameter(s) drove observed gains
+- **A3 strategy**: Requires isolated single-variable validation to establish causal relationships
 
 ### 3. **Concurrency Saturation is Non-Monotonic**
 - **Signal**: Performance regression at certain CC ranges

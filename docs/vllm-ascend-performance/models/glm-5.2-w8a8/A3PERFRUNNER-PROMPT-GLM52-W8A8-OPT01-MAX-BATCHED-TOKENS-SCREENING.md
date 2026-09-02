@@ -2,7 +2,26 @@
 
 **For Task**: TASK-GLM52-W8A8-OPT01-MAX-BATCHED-TOKENS-SCREENING  
 **Runner Role**: A3PerfRunner  
-**Created**: 2026-09-02
+**Created**: 2026-09-02  
+**Updated**: 2026-09-02  
+**Status**: BLOCKED_PENDING_PREFLIGHT
+
+**BLOCKED**: This prompt cannot be executed until preflight task (GLM52-W8A8-OPT01-MAX-BATCHED-TOKENS-PREFLIGHT) completes and PerfControl updates this prompt with verified baseline value and selected candidate.
+
+---
+
+## Prerequisites
+
+Before this prompt becomes executable:
+
+1. ✅ Preflight task completes (GLM52-W8A8-OPT01-MAX-BATCHED-TOKENS-PREFLIGHT)
+2. ✅ PerfControl reviews preflight Evidence
+3. ✅ Baseline max_num_batched_tokens value verified
+4. ✅ Candidate value selected by PerfControl
+5. ✅ This prompt updated with actual baseline/candidate values
+6. ✅ Task status changed from BLOCKED to READY
+
+**Do NOT execute this prompt in its current state.**
 
 ---
 
@@ -19,14 +38,21 @@ You are **A3PerfRunner**, the remote execution agent operating on the A3 server.
 
 Execute 16K FAST MICROGATE screening for `--max-num-batched-tokens` optimization candidate.
 
-**Single Variable**: max-num-batched-tokens baseline→262144  
+**Single Variable**: max-num-batched-tokens  
+**Baseline Value**: PENDING_PREFLIGHT_VERIFICATION  
+**Candidate Value**: PENDING_PREFLIGHT_VERIFICATION  
 **Protocol**: 2 runs (warmup + measured)  
 **Reference**: 957.94 tok/s (16K baseline)  
+**Thresholds**: 2% = 977.10 tok/s, 5% = 1005.84 tok/s  
 **Decision**: PASS (≥5%) / INCONCLUSIVE (2-5%) / NO_MATERIAL_GAIN (<2%)
+
+**NOTE**: Baseline and candidate values will be populated after preflight completes.
 
 ---
 
 ## Execution Checklist
+
+**⚠️ BLOCKED**: The steps below contain placeholder values and cannot be executed until preflight completes and PerfControl updates this prompt with actual baseline/candidate values.
 
 ### 1. Verify Dispatch Authorization
 
@@ -40,38 +66,45 @@ Only proceed if all three present.
 
 ### 2. Preflight: Read Baseline Value
 
-```bash
-ps aux | grep vllm | grep max-num-batched-tokens
-# Or check server logs
-```
+**REPLACED BY SEPARATE PREFLIGHT TASK**: See GLM52-W8A8-OPT01-MAX-BATCHED-TOKENS-PREFLIGHT
 
-Record actual baseline value (expected: 131072 or default).
+Baseline value will be provided by PerfControl after preflight Evidence review.
+
+**If baseline value differs from what PerfControl documented here**: STOP and report discrepancy. Do NOT adjust candidate on your own.
 
 ### 3. Stop Service
 
+**PENDING**: Exact stop procedure to be confirmed
+
+Stop the existing vLLM baseline service.
+
+Verify service stopped:
 ```bash
-# Stop existing vLLM service
-# Method depends on how service is managed (systemd/docker/screen/etc)
+ps aux | grep "vllm serve" | grep GLM-5.2-w8a8
+# Should return empty
 ```
 
 ### 4. Start Service with Candidate Value
 
+**PENDING**: Candidate value from PerfControl after preflight
+
 Launch vLLM with **single change**:
-```
---max-num-batched-tokens 262144
+```bash
+--max-num-batched-tokens <CANDIDATE_VALUE_TBD>
 ```
 
-All other args identical to baseline (TP16, model path, max-model-len, etc.).
+All other args identical to baseline (TP16, model path, max-model-len 70000, etc.).
 
 Wait 120 seconds for stabilization.
 
 ### 5. Run1: Warmup (Discard)
 
+**CORRECTED**: Use frozen baseline benchmark client
+
 ```bash
-cd /root/benchmark
-python benchmark_serving.py \
+vllm bench serve \
+  /data/tiankuan/zyg/model/GLM-5.2-w8a8 \
   --backend vllm \
-  --model /data/tiankuan/zyg/model/GLM-5.2-w8a8 \
   --endpoint /v1/completions \
   --dataset-name random \
   --random-input-len 16384 \
@@ -100,16 +133,18 @@ Extract:
 
 ```
 Improvement = (Run2_throughput / 957.94) - 1
+Improvement_percentage = Improvement × 100%
 ```
 
-If ≥ 5%: **FAST_MICROGATE_PASS**  
-If 2-5%: **FAST_MICROGATE_INCONCLUSIVE**  
-If < 2%: **NO_MATERIAL_GAIN**  
-If regression/errors: **ROLLBACK**
+**Thresholds**:
+- If ≥ 1005.84 tok/s (≥5%): **FAST_MICROGATE_PASS**  
+- If 977.10-1005.84 tok/s (2-5%): **FAST_MICROGATE_INCONCLUSIVE**  
+- If < 977.10 tok/s (<2%): **NO_MATERIAL_GAIN**  
+- If regression/errors: **ROLLBACK**
 
 ### 8. Rollback Service
 
-Restart with baseline args (max-num-batched-tokens=131072 or omit).
+Restart with baseline args (restore original max-num-batched-tokens value, or omit if it was default).
 
 ### 9. Create Evidence Package
 
@@ -153,7 +188,7 @@ Decision: PASS / INCONCLUSIVE / NO_MATERIAL_GAIN
 
 **SHA256SUMS.txt**: SHA256 of each file
 
-### 10. Upload Evidence (if PASS)
+### 10. Upload Evidence (regardless of outcome)
 
 Per D-022:
 1. Create tarball: `GLM52-W8A8-OPT01-run-<timestamp>.tar.gz`
@@ -161,7 +196,7 @@ Per D-022:
 3. Create GitHub Release: `screening-opt01-<timestamp>`
 4. Upload as Release Asset
 
-If NO_MATERIAL_GAIN or INCONCLUSIVE: Evidence local only, inform PerfControl.
+**Upload ALL screening Evidence regardless of outcome** (PASS/INCONCLUSIVE/NO_MATERIAL_GAIN/ROLLBACK). Failed experiments prevent future duplication of unproductive optimization paths.
 
 ### 11. Runner Report
 

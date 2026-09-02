@@ -2,12 +2,13 @@
 
 **Task ID**: GLM52-W8A8-OPT01-MAX-BATCHED-TOKENS-SCREENING  
 **Task Type**: FAST MICROGATE Optimization Screening  
-**Status**: READY  
+**Status**: BLOCKED_PENDING_BASELINE_VALUE_PREFLIGHT  
 **Created**: 2026-09-02  
+**Updated**: 2026-09-02  
 **Assigned to**: A3PerfRunner  
 **Priority**: HIGH
 
-**READY status**: Task prepared, awaiting User explicit dispatch (Task ID + DISPATCH_CONTROL_SHA + Authorization: EXECUTE).
+**BLOCKED status**: Requires baseline max_num_batched_tokens value verification via preflight before candidate selection. See GLM52-W8A8-OPT01-MAX-BATCHED-TOKENS-PREFLIGHT.
 
 ---
 
@@ -23,18 +24,28 @@ Test candidate value for `--max-num-batched-tokens` parameter using 16K FAST MIC
 
 **Current A3 Baseline** (Evidence-backed, formally accepted):
 - 16K baseline: **957.94 tok/s** (Mean of Run2/3/4)
-- Runtime: vLLM 0.24.0+empty, Image nightly-releases-v0.24.0rc-a3
+- Runtime: vLLM 0.24.0+empty, vLLM-Ascend 0.19.1rc2.dev1157+g6443b2a38
+- Image: quay.io/ascend/vllm-ascend:nightly-releases-v0.24.0rc-a3
 - Container: model-test-zyg-a3
+- max-model-len: **70000** (frozen baseline)
+- TP: 16
 
 **Historical Reference** (910B multi-node, NOT directly transferable):
 - "参数优化" stages showed 7-12% incremental gains over pooling baseline
-- Scheduler/batching parameters likely candidates (CONFOUNDED historical signal)
+- Multiple parameters changed simultaneously (CONFOUNDED experiments)
+- Actual historical parameter differences from Excel:
+  - 池化→参数优化1: max-num-batched-tokens 4096→2048, max-num-seqs 8, speculative tokens 5→4, cudagraph_capture_sizes added [1,2,4,8,12,16]
+  - 参数优化1→参数优化2: added enable_fused_mc2, enable_npugraph_ex, expanded cudagraph sizes
+  - 参数优化2→参数优化3: added enable_flashcomm1, simplified cudagraph sizes [40,80]
+- **CONFOUNDED SIGNAL**: Cannot attribute gains to any single parameter change
+- Scheduler/batching parameters are hypothesis only (NOT isolated validation)
 
 **OPT-01 Selection Rationale**:
 1. Single variable: `--max-num-batched-tokens` only
-2. Scheduler/batching most transferable from 910B experience
-3. Baseline value needs verification (assume vLLM default)
+2. Scheduler/batching hypothesis from 910B experience (requires independent A3 validation)
+3. **Baseline value UNVERIFIED** - requires preflight observation
 4. Runtime capability verified (supported in vLLM 0.24)
+5. **Candidate selection PENDING** until baseline value verified
 
 ---
 
@@ -44,15 +55,14 @@ Test candidate value for `--max-num-batched-tokens` parameter using 16K FAST MIC
 
 **Primary Variable**: `--max-num-batched-tokens`
 
-**Baseline Value**: 131072 (vLLM 0.24 default for long-context, to be verified in preflight)
+**Baseline Value**: UNVERIFIED - requires preflight observation (see GLM52-W8A8-OPT01-MAX-BATCHED-TOKENS-PREFLIGHT)
 
-**Candidate Value**: 262144 (2x baseline)
+**Candidate Value**: PENDING baseline value verification
 
-**Rationale**: 
-- 16K input + 1K output = 17K tokens per request
-- Baseline 131K allows ~7-8 concurrent requests in preflight batching
-- Candidate 262K allows ~15 concurrent requests
-- Should improve batching efficiency if scheduler can fill batches
+**Candidate Selection Strategy** (after preflight):
+- Candidate will be selected based on verified baseline value
+- Selection will consider: current runtime capability, workload characteristics (16K input + 1K output), and 910B historical signals (hypothesis only)
+- Candidate design by PerfControl after preflight Evidence review
 
 ### Unchanged Controls
 
@@ -60,7 +70,7 @@ ALL other parameters identical to accepted baseline:
 - Model: GLM-5.2-W8A8
 - Runtime: vLLM 0.24.0+empty, same image/container
 - TP: 16
-- max-model-len: 131072
+- max-model-len: **70000** (frozen baseline)
 - Input: 16384 tokens
 - Output: 1024 tokens
 - Concurrency: 64
@@ -83,10 +93,14 @@ ALL other parameters identical to accepted baseline:
 
 **Screening Reference**: 957.94 tok/s (16K baseline)
 
+**Pass Thresholds**:
+- **2% threshold**: 977.10 tok/s
+- **5% threshold**: 1005.84 tok/s
+
 **Pass Criteria**:
-- Improvement ≥ 5%: **FAST_MICROGATE_PASS** → proceed to 64K validation
-- Improvement 2-5%: **FAST_MICROGATE_INCONCLUSIVE** → add confirmation run
-- Improvement < 2%: **NO_MATERIAL_GAIN** → stop candidate
+- Improvement ≥ 5% (≥1005.84 tok/s): **FAST_MICROGATE_PASS** → proceed to 64K validation
+- Improvement 2-5% (977.10-1005.84 tok/s): **FAST_MICROGATE_INCONCLUSIVE** → add confirmation run
+- Improvement < 2% (<977.10 tok/s): **NO_MATERIAL_GAIN** → stop candidate
 
 **Rollback Criteria** (immediate stop):
 - Throughput regression
@@ -99,24 +113,19 @@ ALL other parameters identical to accepted baseline:
 
 ## Execution Steps
 
-### 1. Preflight (Read-Only)
+**NOTE**: This task is currently BLOCKED pending baseline value preflight. The steps below will be finalized after preflight completes and candidate is selected.
 
-Verify current baseline value:
-```bash
-# Check running service launch command
-ps aux | grep vllm
-# Or check server logs for --max-num-batched-tokens value
-```
+### 1. Preflight (Separate Task)
 
-**Expected**: 131072 (default) or explicit value
-**If different**: Record actual baseline value, adjust candidate accordingly
+See: `GLM52-W8A8-OPT01-MAX-BATCHED-TOKENS-PREFLIGHT.md`
+
+Preflight will determine actual baseline max_num_batched_tokens value through read-only observation.
 
 ### 2. Service Restart with Candidate Value
 
-Stop existing service, restart with:
-```bash
---max-num-batched-tokens 262144
-```
+**PENDING**: Candidate value selection after preflight
+
+Stop existing service, restart with candidate max-num-batched-tokens value.
 
 All other args unchanged from baseline.
 
@@ -125,9 +134,9 @@ All other args unchanged from baseline.
 ### 3. Run Baseline Warmup (Run1)
 
 ```bash
-python benchmark_serving.py \
+vllm bench serve \
+  /data/tiankuan/zyg/model/GLM-5.2-w8a8 \
   --backend vllm \
-  --model /data/tiankuan/zyg/model/GLM-5.2-w8a8 \
   --endpoint /v1/completions \
   --dataset-name random \
   --random-input-len 16384 \
@@ -157,16 +166,18 @@ Same command, Run2 = measured screening run.
 
 ```
 Improvement = (Run2_throughput / 957.94) - 1
+Improvement_percentage = Improvement × 100%
 ```
 
 **Decision**:
-- ≥5%: PASS
-- 2-5%: INCONCLUSIVE (add Run3 confirmation if needed)
-- <2%: NO_MATERIAL_GAIN
+- ≥5% (≥1005.84 tok/s): PASS
+- 2-5% (977.10-1005.84 tok/s): INCONCLUSIVE (add Run3 confirmation if needed)
+- <2% (<977.10 tok/s): NO_MATERIAL_GAIN
+- Regression or errors: ROLLBACK
 
 ### 6. Rollback
 
-Restart service with baseline args (max-num-batched-tokens=131072 or omit for default).
+Restart service with baseline args (restore original max-num-batched-tokens value or omit if it was default).
 
 ---
 
@@ -177,13 +188,16 @@ Restart service with baseline args (max-num-batched-tokens=131072 or omit for de
 - Run2 output (screening measurement)
 - Runtime identity (confirm unchanged from baseline)
 - Exact launch command with candidate value
-- Baseline value recorded
+- Baseline value recorded from preflight
+- Candidate value used
 - Completed/failed counts
 - DISPATCH_CONTROL_SHA
 
-**Transport**: Per D-022, upload as GitHub Release Asset if PASS
+**Transport**: Per D-022, upload as GitHub Release Asset regardless of outcome (PASS/INCONCLUSIVE/NO_MATERIAL_GAIN/ROLLBACK)
 
 **Evidence Type**: `SCREENING EVIDENCE — NOT FORMAL BASELINE`
+
+**Preservation rationale**: All optimization attempts (successful or not) provide valuable learning. Failed experiments prevent future duplication of unproductive paths.
 
 ---
 
@@ -198,12 +212,15 @@ Restart service with baseline args (max-num-batched-tokens=131072 or omit for de
 ## Constraints
 
 - Single variable only (max-num-batched-tokens)
-- Read baseline value before changing
+- Baseline value must be verified via preflight before execution
+- Candidate selection by PerfControl after preflight review
 - 16K FAST MICROGATE only (not full matrix)
 - 2-run protocol (warmup + measured)
+- Benchmark client: `vllm bench serve` (inherit from frozen baseline)
 - Rollback to baseline after completion
 - Do NOT commit Control repo
 - Do NOT author Formal Results
+- Evidence upload regardless of outcome
 
 ---
 
@@ -217,9 +234,22 @@ If OPT-01 achieves FAST_MICROGATE_PASS:
 
 ---
 
+## Prerequisites
+
+**BLOCKED until**:
+- GLM52-W8A8-OPT01-MAX-BATCHED-TOKENS-PREFLIGHT completes
+- PerfControl reviews preflight Evidence
+- Baseline value verified
+- Candidate value selected and documented
+- This Task updated to READY status
+
+---
+
 ## References
 
+- Preflight Task: `GLM52-W8A8-OPT01-MAX-BATCHED-TOKENS-PREFLIGHT.md`
 - Historical reference: `references/HISTORICAL-910B-MULTINODE-OPTIMIZATION-REFERENCE.md`
+- Baseline: `BASELINE.md`
 - Baseline Results: `results/RESULT-GLM52-W8A8-16K-BASELINE-EVIDENCE-run-20260902-140958.md`
 - D-020: Hardware normalization
 - D-021: PerfControl/A3PerfRunner separation
