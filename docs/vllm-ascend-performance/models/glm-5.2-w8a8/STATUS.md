@@ -55,6 +55,8 @@
 
 **Manual runtime (2026-09-02)** — User manually restored GLM-5.2-W8A8 vLLM service (operational variant, NOT exact frozen baseline replay; see [MANUAL-RUNTIME-OBSERVATION-20260902.md](MANUAL-RUNTIME-OBSERVATION-20260902.md)). `max_num_batched_tokens` remains **UNVERIFIED**. Manual 16K exploratory microgate **COMPLETED (2026-09-02)**: Run2 total token throughput 960.45 tok/s vs accepted 957.94 → machine-computed delta **+0.262%** → **MANUAL EXPLORATORY MICROGATE: NO_MATERIAL_GAIN** (below +2%; not formal OPT-01 screening; not a regression; 256 success / 0 failed). Formal OPT-01 screening stays **BLOCKED / NOT YET AUTHORIZED**; future candidate families recorded as reference-only (scheduler 4096 / graph&scheduler alignment / official knobs / later families).
 
+**Exploratory task (2026-09-02)**: `GLM52-W8A8-OFFICIAL-DERIVED-A3-64K-COMPAT-PROFILE-MICROGATE` created - **READY / PENDING USER DISPATCH** (Task: [TASK-GLM52-W8A8-OFFICIAL-DERIVED-A3-64K-COMPAT-PROFILE-MICROGATE.md](TASK-GLM52-W8A8-OFFICIAL-DERIVED-A3-64K-COMPAT-PROFILE-MICROGATE.md); Prompt: [A3PERFRUNNER-PROMPT-GLM52-W8A8-OFFICIAL-DERIVED-A3-64K-COMPAT-PROFILE-MICROGATE.md](A3PERFRUNNER-PROMPT-GLM52-W8A8-OFFICIAL-DERIVED-A3-64K-COMPAT-PROFILE-MICROGATE.md)). Validates the official-derived A3 profile (upstream GLM-5.2-W8A8 single-node recommendation) under the frozen `max-model-len=70000`: startup + 70K capacity gate, then 16K two-run microgate; no auto-64K; leave service running. Independent exploratory branch - NOT Formal OPT-01; NOT a baseline candidate.
+
 ## Frozen Artifacts
 
 - **Container command**: See [BASELINE.md](BASELINE.md) and [scripts/start-container.sh](scripts/start-container.sh)
