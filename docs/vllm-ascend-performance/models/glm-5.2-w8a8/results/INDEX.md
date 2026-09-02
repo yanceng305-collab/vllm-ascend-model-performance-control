@@ -6,7 +6,9 @@
 - 1K input + 1K output, C64: 676.60 tok/s (User-provided matrix summary, Evidence confirmation pending)
 - 4K input + 1K output, C64: 820.76 tok/s (User-provided matrix summary, Evidence confirmation pending)
 - 16K input + 1K output, C64: 957.94 tok/s (User-provided matrix summary, Evidence confirmation pending)
-- 64K input + 1K output, C64: 927.45 tok/s (User-measured baseline, recorded below)
+- 64K input + 1K output, C64: 927.59 tok/s (User-provided matrix summary, Evidence confirmation pending)
+
+**64K historical immutable Result**: 927.45 tok/s (User-measured 2026-09-01, recorded in RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED.md)
 
 **Evidence formalization status**: A3PerfRunner Evidence Acquisition Task (GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION) will extract and formalize raw benchmark Evidence from existing container. Formal Evidence-backed Results pending.
 

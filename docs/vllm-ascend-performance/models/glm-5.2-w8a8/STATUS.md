@@ -26,17 +26,18 @@
 | 1K | 676.60 | 2688.71 | 65.84% | BELOW TARGET | User-provided matrix summary, Evidence pending |
 | 4K | 820.76 | 4063.45 | 52.85% | BELOW TARGET | User-provided matrix summary, Evidence pending |
 | 16K | 957.94 | 4379.60 | 57.23% | BELOW TARGET | User-provided matrix summary, Evidence pending |
-| 64K | 927.45 | 5054.66 | 48.01% | BELOW TARGET | User-measured baseline (see RESULT below) |
+| 64K | 927.59 | 5054.66 | 48.01% | BELOW TARGET | User-provided matrix summary, Evidence pending |
 
 **Target**: ≥80% normalized throughput for each cell
 
-**64K baseline detail** (User-measured 2026-09-01):
+**64K historical baseline** (User-measured 2026-09-01):
 - Total token throughput: 927.45 tok/s
-- Normalized A3 throughput: 0.153373 tok/s per TFLOPS
-- Normalized H100 reference: 0.319430 tok/s per TFLOPS
+- Normalized A3 throughput: 0.153348214285714 tok/s per TFLOPS
+- Normalized H100 reference: 0.319429979777553 tok/s per TFLOPS
 - Achievement: 48.01%
+- See [RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED](results/RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED.md)
 
-See [RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED](results/RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED.md)
+**64K matrix summary** (User-provided XLSX 2026-09-02): 927.59 tok/s (used in table above, difference: 0.14 tok/s)
 
 ## Frozen Artifacts
 

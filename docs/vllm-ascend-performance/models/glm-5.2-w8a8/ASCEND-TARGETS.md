@@ -43,8 +43,8 @@ Pass condition: Achievement >= 0.80
 
 **A3 measured** (User-provided matrix summary, pending Evidence confirmation):
 - Total token throughput: 676.60 tok/s
-- A3 normalized: 676.60 / 6048 = 0.111874338624339 tok/s per TFLOPS
-- Achievement: 0.111874338624339 / 0.169913422649141 = 0.658403534580168 = 65.84%
+- A3 normalized: 676.60 / 6048 = 0.111871693121693 tok/s per TFLOPS
+- Achievement: 0.111871693121693 / 0.169913422649141 = 0.658404094141003 = 65.84%
 - **Disposition**: BELOW TARGET (need ≥80%)
 
 **Gap to target**: 822.11 - 676.60 = 145.51 tok/s (need 21.5% improvement)
@@ -61,8 +61,8 @@ Pass condition: Achievement >= 0.80
 
 **A3 measured** (User-provided matrix summary, pending Evidence confirmation):
 - Total token throughput: 820.76 tok/s
-- A3 normalized: 820.76 / 6048 = 0.135714285714286 tok/s per TFLOPS
-- Achievement: 0.135714285714286 / 0.256790318503539 = 0.528532396593113 = 52.85%
+- A3 normalized: 820.76 / 6048 = 0.135707671957672 tok/s per TFLOPS
+- Achievement: 0.135707671957672 / 0.256790318503539 = 0.528476590349862 = 52.85%
 - **Disposition**: BELOW TARGET (need ≥80%)
 
 **Gap to target**: 1242.45 - 820.76 = 421.69 tok/s (need 51.4% improvement)
@@ -79,13 +79,13 @@ Pass condition: Achievement >= 0.80
 
 **A3 measured** (User-provided matrix summary, pending Evidence confirmation):
 - Total token throughput: 957.94 tok/s
-- A3 normalized: 957.94 / 6048 = 0.158401322751323 tok/s per TFLOPS
-- Achievement: 0.158401322751323 / 0.276769464105157 = 0.572301291989664 = 57.23%
+- A3 normalized: 957.94 / 6048 = 0.158389550264550 tok/s per TFLOPS
+- Achievement: 0.158389550264550 / 0.276769464105157 = 0.572279715816043 = 57.23%
 - **Disposition**: BELOW TARGET (need ≥80%)
 
 **Gap to target**: 1339.12 - 957.94 = 381.18 tok/s (need 39.8% improvement)
 
-### 64K Cell (User-measured baseline)
+### 64K Cell (User-measured and User-provided matrix summary)
 
 **H100 reference** (SRC-B-GLM-64K):
 - Total token throughput: 5054.66 tok/s
@@ -93,53 +93,43 @@ Pass condition: Achievement >= 0.80
 
 **A3 target (80%)**:
 - Target normalized: 0.80 × 0.319429979777553 = 0.255543983822042 tok/s per TFLOPS
-- Target absolute: 0.255543983822042 × 6048 = 1545.52998326107 tok/s
+- Target absolute: 0.255543983822042 × 6048 = 1545.53000141557 tok/s
 
-**A3 measured baseline** (User-measured, recorded in RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED):
-- Total token throughput: 927.45 tok/s (User-measured 2026-09-01)
-- A3 normalized: 927.45 / 6048 = 0.153373015873016 tok/s per TFLOPS
-- Achievement: 0.153373015873016 / 0.319429979777553 = 0.480136050156740 = 48.01%
+**A3 measured - Historical baseline** (User-measured 2026-09-01, recorded in RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED):
+- Total token throughput: 927.45 tok/s
+- A3 normalized: 927.45 / 6048 = 0.153348214285714 tok/s per TFLOPS
+- Achievement: 0.153348214285714 / 0.319429979777553 = 0.480068321678895 = 48.01%
 - **Disposition**: BELOW TARGET (need ≥80%)
 
-**Gap to target**: 1545.53 - 927.45 = 618.08 tok/s (need 66.6% improvement)
+**A3 measured - User-provided matrix summary** (XLSX 2026-09-02, pending Evidence confirmation):
+- Total token throughput: 927.59 tok/s
+- A3 normalized: 927.59 / 6048 = 0.153371362433862 tok/s per TFLOPS
+- Achievement: 0.153371362433862 / 0.319429979777553 = 0.480140788727761 = 48.01%
+- **Disposition**: BELOW TARGET (need ≥80%)
 
-**Note on 64K provenance**: 
-- Original User-measured Result (2026-09-01): 927.45 tok/s (immutable, recorded in RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED.md)
-- User-provided matrix summary XLSX (2026-09-02): 927.59 tok/s
-- Difference: 0.14 tok/s (0.015%)
-- This minor difference does not affect disposition or normalized achievement materially
-- When A3PerfRunner Evidence-backed Result is produced, it will use the exact value calculated from Run2/Run3/Run4 JSON aggregation
+**64K provenance note**: 
+- **Historical immutable Result** (2026-09-01): 927.45 tok/s — recorded in RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED.md, immutable
+- **User-provided matrix summary XLSX** (2026-09-02): 927.59 tok/s — current baseline matrix summary value
+- **Difference**: 0.14 tok/s (0.015%)
+- **Future Evidence-backed value**: Will be calculated from Run2/Run3/Run4 JSON aggregation during Evidence Acquisition Task
+- All three provenance records are preserved; minor differences do not affect disposition
 
-### 1K Cell (pending measurement)
-
-**H100 reference** (SRC-B-GLM-1K): TBD
-
-Target calculable once H100 reference extracted from source materials.
-
-### 4K Cell (pending measurement)
-
-**H100 reference** (SRC-B-GLM-4K): TBD
-
-Target calculable once H100 reference extracted from source materials.
-
-### 16K Cell (pending measurement)
-
-**H100 reference** (SRC-B-GLM-16K): TBD
-
-Target calculable once H100 reference extracted from source materials.
+**Gap to target** (using XLSX 927.59): 1545.53 - 927.59 = 617.94 tok/s (need 66.6% improvement)
 
 ## Target Summary Table
 
-| Cell | H100 Total Throughput (tok/s) | H100 Normalized (tok/s per TFLOPS) | Target Normalized (80%) | Target Absolute A3 (tok/s) | A3 Measured (tok/s) | Achievement | Disposition |
-|---|---|---|---|---|---|---|---|
-| 1K | 2688.71 | 0.169913 | 0.135931 | 822.11 | 676.60 † | 65.84% | BELOW TARGET |
-| 4K | 4063.45 | 0.256790 | 0.205432 | 1242.45 | 820.76 † | 52.85% | BELOW TARGET |
-| 16K | 4379.60 | 0.276769 | 0.221416 | 1339.12 | 957.94 † | 57.23% | BELOW TARGET |
-| 64K | 5054.66 | 0.319430 | 0.255544 | 1545.53 | 927.45 * | 48.01% | BELOW TARGET |
+| Cell | H100 Total Throughput (tok/s) | H100 Normalized (tok/s per TFLOPS) | Target Normalized (80%) | Target Absolute A3 (tok/s) | A3 Measured (tok/s) | A3 Normalized | Achievement | Disposition |
+|---|---|---|---|---|---|---|---|---|
+| 1K | 2688.71 | 0.169913422649141 | 0.135930738119313 | 822.11 | 676.60 † | 0.111871693121693 | 65.84% | BELOW TARGET |
+| 4K | 4063.45 | 0.256790318503539 | 0.205432254802831 | 1242.45 | 820.76 † | 0.135707671957672 | 52.85% | BELOW TARGET |
+| 16K | 4379.60 | 0.276769464105157 | 0.221415571284126 | 1339.12 | 957.94 † | 0.158389550264550 | 57.23% | BELOW TARGET |
+| 64K | 5054.66 | 0.319429979777553 | 0.255543983822042 | 1545.53 | 927.59 † | 0.153371362433862 | 48.01% | BELOW TARGET |
 
 **Legend**:
-- `*` User-measured baseline (2026-09-01), Evidence-backed Result pending
-- `†` User-provided matrix summary (2026-09-02), Evidence confirmation pending
+- `†` User-provided matrix summary (XLSX 2026-09-02), Evidence confirmation pending
+- 64K also has historical immutable Result: 927.45 tok/s (2026-09-01, see RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED.md)
+- All calculations use displayed User-provided values: basis for provisional active documentation
+- Final Evidence-backed Results will use exact Run2/Run3/Run4 JSON aggregation
 
 ## Notes
 

@@ -2,10 +2,13 @@
 
 **Task ID**: GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION  
 **Task Type**: Evidence Acquisition (Read-Only)  
-**Status**: CREATED  
+**Status**: READY  
 **Created**: 2026-09-02  
+**Updated**: 2026-09-02 (Pre-dispatch corrections)  
 **Assigned to**: A3PerfRunner  
 **Priority**: HIGH
+
+**READY status**: Task has passed Control preparation and is ready for User explicit dispatch. READY ≠ DISPATCHED. A3PerfRunner must wait for User authorization with explicit DISPATCH_CONTROL_SHA before execution.
 
 ## Objective
 
@@ -14,10 +17,12 @@ Extract and formalize raw benchmark Evidence from existing A3 container for the 
 ## Background
 
 User has completed the full baseline matrix measurement:
-- 1K input + 1K output, C64: 676.60 tok/s (User-provided matrix summary)
-- 4K input + 1K output, C64: 820.76 tok/s (User-provided matrix summary)
-- 16K input + 1K output, C64: 957.94 tok/s (User-provided matrix summary)
-- 64K input + 1K output, C64: 927.45 tok/s (User-measured, recorded in RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED.md)
+- 1K input + 1K output, C64: 676.60 tok/s (User-provided matrix summary XLSX 2026-09-02)
+- 4K input + 1K output, C64: 820.76 tok/s (User-provided matrix summary XLSX 2026-09-02)
+- 16K input + 1K output, C64: 957.94 tok/s (User-provided matrix summary XLSX 2026-09-02)
+- 64K input + 1K output, C64: 927.59 tok/s (User-provided matrix summary XLSX 2026-09-02)
+
+**64K provenance**: Historical immutable Result (2026-09-01) recorded 927.45 tok/s in RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED.md. User-provided matrix summary XLSX (2026-09-02) shows 927.59 tok/s. Difference: 0.14 tok/s (0.015%). Both provenance records are preserved.
 
 Raw benchmark output files (JSON, logs, stdout) exist in container `model-test-zyg-a3`. This Task formalizes Evidence to enable:
 1. Independent verification of User-provided matrix summary values
@@ -66,6 +71,94 @@ Raw benchmark output files (JSON, logs, stdout) exist in container `model-test-z
 - Any optimization work
 
 **If Evidence is incomplete**: Record `EVIDENCE_INCOMPLETE` with details. Do NOT self-authorize re-runs. PerfControl will review and User will decide whether to authorize specific re-runs.
+
+## Dispatch Control SHA Gate
+
+**REQUIRED FOR DISPATCH**: User must provide explicit dispatch authorization with:
+
+```
+Task ID: GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION
+DISPATCH_CONTROL_SHA: <sha>
+Authorization: EXECUTE
+```
+
+**Before any Evidence acquisition or container inspection**, A3PerfRunner MUST:
+
+1. Fetch remote main: `git fetch origin main`
+2. Get remote main SHA: `git rev-parse origin/main`
+3. Get local HEAD SHA: `git rev-parse HEAD`
+4. Verify:
+   - `remote main SHA == DISPATCH_CONTROL_SHA`
+   - `local HEAD SHA == DISPATCH_CONTROL_SHA`
+
+**If any verification fails**:
+- Record: `CONTROL_SHA_MISMATCH`
+- Record actual remote main SHA, local HEAD SHA, DISPATCH_CONTROL_SHA
+- **STOP** — do not continue Evidence acquisition
+- Do NOT self-checkout any version
+- Report to PerfControl for User re-confirmation
+
+**Rationale**: Ensures Evidence is acquired against the correct Control version. Prevents Evidence/Task/Prompt version mismatch.
+
+## Evidence Completeness Gate
+
+**Two-phase execution**:
+
+### Phase 1: Discovery and Acquisition
+
+**Allowed**:
+- Search for benchmark directories
+- Read files (JSON, logs)
+- Calculate source SHA256 (in-place, before copy)
+- Copy to Evidence root
+- Verify copy SHA256 matches source SHA256
+- Record manifest and provenance
+- Record timestamps, file sizes, paths
+
+### Phase 2: Formal Calculation and Result Creation
+
+**GATE REQUIREMENT**: Before creating any formal Evidence-backed Result, verify ALL FOUR CELLS meet minimum Evidence requirements:
+
+**Per-cell minimum requirements**:
+- Run1.json present and parseable
+- Run2.json present and parseable
+- Run3.json present and parseable
+- Run4.json present and parseable
+- Run2: completed == 256, failed == 0
+- Run3: completed == 256, failed == 0
+- Run4: completed == 256, failed == 0
+- Workload identity verifiable (input tokens, output tokens, C64, 256 prompts, ignore_eos=true)
+- Runtime/container provenance sufficient to verify baseline identity (TP16, model path, image, vLLM versions)
+
+**If ANY cell fails minimum requirements**:
+- Record: `EVIDENCE_INCOMPLETE` or `BASELINE_IDENTITY_UNVERIFIED` or `BENCHMARK_CONTRACT_MISMATCH`
+- Document specific cell and missing/discrepant items
+- **STOP ENTIRE TASK before creating ANY formal Evidence-backed Results**
+- Do NOT create Results for "complete" cells while leaving incomplete cells undone
+- Do NOT use 2 runs to substitute for 3-run aggregation
+- Preserve diagnostic logs, partial Evidence inventory, manifest
+- Report to PerfControl
+
+**Rationale**: Formal Evidence-backed Results must have complete provenance. Partial/incomplete Evidence requires User decision on re-runs.
+
+## Runtime and Contract Mismatch Handling
+
+**Minor discrepancies** (e.g., display metadata vs. actual non-critical values):
+- Document discrepancy
+- Proceed with Evidence acquisition
+- Flag for PerfControl review
+
+**Major mismatches** (cannot verify):
+- Correct container/model
+- TP16/DP1 parallelism
+- Frozen workload contract (input/output tokens, 256 prompts, C64, ignore_eos=true)
+- Required runtime provenance
+
+**Action**:
+- Record: `BASELINE_IDENTITY_UNVERIFIED` or `BENCHMARK_CONTRACT_MISMATCH`
+- **STOP before formal Result creation**
+- Do NOT label contract-violating data as `EVIDENCE-BACKED BASELINE`
+- Report to PerfControl
 
 ## Container and Runtime Identity
 
@@ -152,6 +245,7 @@ where `<RUN_ID>` = `run-YYYYMMDD-HHMMSS` (e.g., `run-20260902-150000`)
 - SHA256 checksum all copied artifacts
 - Record Control repo SHA at time of Evidence acquisition
 - Preserve immutable timestamps
+- **Evidence source integrity**: For each artifact, record source path, file size, mtime, and SHA256 at source location BEFORE copying. After copying to Evidence root, verify copy SHA256 matches source SHA256. This proves copy integrity.
 
 ## Expected Deliverables
 
@@ -160,6 +254,14 @@ where `<RUN_ID>` = `run-YYYYMMDD-HHMMSS` (e.g., `run-20260902-150000`)
 Complete Evidence directory at Evidence root with all raw artifacts, checksums, manifest, and provenance records.
 
 ### 2. Four Immutable Evidence-Backed Results
+
+**CREATION CONDITION**: Results may ONLY be created after ALL of the following gates PASS:
+1. **Control SHA Gate**: DISPATCH_CONTROL_SHA verified (remote main == local HEAD == DISPATCH_CONTROL_SHA)
+2. **Evidence Completeness Gate**: All four cells meet minimum Evidence requirements (Run1/2/3/4 present, completed==256, failed==0, contract verifiable)
+3. **Baseline Identity Gate**: Runtime/container provenance sufficient to verify frozen baseline identity (TP16, model, image, versions)
+4. **Benchmark Contract Gate**: All cells comply with frozen benchmark contract (256 prompts, C64, correct input/output, ignore_eos=true)
+
+**If any gate fails**: STOP before creating Results. Report gate failure to PerfControl.
 
 Create one Result document for each cell:
 
@@ -194,13 +296,22 @@ Create one Result document for each cell:
 - Evidence directory path
 - SHA256 checksums of key artifacts
 
-**Important**: Do not mix cells into a single Result. Each cell must have an independent Result that can be reviewed and Accepted individually.
+**Result status**: `EVIDENCE-BACKED BASELINE / READY FOR PERFCONTROL FORMAL REVIEW`
+
+Do NOT mark Results as `ACCEPTED`. Formal Acceptance is performed by PerfControl after independent review.
+
+**Important**: Do not mix cells into a single Result. Each cell must have an independent Result for individual review and Acceptance.
 
 ### 3. Comparison Report
 
 Brief comparison between:
-- User-provided matrix summary values (from XLSX)
+- User-provided matrix summary values (XLSX 2026-09-02)
 - Evidence-backed calculated values (from raw JSON Run2/Run3/Run4 aggregation)
+
+**For 64K cell specifically**, compare all three provenance records:
+- Historical immutable Result (2026-09-01): 927.45 tok/s
+- User-provided matrix summary XLSX (2026-09-02): 927.59 tok/s
+- Evidence-backed calculated value: (from Run2/3/4 JSON)
 
 If values differ, document:
 - Absolute difference
@@ -208,7 +319,7 @@ If values differ, document:
 - Whether difference affects disposition
 - Potential causes (rounding, different aggregation method, etc.)
 
-Do NOT silently overwrite User-provided values. Both values are valid historical records with different provenance.
+Do NOT silently overwrite User-provided values. All provenance records are valid historical records with different sources.
 
 ### 4. Completeness Assessment
 

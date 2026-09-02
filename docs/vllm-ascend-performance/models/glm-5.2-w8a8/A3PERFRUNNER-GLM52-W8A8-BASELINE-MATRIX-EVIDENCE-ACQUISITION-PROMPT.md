@@ -2,8 +2,10 @@
 
 **Task ID**: GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION  
 **Task Type**: Evidence Acquisition (Read-Only)  
+**Task Status**: READY (awaiting User explicit dispatch)  
 **A3PerfRunner Role**: Evidence acquisition and immutable Result publication  
-**Created**: 2026-09-02
+**Created**: 2026-09-02  
+**Updated**: 2026-09-02 (Pre-dispatch corrections)
 
 ---
 
@@ -48,13 +50,68 @@ Your mission: Extract and formalize raw benchmark Evidence from existing contain
 
 ---
 
+## DISPATCH AUTHORIZATION REQUIRED
+
+**Before starting ANY work**, verify you have received User explicit dispatch authorization in the form:
+
+```
+Task ID: GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION
+DISPATCH_CONTROL_SHA: <sha>
+Authorization: EXECUTE
+```
+
+**If you have NOT received explicit dispatch authorization with DISPATCH_CONTROL_SHA**: STOP. Do not proceed. Wait for User dispatch.
+
+---
+
+## Control SHA Gate (MANDATORY FIRST STEP)
+
+**BEFORE any Evidence acquisition, container inspection, or file operations**, execute Control SHA Gate:
+
+### Step 1: Fetch and verify Control repo state
+
+```bash
+cd /data/tiankuan/vllm-ascend-model-performance-control
+git fetch origin main
+REMOTE_MAIN_SHA=$(git rev-parse origin/main)
+LOCAL_HEAD_SHA=$(git rev-parse HEAD)
+echo "Remote main SHA: $REMOTE_MAIN_SHA"
+echo "Local HEAD SHA: $LOCAL_HEAD_SHA"
+echo "DISPATCH_CONTROL_SHA: <from User dispatch authorization>"
+```
+
+### Step 2: Verify all three match
+
+**Required condition**:
+```
+REMOTE_MAIN_SHA == DISPATCH_CONTROL_SHA
+LOCAL_HEAD_SHA == DISPATCH_CONTROL_SHA
+```
+
+**If ANY mismatch**:
+- Record: `CONTROL_SHA_MISMATCH`
+- Record actual REMOTE_MAIN_SHA, LOCAL_HEAD_SHA, DISPATCH_CONTROL_SHA
+- **STOP IMMEDIATELY** — do not continue
+- Do NOT `git checkout` or modify repo state
+- Report mismatch to PerfControl for User re-confirmation
+
+**If all match**:
+- Record verified Control SHA in Evidence `control-sha.txt`
+- Proceed to Phase 1
+
+**Rationale**: Ensures Evidence is acquired against correct Control version, preventing Task/Prompt/Evidence version mismatch.
+
+---
+
 ## Background
 
 User has completed full baseline matrix measurement (2026-09-01 to 2026-09-02):
-- 1K: 676.60 tok/s (User-provided matrix summary)
-- 4K: 820.76 tok/s (User-provided matrix summary)
-- 16K: 957.94 tok/s (User-provided matrix summary)
-- 64K: 927.45 tok/s (User-measured, recorded in RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED.md)
+- 1K: 676.60 tok/s (User-provided matrix summary XLSX 2026-09-02)
+- 4K: 820.76 tok/s (User-provided matrix summary XLSX 2026-09-02)
+- 16K: 957.94 tok/s (User-provided matrix summary XLSX 2026-09-02)
+- 64K: 927.59 tok/s (User-provided matrix summary XLSX 2026-09-02)
+
+**64K provenance**: Historical immutable Result (2026-09-01) recorded 927.45 tok/s. User-provided matrix summary XLSX shows 927.59 tok/s. Difference: 0.14 tok/s (0.015%). All provenance records preserved.
 
 Raw benchmark files exist in container. Your job: formalize Evidence and create immutable Results.
 
@@ -135,9 +192,9 @@ run-YYYYMMDD-HHMMSS/
 
 Requirements:
 - Don't overwrite existing Evidence
-- SHA256 checksum all artifacts
+- **Evidence source integrity**: For each artifact, record source path, file size, mtime, and SHA256 at source location BEFORE copying. After copying, verify copy SHA256 matches source SHA256.
 - Record all commands with timestamps and exit codes
-- Record Control repo SHA
+- Record Control repo SHA (from Control SHA Gate)
 - Preserve immutable timestamps
 
 ---
@@ -177,21 +234,40 @@ Target: Achievement >= 0.80 (80%)
 
 ## Step-by-Step Execution
 
+**IMPORTANT**: Control SHA Gate MUST be completed BEFORE Phase 1. See "Control SHA Gate (MANDATORY FIRST STEP)" section above.
+
 ### Phase 1: Environment Setup
 
-1. Verify you are on A3 server with access to container `model-test-zyg-a3`
+1. Verify Control SHA Gate passed (DISPATCH_CONTROL_SHA verified)
+2. Verify you are on A3 server with access to container `model-test-zyg-a3`
 2. Verify Evidence root is accessible: `/data/tiankuan/zyg/evidence/vllm-ascend-model-performance-control`
 3. Create RUN_ID: `run-$(date +%Y%m%d-%H%M%S)`
 4. Create Evidence directory: `<Evidence root>/GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION/${RUN_ID}/`
 5. Get current Control repo SHA: `cd <control repo> && git rev-parse HEAD`
 6. Record Control SHA in Evidence directory
 
-### Phase 2: Container Inspection
+### Phase 2: Container Inspection and Image Identity
 
 1. Check container status: `docker ps -f name=model-test-zyg-a3`
 2. Get container ID: `docker inspect model-test-zyg-a3 --format '{{.Id}}'`
-3. Get image ID and digest: `docker inspect model-test-zyg-a3 --format '{{.Image}}' '{{.Config.Image}}'`
-4. Record runtime identity in `runtime-identity.txt`
+3. Get image information:
+   ```bash
+   # Get image ID and config image
+   IMAGE_ID=$(docker inspect model-test-zyg-a3 --format '{{.Image}}')
+   CONFIG_IMAGE=$(docker inspect model-test-zyg-a3 --format '{{.Config.Image}}')
+   
+   # Get repo digest if available
+   REPO_DIGESTS=$(docker image inspect "$IMAGE_ID" --format '{{json .RepoDigests}}')
+   
+   # Record all three
+   echo "Image ID: $IMAGE_ID" >> runtime-identity.txt
+   echo "Config.Image (tag): $CONFIG_IMAGE" >> runtime-identity.txt
+   echo "RepoDigests: $REPO_DIGESTS" >> runtime-identity.txt
+   ```
+   
+   If RepoDigests is empty or null, record: `RepoDigest: UNAVAILABLE`. Do NOT fabricate a digest.
+
+4. Record complete runtime identity in `runtime-identity.txt`
 
 ### Phase 3: Locate Benchmark Artifacts
 
@@ -217,11 +293,68 @@ For each cell (1K, 4K, 16K, 64K):
    - average_run2_4.json (if exists)
    - benchmark stdout/stderr logs
    - server logs (if accessible)
-3. Copy to Evidence directory: `<Evidence root>/.../1K/`, etc.
-4. Calculate SHA256: `sha256sum <file> >> SHA256SUMS.txt`
-5. Record copy operation in COMMANDS.txt with timestamp and exit code
+3. **Before copying**, record source integrity:
+   ```bash
+   # For each artifact at source location
+   SOURCE_FILE="/path/to/run2.json"
+   echo "Source: $SOURCE_FILE" >> MANIFEST.txt
+   ls -lh "$SOURCE_FILE" >> MANIFEST.txt  # size, mtime
+   sha256sum "$SOURCE_FILE" >> MANIFEST.txt
+   ```
+4. Copy to Evidence directory: `cp "$SOURCE_FILE" <Evidence root>/.../1K/`
+5. **After copying**, verify copy integrity:
+   ```bash
+   DEST_FILE="<Evidence root>/.../1K/run2.json"
+   COPY_SHA=$(sha256sum "$DEST_FILE" | awk '{print $1}')
+   SOURCE_SHA=$(sha256sum "$SOURCE_FILE" | awk '{print $1}')
+   
+   if [ "$COPY_SHA" == "$SOURCE_SHA" ]; then
+     echo "VERIFIED: $DEST_FILE" >> SHA256SUMS.txt
+   else
+     echo "COPY_MISMATCH: $DEST_FILE" >> SHA256SUMS.txt
+     # This is a critical failure
+   fi
+   ```
+6. Record copy operation in COMMANDS.txt with timestamp and exit code
 
-### Phase 5: Verification and Calculation (Per Cell)
+### Phase 4.5: Evidence Completeness Gate
+
+**CRITICAL GATE**: Before proceeding to formal calculation and Result creation, verify ALL FOUR CELLS meet minimum Evidence requirements.
+
+**Per-cell check**:
+```bash
+# For each cell (1K/4K/16K/64K)
+CELL_DIR="<Evidence root>/.../${CELL}/"
+
+# Check required files exist
+[ -f "$CELL_DIR/run1.json" ] || echo "MISSING: run1.json"
+[ -f "$CELL_DIR/run2.json" ] || echo "MISSING: run2.json"
+[ -f "$CELL_DIR/run3.json" ] || echo "MISSING: run3.json"
+[ -f "$CELL_DIR/run4.json" ] || echo "MISSING: run4.json"
+
+# Parse and verify Run2/3/4 (example for Run2)
+COMPLETED=$(jq '.completed' "$CELL_DIR/run2.json")
+FAILED=$(jq '.failed' "$CELL_DIR/run3.json")
+
+if [ "$COMPLETED" != "256" ] || [ "$FAILED" != "0" ]; then
+  echo "EVIDENCE_INCOMPLETE: ${CELL} Run2 completed=$COMPLETED failed=$FAILED"
+fi
+
+# Verify workload contract (input tokens, output tokens, etc.)
+# Verify runtime provenance (TP, model, versions)
+```
+
+**Gate decision**:
+- If ALL four cells PASS minimum requirements → Proceed to Phase 5
+- If ANY cell FAILS → Record `EVIDENCE_INCOMPLETE` or `BENCHMARK_CONTRACT_MISMATCH`, **STOP before Phase 5**
+
+Do NOT create Results for partial cells. Do NOT use 2 runs to substitute for 3-run aggregation.
+
+Report to PerfControl with specific missing/discrepant items.
+
+### Phase 5: Formal Calculation and Verification (Per Cell)
+
+**ONLY execute Phase 5 if Phase 4.5 Evidence Completeness Gate PASSED for all four cells.**
 
 For each cell:
 
@@ -239,10 +372,16 @@ For each cell:
    Mean_TotalThroughput = (Run2_TotalThroughput + Run3_TotalThroughput + Run4_TotalThroughput) / 3
    ```
 4. Compare with User-provided matrix summary:
-   - 1K: 676.60 tok/s
-   - 4K: 820.76 tok/s
-   - 16K: 957.94 tok/s
-   - 64K: 927.45 tok/s (or 927.59 per latest XLSX)
+   - 1K: 676.60 tok/s (User-provided XLSX 2026-09-02)
+   - 4K: 820.76 tok/s (User-provided XLSX 2026-09-02)
+   - 16K: 957.94 tok/s (User-provided XLSX 2026-09-02)
+   - 64K: 927.59 tok/s (User-provided XLSX 2026-09-02)
+   
+   **64K has three provenance records**:
+   - Historical immutable: 927.45 tok/s (2026-09-01)
+   - User XLSX: 927.59 tok/s (2026-09-02)
+   - Evidence-backed calculated: (from Run2/3/4 JSON)
+   
 5. Document any differences
 
 ### Phase 6: Runtime Identity Capture
@@ -271,7 +410,7 @@ Where `<CELL>` = `1K`, `4K`, `16K`, or `64K`
 
 **Result ID**: RESULT-GLM52-W8A8-<CELL>-BASELINE-EVIDENCE-<RUN_ID>
 **Date**: 2026-09-02
-**Status**: EVIDENCE-BACKED BASELINE
+**Status**: EVIDENCE-BACKED BASELINE / READY FOR PERFCONTROL FORMAL REVIEW
 **Model**: GLM-5.2-W8A8
 **Workload**: <INPUT> input + 1024 output, C64, 256 prompts
 
@@ -457,8 +596,9 @@ GLM-5.2-W8A8 Baseline Matrix: User-Provided Summary vs. Evidence-Backed Calculat
 Notes:
 - Minor differences (<1%) are expected due to rounding or aggregation method
 - Material differences (>1%) should be investigated
-- Both User-provided and Evidence-backed values are valid historical records
-- Evidence-backed values have formal provenance and checksums
+- All provenance records are valid historical records with different sources
+- Evidence-backed values have formal provenance, checksums, and source integrity verification
+- 64K has three provenance records: historical (927.45), XLSX (927.59), Evidence-backed (from JSON)
 ```
 
 ### Phase 9: Update Control Repo
