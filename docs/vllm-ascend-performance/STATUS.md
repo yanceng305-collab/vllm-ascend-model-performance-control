@@ -62,6 +62,8 @@
 2. Root cause analysis and profiling
 3. Target achievement: ≥80% for all cells
 
+**OPT-01 Preflight (2026-09-02, read-only)**: outcome `RUNTIME_IDENTITY_MISMATCH` / Gate A `NO_PROCESS`; effective `max_num_batched_tokens` **UNVERIFIED**; the accepted GLM-5.2-W8A8 baseline runtime was NOT active at observation time (container serving another workload). OPT-01 screening remains **BLOCKED**; candidate selection NOT AUTHORIZED. Evidence transport: GitHub Release `preflight-opt01-20260902-085628` (D-022). `READ-ONLY PREFLIGHT EVIDENCE — NOT FORMAL BASELINE RESULT`. Re-observation requires User authorization to restore the accepted GLM baseline runtime.
+
 Stage 0 discovery is NOT required for GLM baseline performance work. GLM uses vLLM 0.24.0+empty as frozen baseline runtime. FlagOS-aligned 0.20.2 remains as historical reference only.
 
 ## Pending Gates

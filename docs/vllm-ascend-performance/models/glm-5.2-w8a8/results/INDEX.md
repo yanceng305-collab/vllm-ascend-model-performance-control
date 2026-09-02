@@ -43,3 +43,19 @@
 - Baseline formally accepted (corrected); optimization track may begin
 - Optimization Tasks will produce separate OPT Results compared against these immutable corrected baseline Results
 - Per Decision D-019: Baseline execution mode complete (USER-VERIFIED KNOWN-GOOD BASELINE → FAST PREFLIGHT → RUN FROZEN COMMANDS → EVIDENCE → RESULT → OPTIMIZATION)
+
+## Read-Only Preflight Observations (Non-Formal)
+
+`READ-ONLY PREFLIGHT EVIDENCE — NOT FORMAL BASELINE RESULT` (this section is NOT a formal Result; the baseline Results above remain authoritative and immutable).
+
+| Record | Date | Outcome | Gate A | Effective value | Evidence (D-022) |
+|---|---|---|---|---|---|
+| OPT-01 Preflight (see `TASK-GLM52-W8A8-OPT01-MAX-BATCHED-TOKENS-PREFLIGHT.md`) | 2026-09-02 | `RUNTIME_IDENTITY_MISMATCH` | `NO_PROCESS` | `max_num_batched_tokens`: **UNVERIFIED** | Release `preflight-opt01-20260902-085628` — asset `GLM52-W8A8-OPT01-PREFLIGHT-run-20260902-085628.tar.gz` (size 3019; SHA256 `245470fd6b61d47f8cf2163a9d3647fd51626d921abbb42127e07ce5d158ed03`) |
+
+Notes:
+
+- Interpretation: fail-closed preflight correctly found `ACCEPTED GLM-5.2-W8A8 BASELINE RUNTIME NOT CURRENTLY ACTIVE` at observation time (container `model-test-zyg-a3` serving another workload). NOT a benchmark failure; accepted historical baseline remains valid.
+- Integrity (verified 2026-09-02 via live GitHub API + local download): GitHub asset digest == downloaded archive sha256 == `.sha256` sidecar recorded digest. The `.sha256` file's own digest differs from the recorded digest (file-digest vs recorded tar digest kept distinct).
+- Runner's original natural-language report transcribed the archive SHA incorrectly; integrity reconciliation confirmed `LOCAL_ARCHIVE == LOCAL_SIDECAR_VALUE == GITHUB_TARBALL_ASSET`, recorded as `REPORT_TRANSCRIPTION_ERROR` — NOT `EVIDENCE_ARCHIVE_MISMATCH`.
+- No other runner-narrative SHA values are adopted into this Control record.
+- `OPT-01 remains BLOCKED until the accepted GLM baseline runtime is restored (User-authorized) and effective max_num_batched_tokens is re-observed.`

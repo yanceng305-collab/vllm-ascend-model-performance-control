@@ -49,6 +49,8 @@
 
 **64K Evidence-backed** (2026-09-02): 927.59 tok/s (used in table above; difference from historical: +0.14 tok/s, within variance)
 
+**OPT-01 Preflight (2026-09-02, read-only)**: outcome `RUNTIME_IDENTITY_MISMATCH` / Gate A `NO_PROCESS` → effective `max_num_batched_tokens` **UNVERIFIED** (no guess). The accepted GLM-5.2-W8A8 baseline runtime was NOT active at observation time; OPT-01 screening remains **BLOCKED**, candidate selection NOT AUTHORIZED. Evidence: GitHub Release `preflight-opt01-20260902-085628` (asset `GLM52-W8A8-OPT01-PREFLIGHT-run-20260902-085628.tar.gz`). `READ-ONLY PREFLIGHT EVIDENCE — NOT FORMAL BASELINE RESULT`. Re-observation requires User authorization to restore the accepted GLM baseline runtime.
+
 ## Frozen Artifacts
 
 - **Container command**: See [BASELINE.md](BASELINE.md) and [scripts/start-container.sh](scripts/start-container.sh)

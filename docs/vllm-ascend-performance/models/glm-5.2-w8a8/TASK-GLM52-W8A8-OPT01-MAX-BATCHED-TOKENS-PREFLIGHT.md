@@ -2,12 +2,29 @@
 
 **Task ID**: GLM52-W8A8-OPT01-MAX-BATCHED-TOKENS-PREFLIGHT  
 **Task Type**: READ-ONLY Baseline Value Observation  
-**Status**: READY  
+**Status**: COMPLETED (read-only; no server state changed)  
 **Created**: 2026-09-02  
+**Executed**: 2026-09-02 (observation window from evidence archive `run-20260902-085628`)  
 **Assigned to**: A3PerfRunner  
 **Priority**: HIGH
 
-**READY status**: Task prepared, awaiting User explicit dispatch (Task ID + DISPATCH_CONTROL_SHA + Authorization: EXECUTE).
+**Execution record (2026-09-02)**
+
+- `DISPATCH_CONTROL_SHA`: `e0a4afda499689b9e239d109f87312fcd2aad6dd`
+- Preflight outcome: **`RUNTIME_IDENTITY_MISMATCH`**
+- Gate A: **`NO_PROCESS`** — at observation time no accepted GLM-5.2-W8A8 serve process matched `/data/tiankuan/zyg/model/GLM-5.2-w8a8`; container `model-test-zyg-a3` was observed serving another workload (MiniMax-M3), NOT GLM-5.2-W8A8.
+- effective `max_num_batched_tokens`: **`UNVERIFIED`** (no guess; assumption of defaults not permitted)
+- Classification: fail-closed preflight correctly detected `ACCEPTED GLM BASELINE RUNTIME NOT CURRENTLY ACTIVE`. This is NOT a benchmark failure and NOT an implementation failure. The accepted historical GLM-5.2-W8A8 baseline remains valid.
+- `READ-ONLY PREFLIGHT EVIDENCE — NOT FORMAL BASELINE RESULT`
+- `OPT-01 remains BLOCKED until the accepted GLM baseline runtime is restored and effective max_num_batched_tokens is re-observed.`
+
+**Evidence transport (D-022)** — live-verified by PerfControl (GitHub API + local recompute, 2026-09-02):
+
+- GitHub Release: `preflight-opt01-20260902-085628`
+- Archive asset: `GLM52-W8A8-OPT01-PREFLIGHT-run-20260902-085628.tar.gz` (size `3019` bytes)
+- Archive SHA256 (authoritative): `245470fd6b61d47f8cf2163a9d3647fd51626d921abbb42127e07ce5d158ed03` — GitHub asset digest == downloaded archive sha256 == `.sha256` sidecar recorded digest.
+- The `.sha256` sidecar FILE has its own SHA256 `a3ede4044a64ecca5a55b1b70721bc68924150c9fba9a4d1ff33fee323533af8`; that is the digest of the sidecar file itself, distinct from the archive digest the sidecar records.
+- Runner natural-language report initially transcribed the archive SHA incorrectly; integrity reconciliation confirmed `LOCAL_ARCHIVE == LOCAL_SIDECAR_VALUE == GITHUB_TARBALL_ASSET` at the archive level, classified `REPORT_TRANSCRIPTION_ERROR` (NOT `EVIDENCE_ARCHIVE_MISMATCH`). No erroneous runner-narrative hashes are adopted in this Control record.
 
 ---
 
