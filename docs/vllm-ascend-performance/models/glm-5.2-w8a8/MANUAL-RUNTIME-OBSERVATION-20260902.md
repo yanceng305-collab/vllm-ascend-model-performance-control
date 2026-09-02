@@ -5,7 +5,7 @@
 **Executor**: User (manual, on A3; no A3PerfRunner execution, no PerfControl server operation)
 **Classification**: USER-MANUAL OPERATIONAL RESTORE / EXPLORATORY RUNTIME — NOT an accepted frozen baseline replay, NOT A3PerfRunner formal Task execution, NOT a formal Evidence run, NOT a Formal Result, NOT Formal OPT-01 Screening.
 
-This document is a non-formal, read-only observation record. The official baseline (BASELINE.md) and immutable Results are unchanged. Nothing here authorizes a next server execution.
+This document is a non-formal observation record. The official baseline (BASELINE.md) and immutable Results are unchanged. Nothing here authorizes a next server execution.
 
 ---
 
@@ -121,7 +121,7 @@ Verified official reference content includes:
 - example launch with `--data-parallel-size 2` / `--tensor-parallel-size 8` and `--enable-expert-parallel`
 - `--max-num-seqs 48` and `--max-num-batched-tokens 4096`
 - `--async-scheduling`, `--additional-config '{"multistream_overlap_shared_expert":true}'`
-- low-latency single-node mode listed with `DP1 PP1 TP16`
+- low-latency single-node reference: `DP1 / TP16`, Expert Parallel off
 
 Status of that 4096: **OFFICIAL upstream recommended reference candidate only**. It must NOT be recorded as the accepted baseline effective `max_num_batched_tokens` (the baseline never explicitly passed this parameter; its effective value remains UNVERIFIED).
 ---

@@ -71,7 +71,7 @@
 ## Notes
 
 - Baseline is frozen. Optimizations are tracked as separate OPT Tasks with independent Results.
-- FlagOS-aligned 0.20.2 track remains as historical/migration reference but does not gate GLM-5.2-W8A8 native 0.6.4 performance work.
+- FlagOS-aligned 0.20.2 track remains as historical/migration reference but does not gate GLM-5.2-W8A8 native vLLM 0.24 performance work.
 - Decision D-019: GLM-5.2-W8A8 User-verified baseline override
 - Decision D-020: Hardware compute basis and normalization policy
 - Decision D-021: PerfControl/A3PerfRunner separation (Runner produces Evidence; PerfControl produces formal Results)

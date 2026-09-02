@@ -2,7 +2,7 @@
 
 **Task ID**: GLM52-W8A8-OPT01-MAX-BATCHED-TOKENS-SCREENING  
 **Task Type**: FAST MICROGATE Optimization Screening  
-**Status**: BLOCKED_PENDING_BASELINE_RUNTIME_RESTORE  
+**Status**: BLOCKED_PENDING_BASELINE_VALUE_VERIFICATION  
 **Created**: 2026-09-02  
 **Updated**: 2026-09-02  
 **Assigned to**: A3PerfRunner  
