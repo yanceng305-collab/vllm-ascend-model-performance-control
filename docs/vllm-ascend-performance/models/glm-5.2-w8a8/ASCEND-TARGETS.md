@@ -1,145 +1,82 @@
 # GLM-5.2-W8A8 Ascend Targets
 
-**Status**: CALCULABLE (per Decision D-020, effective 2026-09-01)
+**Status**: CALCULABLE (active basis per Decision D-024, effective 2026-09-02)
 
 **Comparison class**: `ENGINEERING_REFERENCE` (H100 FP8 vs A3 W8A8)
 
 **Primary acceptance metric**: Normalized Total Token Throughput
 
-## Hardware Compute Basis (Decision D-020)
+## Hardware Compute Basis (active, Decision D-024)
 
-**A3/910C**: 756 TFLOPS per physical card @ FP16 (suitable precision for W8A8 comparison)  
-**A3 system**: 8 physical cards × 756 = **6048 TFLOPS**
+D-024 corrects the A3 compute-basis portion of D-020 (historical; D-020 preserved).
 
-**H100**: 989 TFLOPS per physical card @ FP8 (customer baseline precision)  
-**H100 system**: 16 cards × 989 = **15824 TFLOPS**
+**A3/910C**: 752 TFLOPS per physical card @ FP16  
+**A3 system**: 8 physical cards x 752 = **6016 TFLOPS**
 
-**Measured A3 compute** (ascend-dmi -f -t fp16 -q --all): 6019.718 TFLOPS (recorded as evidence; 6048 TFLOPS is official normalization basis)
+**H100** (unchanged): 989 TFLOPS per physical card @ FP8  
+**H100 system**: 16 cards x 989 = **15824 TFLOPS**
 
-**Compute ratio**: R = 6048 / 15824 = 0.382267
+**measured A3**: 6019.718 TFLOPS (ascend-dmi) - evidence/reference ONLY; never a normalization denominator. The superseded basis 8 x 756 = 6048 (D-020) is historical provenance only.
+
+**Compute ratio**: R = 6016 / 15824 = 0.380182
 
 ## Normalization Formula
 
 ```
-A3_Normalized = TotalTokenThroughput_A3 / 8 cards / 756 TFLOPS/card
+A3_Normalized = TotalTokenThroughput_A3 / 8 cards / 752 TFLOPS/card
 H100_Normalized = TotalTokenThroughput_H100 / 16 cards / 989 TFLOPS/card
-
 Achievement = A3_Normalized / H100_Normalized
-
 Pass condition: Achievement >= 0.80
 ```
 
+All derived active values below were machine-computed from hardware-normalization-config.yaml (752/6016) plus model-workload references and accepted raw data; no manual transcription of factual arithmetic.
+
 ## Target Cells
+### 1K Cell
 
-### 1K Cell (User-provided matrix summary)
+- H100 reference: **2688.71 tok/s**
+- A3 80% target: **817.76 tok/s** (machine recomputed)
+- A3 accepted: 676.60 tok/s
+- Achievement: **66.19%** (machine recomputed)
+- Disposition: **BELOW TARGET** (gap 141.16 tok/s)
 
-**H100 reference** (SRC-B-GLM-1K):
-- Total token throughput: 2688.71 tok/s
-- H100 normalized: 2688.71 / 15824 = 0.169913422649141 tok/s per TFLOPS
+### 4K Cell
 
-**A3 target (80%)**:
-- Target normalized: 0.80 × 0.169913422649141 = 0.135930738119313 tok/s per TFLOPS
-- Target absolute: 0.135930738119313 × 6048 = 822.108304209564 tok/s
+- H100 reference: **4063.45 tok/s**
+- A3 80% target: **1235.88 tok/s**
+- A3 accepted: 820.76 tok/s
+- Achievement: **53.13%**
+- Disposition: **BELOW TARGET** (gap 415.12 tok/s)
 
-**A3 measured** (User-provided matrix summary, pending Evidence confirmation):
-- Total token throughput: 676.60 tok/s
-- A3 normalized: 676.60 / 6048 = 0.111871693121693 tok/s per TFLOPS
-- Achievement: 0.111871693121693 / 0.169913422649141 = 0.658404094141003 = 65.84%
-- **Disposition**: BELOW TARGET (need ≥80%)
+### 16K Cell
 
-**Gap to target**: 822.11 - 676.60 = 145.51 tok/s (need 21.5% improvement)
+- H100 reference: **4379.60 tok/s**
+- A3 80% target: **1332.04 tok/s**
+- A3 accepted: 957.94 tok/s
+- Achievement: **57.53%**
+- Disposition: **BELOW TARGET** (gap 374.10 tok/s)
 
-### 4K Cell (User-provided matrix summary)
+### 64K Cell
 
-**H100 reference** (SRC-B-GLM-4K):
-- Total token throughput: 4063.45 tok/s
-- H100 normalized: 4063.45 / 15824 = 0.256790318503539 tok/s per TFLOPS
-
-**A3 target (80%)**:
-- Target normalized: 0.80 × 0.256790318503539 = 0.205432254802831 tok/s per TFLOPS
-- Target absolute: 0.205432254802831 × 6048 = 1242.45413405552 tok/s
-
-**A3 measured** (User-provided matrix summary, pending Evidence confirmation):
-- Total token throughput: 820.76 tok/s
-- A3 normalized: 820.76 / 6048 = 0.135707671957672 tok/s per TFLOPS
-- Achievement: 0.135707671957672 / 0.256790318503539 = 0.528476590349862 = 52.85%
-- **Disposition**: BELOW TARGET (need ≥80%)
-
-**Gap to target**: 1242.45 - 820.76 = 421.69 tok/s (need 51.4% improvement)
-
-### 16K Cell (User-provided matrix summary)
-
-**H100 reference** (SRC-B-GLM-16K):
-- Total token throughput: 4379.60 tok/s
-- H100 normalized: 4379.60 / 15824 = 0.276769464105157 tok/s per TFLOPS
-
-**A3 target (80%)**:
-- Target normalized: 0.80 × 0.276769464105157 = 0.221415571284126 tok/s per TFLOPS
-- Target absolute: 0.221415571284126 × 6048 = 1339.11897407125 tok/s
-
-**A3 measured** (User-provided matrix summary, pending Evidence confirmation):
-- Total token throughput: 957.94 tok/s
-- A3 normalized: 957.94 / 6048 = 0.158389550264550 tok/s per TFLOPS
-- Achievement: 0.158389550264550 / 0.276769464105157 = 0.572279715816043 = 57.23%
-- **Disposition**: BELOW TARGET (need ≥80%)
-
-**Gap to target**: 1339.12 - 957.94 = 381.18 tok/s (need 39.8% improvement)
-
-### 64K Cell (User-measured and User-provided matrix summary)
-
-**H100 reference** (SRC-B-GLM-64K):
-- Total token throughput: 5054.66 tok/s
-- H100 normalized: 5054.66 / 15824 = 0.319429979777553 tok/s per TFLOPS
-
-**A3 target (80%)**:
-- Target normalized: 0.80 × 0.319429979777553 = 0.255543983822042 tok/s per TFLOPS
-- Target absolute: 0.255543983822042 × 6048 = 1545.53000141557 tok/s
-
-**A3 measured - Historical baseline** (User-measured 2026-09-01, recorded in RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED):
-- Total token throughput: 927.45 tok/s
-- A3 normalized: 927.45 / 6048 = 0.153348214285714 tok/s per TFLOPS
-- Achievement: 0.153348214285714 / 0.319429979777553 = 0.480068321678895 = 48.01%
-- **Disposition**: BELOW TARGET (need ≥80%)
-
-**A3 measured - User-provided matrix summary** (XLSX 2026-09-02, pending Evidence confirmation):
-- Total token throughput: 927.59 tok/s
-- A3 normalized: 927.59 / 6048 = 0.153371362433862 tok/s per TFLOPS
-- Achievement: 0.153371362433862 / 0.319429979777553 = 0.480140788727761 = 48.01%
-- **Disposition**: BELOW TARGET (need ≥80%)
-
-**64K provenance note**: 
-- **Historical immutable Result** (2026-09-01): 927.45 tok/s — recorded in RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED.md, immutable
-- **User-provided matrix summary XLSX** (2026-09-02): 927.59 tok/s — current baseline matrix summary value
-- **Difference**: 0.14 tok/s (0.015%)
-- **Future Evidence-backed value**: Will be calculated from Run2/Run3/Run4 JSON aggregation during Evidence Acquisition Task
-- All three provenance records are preserved; minor differences do not affect disposition
-
-**Gap to target** (using XLSX 927.59): 1545.53 - 927.59 = 617.94 tok/s (need 66.6% improvement)
-
+- H100 reference: **5054.66 tok/s**
+- A3 80% target: **1537.35 tok/s**
+- A3 accepted: 927.59 tok/s
+- Achievement: **48.27%**
+- Disposition: **BELOW TARGET** (gap 609.76 tok/s)
 ## Target Summary Table
 
-| Cell | H100 Total Throughput (tok/s) | H100 Normalized (tok/s per TFLOPS) | Target Normalized (80%) | Target Absolute A3 (tok/s) | A3 Measured (tok/s) | A3 Normalized | Achievement | Disposition |
-|---|---|---|---|---|---|---|---|---|
-| 1K | 2688.71 | 0.169913422649141 | 0.135930738119313 | 822.11 | 676.60 † | 0.111871693121693 | 65.84% | BELOW TARGET |
-| 4K | 4063.45 | 0.256790318503539 | 0.205432254802831 | 1242.45 | 820.76 † | 0.135707671957672 | 52.85% | BELOW TARGET |
-| 16K | 4379.60 | 0.276769464105157 | 0.221415571284126 | 1339.12 | 957.94 † | 0.158389550264550 | 57.23% | BELOW TARGET |
-| 64K | 5054.66 | 0.319429979777553 | 0.255543983822042 | 1545.53 | 927.59 † | 0.153371362433862 | 48.01% | BELOW TARGET |
-
-**Legend**:
-- `†` User-provided matrix summary (XLSX 2026-09-02), Evidence confirmation pending
-- 64K also has historical immutable Result: 927.45 tok/s (2026-09-01, see RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED.md)
-- All calculations use displayed User-provided values: basis for provisional active documentation
-- Final Evidence-backed Results will use exact Run2/Run3/Run4 JSON aggregation
+| Cell | H100 ref (tok/s) | 80% target A3 (tok/s) | A3 raw (tok/s) | Achievement | Disposition |
+|---|---|---|---|---|---|
+| 1K | 2688.71 | 817.76 | 676.60 | 66.19% | BELOW TARGET |
+| 4K | 4063.45 | 1235.88 | 820.76 | 53.13% | BELOW TARGET |
+| 16K | 4379.60 | 1332.04 | 957.94 | 57.53% | BELOW TARGET |
+| 64K | 5054.66 | 1537.35 | 927.59 | 48.27% | BELOW TARGET |
 
 ## Notes
 
-- Targets use exact unrounded values for comparison. Display rounding must not change disposition.
-- Decision D-020 establishes User-approved unified hardware compute basis for GLM-5.2-W8A8.
-- This is model-specific and does not automatically apply to DeepSeek, MiniMax, or future models.
-- All four baseline matrix cells (1K/4K/16K/64K) are now measured by User:
-  - 64K: User-measured baseline (2026-09-01), recorded in RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED.md
-  - 1K/4K/16K: User-provided matrix summary from XLSX (2026-09-02), pending Evidence confirmation
-- A3PerfRunner Evidence Acquisition Task (GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION) will formalize Evidence for all four cells
-- Primary gate: Normalized Total Token Throughput ≥ 80% of H100 normalized reference
-- Secondary/observational metrics: TTFT, TPOT, ITL (not automatic gates per PERFORMANCE-NORMALIZATION-POLICY.md unless explicitly promoted)
-- All four cells currently BELOW TARGET; optimization track to be initiated after Evidence-backed baseline is formally established
+- Achievements and 80% targets are machine-computed on the D-024 basis (6016); the prior D-020-basis figures (65.84% / 52.85% / 57.23% / 48.01% on 6048) are superseded for active tracking and retained only in historical records.
+- Decision D-024 supersedes D-020 for the A3 compute basis; H100 unchanged.
+- All four accepted baseline cells remain BELOW TARGET (need >= 80%); optimization gap persists.
+- measured 6019.718 TFLOPS is evidence only and never becomes the denominator.
+- 64K also has a historical immutable Result (2026-09-01) with originally recorded (old-basis) values; see RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED.md.
+- Machine source: docs/vllm-ascend-performance/hardware-normalization-config.yaml, docs/vllm-ascend-performance/model-workload-references.yaml, results index + correction supplement.

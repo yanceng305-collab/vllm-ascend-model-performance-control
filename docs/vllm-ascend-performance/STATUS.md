@@ -31,7 +31,7 @@
 - **GLM-5.2-W8A8 User-verified baseline established (2026-09-01)**:
   - Container creation, vLLM 0.24 runtime, TP16 launch, graph compilation, 64K benchmark completed by User
   - Baseline frozen: container command, server launch command, benchmark workload, scripts
-  - 64K measured performance: 927.45 tok/s (48.01% achievement vs 80% target)
+  - 64K measured performance: 927.45 tok/s (historical; active basis D-024 achievement 48.27% on 927.59)
   - Hardware compute basis established (Decision D-020)
   - RUNBOOK and executable scripts created
   - Baseline vs optimization separation enforced (Decision D-019)
@@ -42,20 +42,22 @@
 
 **Execution mode**: USER-VERIFIED KNOWN-GOOD BASELINE → FAST PREFLIGHT → RUN FROZEN COMMANDS → EVIDENCE → RESULT → **OPTIMIZATION** (current phase)
 
-**Evidence-backed baseline matrix** (Evidence run: run-20260902-140958, corrected):
-- 1K: **676.60 tok/s**, Achievement: 65.84% (BELOW TARGET)
-- 4K: 820.76 tok/s, Achievement: 52.85% (BELOW TARGET)
-- 16K: **957.94 tok/s**, Achievement: 57.23% (BELOW TARGET)
-- 64K: 927.59 tok/s, Achievement: 48.01% (BELOW TARGET)
+**Evidence-backed baseline matrix** (Evidence run: run-20260902-140958, corrected; active basis D-024, 6016):
+- 1K: **676.60 tok/s**, Achievement: 66.19% (BELOW TARGET)
+- 4K: 820.76 tok/s, Achievement: 53.13% (BELOW TARGET)
+- 16K: **957.94 tok/s**, Achievement: 57.53% (BELOW TARGET)
+- 64K: 927.59 tok/s, Achievement: 48.27% (BELOW TARGET)
 
 **Evidence Archive**: `GLM52-W8A8-BASELINE-EVIDENCE-run-20260902-140958.tar.gz` (SHA256: `8818e4ffa...01816d2`)  
 **Evidence Location**: GitHub Release `evidence-test-glm52-run-20260902-140958` (Decision D-022)
 
 **Runtime Identity** (corrected): Container `model-test-zyg-a3`, Image `nightly-releases-v0.24.0rc-a3`, vLLM `0.24.0+empty`
 
-**Target**: ≥80% normalized throughput for all cells (Decision D-020)
+**Target**: ≥80% normalized throughput for all cells (active basis D-024, 6016; D-020 A3 basis historical)
 
 **Correction Note**: Original Results (commit 371f5f0) contained runtime identity transcription error (incorrectly recorded as vLLM 0.6.4.post1; actual: vLLM 0.24.0+empty) and two calculation rounding errors (1K: 676.59→676.60; 16K: 957.93→957.94). Correction Supplement created; original Results superseded but unchanged.
+
+**Hardware basis correction (2026-09-02, D-024)**: User corrected the A3/910C compute input; active basis is 752 TFLOPS/card × 8 = **6016 TFLOPS** (was 756 × 8 = 6048). H100 unchanged (989 × 16 = 15824). Measured 6019.718 TFLOPS remains evidence-only. Active achievements/80% targets above are machine-recomputed on 6016 (see [CORRECTION-SUPPLEMENT-HARDWARE-NORMALIZATION-20260902](models/glm-5.2-w8a8/results/CORRECTION-SUPPLEMENT-HARDWARE-NORMALIZATION-20260902.md)); immutable Results and the first correction supplement remain unchanged.
 
 **Next steps**:
 1. Optimization track may proceed (corrected baseline formally accepted)
@@ -64,7 +66,7 @@
 
 **OPT-01 Preflight (2026-09-02, read-only)**: outcome `RUNTIME_IDENTITY_MISMATCH` / Gate A `NO_PROCESS`; effective `max_num_batched_tokens` **UNVERIFIED**; the accepted GLM-5.2-W8A8 baseline runtime was NOT active at observation time (container serving another workload). OPT-01 screening remains **BLOCKED**; candidate selection NOT AUTHORIZED. Evidence transport: GitHub Release `preflight-opt01-20260902-085628` (D-022). `READ-ONLY PREFLIGHT EVIDENCE — NOT FORMAL BASELINE RESULT`. Re-observation requires User authorization to restore the accepted GLM baseline runtime.
 
-**Manual runtime observation (2026-09-02)**: User manually restored a GLM-5.2-W8A8 vLLM service on A3 (USER-MANUAL OPERATIONAL RESTORE / EXPLORATORY). It is NOT an exact replay of the accepted frozen baseline (deviations: `LD_PRELOAD` jemalloc, `PYTORCH_NPU_ALLOC_CONF=expandable_segments:True`, `OMP_PROC_BIND=false`, `OMP_NUM_THREADS=1`, `--served-model-name glm52-w8a8`, `--distributed-executor-backend mp`, `max_cudagraph_capture_size=64`, `--port 8000`, log `/workspace/glm52_w8a8.log`). Graph capture 11/11 (411 s; 0.59 GiB); warning: capture 64 < potential decode requirement 256 (alignment risk, not a measured value). `max_num_batched_tokens` remains **UNVERIFIED**. Manual 16K exploratory microgate: **IN PROGRESS / RESULT PENDING** (no throughput, no verdict). Formal OPT-01 screening remains **BLOCKED / NOT YET AUTHORIZED**. Official upstream reference (GLM5.2.md, commit `6443b2a38b95390e4f5174ff7ad2f8c3751e040f`) independently verified; its `--max-num-batched-tokens 4096` recorded as `RECOMMENDED / REFERENCE CANDIDATE ONLY`, NOT the baseline effective value.
+**Manual runtime observation (2026-09-02)**: User manually restored a GLM-5.2-W8A8 vLLM service on A3 (USER-MANUAL OPERATIONAL RESTORE / EXPLORATORY). It is NOT an exact replay of the accepted frozen baseline (deviations: `LD_PRELOAD` jemalloc, `PYTORCH_NPU_ALLOC_CONF=expandable_segments:True`, `OMP_PROC_BIND=false`, `OMP_NUM_THREADS=1`, `--served-model-name glm52-w8a8`, `--distributed-executor-backend mp`, `max_cudagraph_capture_size=64`, `--port 8000`, log `/workspace/glm52_w8a8.log`). Graph capture 11/11 (411 s; 0.59 GiB); warning: capture 64 < potential decode requirement 256 (alignment risk, not a measured value). `max_num_batched_tokens` remains **UNVERIFIED**. Manual 16K exploratory microgate **COMPLETED (2026-09-02)**: Run2 total token throughput 960.45 tok/s vs accepted 957.94, machine-computed delta **+0.262%** → **MANUAL EXPLORATORY MICROGATE: NO_MATERIAL_GAIN** (below +2% material-gain threshold; not regression; 256 success / 0 failed; not formal OPT-01 screening). Formal OPT-01 screening remains **BLOCKED / NOT YET AUTHORIZED**. Official upstream reference (GLM5.2.md, commit `6443b2a38b95390e4f5174ff7ad2f8c3751e040f`) independently verified; its `--max-num-batched-tokens 4096` recorded as `RECOMMENDED / REFERENCE CANDIDATE ONLY`, NOT the baseline effective value.
 
 Stage 0 discovery is NOT required for GLM baseline performance work. GLM uses vLLM 0.24.0+empty as frozen baseline runtime. FlagOS-aligned 0.20.2 remains as historical reference only.
 
@@ -84,7 +86,7 @@ Stage 0 discovery is NOT required for GLM baseline performance work. GLM uses vL
 
 | Model | Status | Current work | Execution mode |
 |---|---|---|---|
-| GLM-5.2-W8A8 | USER-VERIFIED BASELINE; 64K@48.01% | Baseline matrix + optimization | Known-good baseline, no Stage 0 |
+| GLM-5.2-W8A8 | USER-VERIFIED BASELINE; 64K@48.27% | Baseline matrix + optimization | Known-good baseline, no Stage 0 |
 | DeepSeek-V4-Pro-W8A8 | `MULTI_NODE_CANDIDATE / NOT_SINGLE_A3_CANDIDATE` | None (excluded from single-A3) | N/A |
 | DeepSeek-V4-Flash-W8A8 | `PENDING_A3PERFRUNNER_DISCOVERY` | Stage 0A awaiting dispatch | Discovery first |
 | MiniMax-M3 | `PENDING_A3PERFRUNNER_DISCOVERY` | Stage 0A awaiting dispatch | Discovery first |
@@ -93,7 +95,7 @@ DeepSeek-V4-Pro-W8A8 is `MULTI_NODE_CANDIDATE / NOT_SINGLE_A3_CANDIDATE` for thi
 
 ## Current Source Status
 
-Both requested user files are present and ingested. Their hashes and extracted cells are recorded in [SOURCE-MATERIALS.md](references/SOURCE-MATERIALS.md) and [H100-REFERENCE-INDEX.md](references/H100-REFERENCE-INDEX.md). Original files remain outside this repository and are not modified. GLM-5.2-W8A8 normalized targets are calculable per Decision D-020.
+Both requested user files are present and ingested. Their hashes and extracted cells are recorded in [SOURCE-MATERIALS.md](references/SOURCE-MATERIALS.md) and [H100-REFERENCE-INDEX.md](references/H100-REFERENCE-INDEX.md). Original files remain outside this repository and are not modified. GLM-5.2-W8A8 normalized targets are calculable per Decision D-020 (active basis per D-024).
 
 ## Decisions
 
@@ -104,3 +106,4 @@ See [DECISIONS.md](DECISIONS.md) for all formal decisions, including:
 - D-021: Local PerfControl / Remote A3PerfRunner Separation (final role architecture; Runner produces Evidence, PerfControl produces formal Results)
 - D-022: GitHub Release Asset Evidence Transport
 - D-023: Machine-Verified Formal Result Gate (eliminates AI transcription errors)
+- D-024: GLM-5.2-W8A8 A3/910C hardware compute basis correction (active basis 752 × 8 = 6016; supersedes the A3 compute-basis portion of D-020)

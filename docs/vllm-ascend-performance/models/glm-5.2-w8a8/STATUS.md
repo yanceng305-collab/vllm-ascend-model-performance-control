@@ -21,12 +21,12 @@
 
 **Evidence-backed baseline matrix** (Evidence run: run-20260902-140958, corrected 2026-09-02):
 
-| Cell | A3 Total Throughput (tok/s) | H100 Reference (tok/s) | Achievement | Disposition | Status |
-|---|---|---|---|---|---|
-| 1K | **676.60** | 2688.71 | 65.84% | BELOW TARGET | Evidence-backed ACCEPTED (corrected) |
-| 4K | 820.76 | 4063.45 | 52.85% | BELOW TARGET | Evidence-backed ACCEPTED |
-| 16K | **957.94** | 4379.60 | 57.23% | BELOW TARGET | Evidence-backed ACCEPTED (corrected) |
-| 64K | 927.59 | 5054.66 | 48.01% | BELOW TARGET | Evidence-backed ACCEPTED |
+| Cell | A3 Total Throughput (tok/s) | H100 Reference (tok/s) | 80% Target A3 (tok/s) | Achievement | Disposition | Status |
+|---|---|---|---|---|---|---|
+| 1K | **676.60** | 2688.71 | 817.76 | 66.19% | BELOW TARGET | Evidence-backed ACCEPTED (corrected) |
+| 4K | 820.76 | 4063.45 | 1235.88 | 53.13% | BELOW TARGET | Evidence-backed ACCEPTED |
+| 16K | **957.94** | 4379.60 | 1332.04 | 57.53% | BELOW TARGET | Evidence-backed ACCEPTED (corrected) |
+| 64K | 927.59 | 5054.66 | 1537.35 | 48.27% | BELOW TARGET | Evidence-backed ACCEPTED |
 
 **Evidence Archive**: `GLM52-W8A8-BASELINE-EVIDENCE-run-20260902-140958.tar.gz` (SHA256: `8818e4ffa...01816d2`)  
 **Evidence Location**: GitHub Release `evidence-test-glm52-run-20260902-140958` (Decision D-022)  
@@ -36,22 +36,24 @@
 
 **Target**: ≥80% normalized throughput for each cell
 
-**Performance Gap**: All four cells below 80% normalized target (Decision D-020). Baseline establishes formal reference for optimization tracking.
+**Performance Gap**: All four cells below 80% normalized target (active basis D-024, 6016). Baseline establishes formal reference for optimization tracking.
 
 **Correction Note**: Original Results (commit 371f5f0) contained runtime identity transcription error and two calculation rounding errors. Correction Supplement created; original Results superseded but unchanged. Use corrected values: 1K=676.60 (was 676.59), 16K=957.94 (was 957.93).
+
+**Hardware basis correction (2026-09-02, D-024)**: User corrected the A3/910C compute input; active basis is 752 TFLOPS/card × 8 = **6016 TFLOPS** (was 756 × 8 = 6048). H100 unchanged (989 × 16 = 15824). Measured 6019.718 TFLOPS remains evidence-only. All active achievements/80% targets above are machine-recomputed on 6016 (see [CORRECTION-SUPPLEMENT-HARDWARE-NORMALIZATION-20260902](results/CORRECTION-SUPPLEMENT-HARDWARE-NORMALIZATION-20260902.md)). Immutable Results and the first correction supplement remain unchanged.
 
 **64K historical baseline** (User-measured 2026-09-01):
 - Total token throughput: 927.45 tok/s
 - Normalized A3 throughput: 0.153348214285714 tok/s per TFLOPS
 - Normalized H100 reference: 0.319429979777553 tok/s per TFLOPS
-- Achievement: 48.01%
+- Achievement: 48.01% (as recorded in the immutable historical Result; active D-024 basis value is 48.27% on 927.59)
 - See [RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED](results/RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED.md) (immutable, unchanged)
 
 **64K Evidence-backed** (2026-09-02): 927.59 tok/s (used in table above; difference from historical: +0.14 tok/s, within variance)
 
 **OPT-01 Preflight (2026-09-02, read-only)**: outcome `RUNTIME_IDENTITY_MISMATCH` / Gate A `NO_PROCESS` → effective `max_num_batched_tokens` **UNVERIFIED** (no guess). The accepted GLM-5.2-W8A8 baseline runtime was NOT active at observation time; OPT-01 screening remains **BLOCKED**, candidate selection NOT AUTHORIZED. Evidence: GitHub Release `preflight-opt01-20260902-085628` (asset `GLM52-W8A8-OPT01-PREFLIGHT-run-20260902-085628.tar.gz`). `READ-ONLY PREFLIGHT EVIDENCE — NOT FORMAL BASELINE RESULT`. Re-observation requires User authorization to restore the accepted GLM baseline runtime.
 
-**Manual runtime (2026-09-02)** — User manually restored GLM-5.2-W8A8 vLLM service (operational variant, NOT exact frozen baseline replay; see [MANUAL-RUNTIME-OBSERVATION-20260902.md](MANUAL-RUNTIME-OBSERVATION-20260902.md)). `max_num_batched_tokens` remains **UNVERIFIED**. Manual 16K exploratory microgate **IN PROGRESS / RESULT PENDING**. Formal OPT-01 screening stays **BLOCKED / NOT YET AUTHORIZED**; future candidate families recorded as reference-only (scheduler 4096 / graph&scheduler alignment / official knobs / later families).
+**Manual runtime (2026-09-02)** — User manually restored GLM-5.2-W8A8 vLLM service (operational variant, NOT exact frozen baseline replay; see [MANUAL-RUNTIME-OBSERVATION-20260902.md](MANUAL-RUNTIME-OBSERVATION-20260902.md)). `max_num_batched_tokens` remains **UNVERIFIED**. Manual 16K exploratory microgate **COMPLETED (2026-09-02)**: Run2 total token throughput 960.45 tok/s vs accepted 957.94 → machine-computed delta **+0.262%** → **MANUAL EXPLORATORY MICROGATE: NO_MATERIAL_GAIN** (below +2%; not formal OPT-01 screening; not a regression; 256 success / 0 failed). Formal OPT-01 screening stays **BLOCKED / NOT YET AUTHORIZED**; future candidate families recorded as reference-only (scheduler 4096 / graph&scheduler alignment / official knobs / later families).
 
 ## Frozen Artifacts
 
@@ -73,6 +75,7 @@
 - Baseline is frozen. Optimizations are tracked as separate OPT Tasks with independent Results.
 - FlagOS-aligned 0.20.2 track remains as historical/migration reference but does not gate GLM-5.2-W8A8 native vLLM 0.24 performance work.
 - Decision D-019: GLM-5.2-W8A8 User-verified baseline override
-- Decision D-020: Hardware compute basis and normalization policy
+- Decision D-020: Hardware compute basis and normalization policy (historical; A3 compute-basis portion superseded by D-024)
 - Decision D-021: PerfControl/A3PerfRunner separation (Runner produces Evidence; PerfControl produces formal Results)
 - Decision D-022: GitHub Release Asset Evidence Transport
+- Decision D-024: A3/910C hardware compute basis correction (active basis 752 × 8 = 6016)

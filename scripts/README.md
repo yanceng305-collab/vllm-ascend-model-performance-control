@@ -89,10 +89,10 @@ python scripts/validate_result.py docs/vllm-ascend-performance/models/glm-5.2-w8
 
 **File**: `docs/vllm-ascend-performance/hardware-normalization-config.yaml`
 
-**Purpose**: Authoritative machine-readable hardware compute basis per Decision D-020.
+**Purpose**: Authoritative machine-readable hardware compute basis per Decision D-024 (supersedes the A3 compute-basis portion of D-020).
 
 **Contents**:
-- A3/910C: 8 cards × 756 TFLOPS FP16 = 6048 TFLOPS
+- A3/910C: 8 cards × 752 TFLOPS FP16 = 6016 TFLOPS
 - H100: 16 cards × 989 TFLOPS FP8 = 15824 TFLOPS
 - Target achievement: 80%
 
@@ -178,5 +178,6 @@ Per Decision D-023, AI agents are **prohibited** from manually filling these fac
 
 ## Decision Reference
 
-- **D-020**: Hardware compute basis and normalization policy
+- **D-020**: Hardware compute basis and normalization policy (historical; A3 compute-basis portion superseded by D-024)
 - **D-023**: Machine-Verified Formal Result Gate (this workflow)
+- **D-024**: GLM-5.2-W8A8 A3/910C hardware compute basis correction (active basis 752 × 8 = 6016)

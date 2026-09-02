@@ -1,17 +1,18 @@
 # Hardware Normalization Configuration
 
 # This file provides the authoritative machine-readable hardware compute basis
-# and normalization policy per Decision D-020 and Decision D-023.
+# and normalization policy per Decision D-024 (supersedes the A3 compute-basis
+# portion of Decision D-020) and Decision D-023.
 # All Formal Result generators and validators MUST use values from this file.
 # Manual transcription is prohibited.
 
-# A3/910C Configuration
+# A3/910C Configuration (corrected by Decision D-024; User corrected the input)
 a3:
   cards: 8
-  tflops_per_card_fp16: 756  # FP16 precision suitable for W8A8 comparison
-  total_tflops: 6048  # MUST equal cards × tflops_per_card_fp16
+  tflops_per_card_fp16: 752  # FP16 precision suitable for W8A8 comparison (D-024)
+  total_tflops: 6016  # MUST equal cards × tflops_per_card_fp16
 
-# H100 Configuration (Customer Baseline)
+# H100 Configuration (Customer Baseline; unchanged by D-024)
 h100:
   cards: 16
   tflops_per_card_fp8: 989  # FP8 precision (customer baseline)
@@ -24,8 +25,9 @@ normalization:
 
 # Decision Provenance
 metadata:
-  decision_id: "D-020"
-  effective_date: "2026-09-01"
+  decision_id: "D-024"
+  effective_date: "2026-09-02"
+  supersedes: "D-020"                 # A3 compute-basis portion only; H100 basis unchanged
   validation_decision_id: "D-023"
   validation_effective_date: "2026-09-02"
 

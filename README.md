@@ -6,7 +6,7 @@ Public Control repository for auditable native vLLM-Ascend correctness and perfo
 
 **BOOTSTRAPPED / GLM-5.2-W8A8 USER-VERIFIED BASELINE ESTABLISHED**
 
-**GLM-5.2-W8A8**: User-verified baseline on vLLM 0.24 established. 64K baseline measured at 927.45 tok/s (48.01% achievement vs 80% target). Frozen baseline artifacts and scripts available. Optimization work in progress.
+**GLM-5.2-W8A8**: User-verified baseline on vLLM 0.24 established. 64K baseline measured at 927.45 tok/s (historical; active-basis achievement 48.27% on 927.59, D-024). Frozen baseline artifacts and scripts available. Optimization work in progress.
 
 **DeepSeek-V4-Flash / MiniMax-M3**: Stage 0A discovery awaiting User dispatch.
 
@@ -44,7 +44,7 @@ See [AGENTS.md](AGENTS.md) and Decision D-018.
 - [H100 Reference Index](docs/vllm-ascend-performance/references/H100-REFERENCE-INDEX.md)
 
 ### Models
-- [GLM-5.2-W8A8](docs/vllm-ascend-performance/models/glm-5.2-w8a8/STATUS.md) — **User-verified baseline, 64K@48.01%**
+- [GLM-5.2-W8A8](docs/vllm-ascend-performance/models/glm-5.2-w8a8/STATUS.md) — **User-verified baseline, 64K@48.27%**
   - [Baseline](docs/vllm-ascend-performance/models/glm-5.2-w8a8/BASELINE.md)
   - [Runbook](docs/vllm-ascend-performance/models/glm-5.2-w8a8/RUNBOOK.md)
   - [H100 Reference](docs/vllm-ascend-performance/models/glm-5.2-w8a8/H100-REFERENCE.md)

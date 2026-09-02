@@ -105,6 +105,8 @@ The FlagOS-aligned 0.20.2 track remains as historical/migration reference but do
 
 ## D-020 GLM-5.2-W8A8 hardware compute basis
 
+> **Provenance note (2026-09-02)**: the A3 compute-basis portion of D-020 below is **SUPERSEDED** by D-024 (A3/910C corrected to 752 TFLOPS/card × 8 = 6016 TFLOPS). H100 basis (989 × 16 = 15824) unchanged. D-020 remains preserved as historical record; the value `756 / 6048` must not be used as the active normalization basis.
+
 Effective 2026-09-01, the **User-approved unified hardware compute basis** for GLM-5.2-W8A8 normalization:
 
 **A3/910C**: 756 TFLOPS per physical card @ FP16 (suitable precision for W8A8 comparison)  
@@ -258,3 +260,22 @@ A3PerfRunner is authorized to use **GitHub Release Assets** as an immutable Evid
 **Rationale**: This Decision enables Evidence delivery when SSH password-based authentication blocks direct SCP, without compromising the D-021 separation (PerfControl = Git writer, Runner = execution/Evidence only). GitHub Release Assets provide authenticated, checksummed, immutable storage that both roles can access programmatically.
 
 **Not covered by this Decision**: Runner uploading anything other than Evidence bundles (e.g., partial logs, interim drafts, or formal Results) to GitHub Releases; such actions remain prohibited.
+
+## D-024 GLM-5.2-W8A8 A3/910C Hardware Compute Basis Correction
+
+**Effective**: 2026-09-02
+
+**Status**: Corrects the A3 compute-basis portion of Decision D-020; supersedes it for all current and future GLM-5.2-W8A8 normalization. D-020 remains preserved as historical provenance.
+
+1. User previously supplied the A3/910C basis as `756 TFLOPS / physical card @ FP16`.
+2. User has now **explicitly corrected that input as erroneous**.
+3. The correct active A3/910C basis is **752 TFLOPS / physical card @ FP16**.
+4. The 8-card A3 system basis is **8 × 752 = 6016 TFLOPS**.
+5. The H100 basis remains unchanged: **16 × 989 = 15824 TFLOPS**.
+6. The measured A3 value **6019.718 TFLOPS** (ascend-dmi) remains evidence/reference **ONLY**; it is never used as the normalization denominator.
+7. D-024 supersedes the A3 compute-basis portion of D-020 for all current/future GLM-5.2-W8A8 normalization.
+8. D-020 remains preserved as historical provenance (see D-020 section note above); it is not deleted.
+9. Existing immutable Results are NOT rewritten; active normalized values are corrected via the new hardware normalization correction supplement and current active documentation (`hardware-normalization-config.yaml`, POLICY, ASCEND-TARGETS, STATUS, INDEX).
+10. All derived normalization values are machine-computed from `hardware-normalization-config.yaml` (now 752/6016) plus accepted raw data — no manual transcription.
+
+**Rationale**: User identified `756/6048` as an input error and provided the corrected A3/910C specification `752 × 8 = 6016`.

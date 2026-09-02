@@ -44,23 +44,24 @@ Otherwise classify the metric as `SECONDARY REFERENCE` or `OBSERVATIONAL ONLY` a
 
 Every formal performance Result must show raw Ascend value, raw H100 value, both compute bases, device counts, ratio, normalized equivalent, 80% target/allowed maximum, exact measured value, achievement, direction, gate class, and disposition.
 
-## Model-Specific Override: GLM-5.2-W8A8 (Decision D-020)
+## Model-Specific Override: GLM-5.2-W8A8 (Decision D-020, A3 compute basis corrected by D-024)
 
 **GLM-5.2-W8A8** uses a model-specific normalization policy that overrides the generic methodology:
 
-**Hardware compute basis**:
-- A3: 8 cards × 756 TFLOPS (FP16) = **6048 TFLOPS**
-- H100: 16 cards × 989 TFLOPS (FP8) = **15824 TFLOPS**
+**Hardware compute basis** (active, per Decision D-024 which supersedes the A3 compute-basis portion of D-020; D-020 remains preserved as historical):
+- A3: 8 cards × 752 TFLOPS (FP16) = **6016 TFLOPS**
+- H100: 16 cards × 989 TFLOPS (FP8) = **15824 TFLOPS** (unchanged)
+- measured A3 = 6019.718 TFLOPS (evidence/reference only; never the denominator)
 
 **Primary acceptance metric**: **Normalized Total Token Throughput** (not Output Token Throughput)
 
 **Normalization formula**:
 ```text
-A3_Normalized = TotalThroughput_A3 / 8 / 756
+A3_Normalized = TotalThroughput_A3 / 8 / 752
 H100_Normalized = TotalThroughput_H100 / 16 / 989
 Achievement = A3_Normalized / H100_Normalized
 ```
 
 **Pass condition**: `Achievement >= 0.80`
 
-This model-specific policy takes precedence over generic methodology for all GLM-5.2-W8A8 Results. See Decision D-020 and `models/glm-5.2-w8a8/ASCEND-TARGETS.md` for details.
+This model-specific policy takes precedence over generic methodology for all GLM-5.2-W8A8 Results. See Decision D-024, `hardware-normalization-config.yaml`, and `models/glm-5.2-w8a8/ASCEND-TARGETS.md` for details.

@@ -126,14 +126,40 @@ Verified official reference content includes:
 Status of that 4096: **OFFICIAL upstream recommended reference candidate only**. It must NOT be recorded as the accepted baseline effective `max_num_batched_tokens` (the baseline never explicitly passed this parameter; its effective value remains UNVERIFIED).
 ---
 
-## 7. Manual 16K exploratory microgate — IN PROGRESS / RESULT PENDING
+## 7. Manual 16K exploratory microgate — COMPLETED (2026-09-02)
 
-A manual exploratory 16K FAST MICROGATE (Run1 warmup/discard, Run2 measured) is currently running. Workload: input 16384, output 1024, concurrency 64, num-prompts 256, dataset random, random-range-ratio 0, request-rate inf, ignore-eos true, endpoint /v1/completions, client `vllm bench serve`.
+Workload: input 16384, output 1024, concurrency 64, num-prompts 256, dataset random, random-range-ratio 0, request-rate inf, ignore-eos true, endpoint /v1/completions, client `vllm bench serve`. Run1 warmup/discard; Run2 measured (exploratory).
 
-- reference: accepted 16K baseline 957.94 tok/s
-- thresholds: +2% = 977.10 tok/s, +5% = 1005.84 tok/s
+Run2 summary (as provided by User):
 
-This is MANUAL EXPLORATORY MICROGATE, not formal OPT-01 screening. The benchmark is NOT yet complete; NO throughput is recorded in this Control repo; no PASS / INCONCLUSIVE / NO_MATERIAL_GAIN / regression decision is made. Ingestion is deferred until User provides Run1/Run2 output.
+- Successful requests: 256
+- Failed requests: 0
+- Benchmark duration: 4639.94 s
+- Total input tokens: 4194304
+- Total generated tokens: 262144
+- Request throughput: 0.06 req/s
+- Output token throughput: 56.50 tok/s
+- Peak output token throughput: 88.00 tok/s
+- Peak concurrent requests: 65
+- **Total token throughput: 960.45 tok/s**
+- Mean TTFT: 959813.80 ms; median 1092897.84 ms; P99 1097525.24 ms
+- Mean TPOT: 64.23 ms; median 64.55 ms; P99 65.40 ms
+- Mean ITL: 64.23 ms; median 49.28 ms; P99 737.46 ms
+
+Disposition (machine-computed from Run2 value):
+
+- accepted 16K baseline reference: **957.94 tok/s**
+- delta = (960.45 / 957.94 - 1) x 100% = **+0.262021%** (≈ +0.262%)
+- thresholds: +2% = 977.10 tok/s; +5% = 1005.84 tok/s
+- classification: **MANUAL EXPLORATORY MICROGATE: NO_MATERIAL_GAIN**
+- wording: slight positive delta / essentially flat; below the +2% material-gain threshold; NOT a regression; 256 success / 0 failed; no correctness/service failure observed from the benchmark summary.
+
+Boundary on capture=64 (confounded, not isolated):
+
+- under this manual runtime variant (`max_cudagraph_capture_size=64` plus the other manual deviations: jemalloc LD_PRELOAD, PYTORCH_NPU_ALLOC_CONF, OMP settings, explicit mp backend, served-model-name/port, capture max 64), the 16K/C64 exploratory run gave 960.45 tok/s — essentially flat vs the accepted 957.94 tok/s.
+- classification: **NO MATERIAL CHANGE OBSERVED FOR THE COMBINED MANUAL VARIANT** — NOT `capture64 isolated PASS`; the variant is confounded and no single-parameter conclusion is drawn.
+
+This is a MANUAL EXPLORATORY MICROGATE. It is NOT formal OPT-01 screening, NOT A3Per output formal Evidence, NOT a Formal Result, and it does not unlock OPT-01.
 
 ---
 
@@ -160,8 +186,8 @@ Accurate reason summary:
 - User has since manually restored an operational GLM-5.2-W8A8 runtime variant;
 - that runtime is NOT an exact replay of the accepted baseline;
 - `max_num_batched_tokens` remains UNVERIFIED;
-- a manual exploratory 16K microgate is in progress;
-- formal candidate selection / screening waits for review of the manual observation.
+- a manual exploratory 16K microgate has COMPLETED (960.45 tok/s; +0.262% vs accepted; MANUAL EXPLORATORY MICROGATE: NO_MATERIAL_GAIN; see section 7);
+- formal candidate selection / screening waits for review of the completed manual observation.
 
 This record does not modify the completed preflight Task record (its NO_PROCESS finding was correct at that time) and does not retroactively change any disposition.
 

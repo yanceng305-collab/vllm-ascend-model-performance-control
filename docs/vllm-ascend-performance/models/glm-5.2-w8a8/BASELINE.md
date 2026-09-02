@@ -113,15 +113,17 @@ Runs per cell: 4 (run1 discarded, mean of run2/run3/run4)
 
 See `RUNBOOK.md` and `scripts/bench-glm52-matrix.sh` for executable implementation.
 
-## Hardware compute basis (Decision D-020)
+## Hardware compute basis (Decision D-020; A3 basis corrected by D-024)
 
-**A3/910C**: 756 TFLOPS per physical card @ FP16  
-**A3 system**: 8 cards × 756 = **6048 TFLOPS** (User-approved unified hardware compute basis)
+> **D-024 (2026-09-02)**: the A3/910C compute input `756 TFLOPS/card` was corrected by User as erroneous. Active A3/910C basis is **752 TFLOPS/card × 8 = 6016 TFLOPS** (see Decision D-024 and `hardware-normalization-config.yaml`). The `756 / 6048` values below are the superseded D-020/User-input historical record and must not be used for active normalization. H100 basis and measured value below are unchanged.
 
-**Measured A3 compute** (via ascend-dmi -f -t fp16 -q --all): **6019.718 TFLOPS**
+**A3/910C**: 756 TFLOPS per physical card @ FP16 (historical, superseded by D-024 → 752)  
+**A3 system**: 8 cards × 756 = **6048 TFLOPS** (historical; active = 6016 per D-024)
+
+**Measured A3 compute** (via ascend-dmi -f -t fp16 -q --all): **6019.718 TFLOPS** (evidence only; never the normalization denominator)
 
 **H100**: 989 TFLOPS per physical card @ FP8  
-**H100 system**: 16 cards × 989 = **15824 TFLOPS**
+**H100 system**: 16 cards × 989 = **15824 TFLOPS** (unchanged)
 
 **Comparison class**: `ENGINEERING_REFERENCE` (precision differs: H100 FP8 vs A3 W8A8)
 

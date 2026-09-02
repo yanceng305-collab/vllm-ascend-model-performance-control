@@ -2,11 +2,11 @@
 
 ## Baseline Matrix Status
 
-**Complete Evidence-backed baseline matrix established** (Evidence run: run-20260902-140958, corrected 2026-09-02):
-- 1K input + 1K output, C64: **676.60 tok/s** (Achievement: 65.84%, BELOW TARGET)
-- 4K input + 1K output, C64: **820.76 tok/s** (Achievement: 52.85%, BELOW TARGET)
-- 16K input + 1K output, C64: **957.94 tok/s** (Achievement: 57.23%, BELOW TARGET)
-- 64K input + 1K output, C64: **927.59 tok/s** (Achievement: 48.01%, BELOW TARGET)
+**Complete Evidence-backed baseline matrix established** (Evidence run: run-20260902-140958, corrected 2026-09-02; active normalization basis D-024, 6016):
+- 1K input + 1K output, C64: **676.60 tok/s** (Achievement: 66.19%, BELOW TARGET)
+- 4K input + 1K output, C64: **820.76 tok/s** (Achievement: 53.13%, BELOW TARGET)
+- 16K input + 1K output, C64: **957.94 tok/s** (Achievement: 57.53%, BELOW TARGET)
+- 64K input + 1K output, C64: **927.59 tok/s** (Achievement: 48.27%, BELOW TARGET)
 
 **Evidence Archive**: `GLM52-W8A8-BASELINE-EVIDENCE-run-20260902-140958.tar.gz`  
 **Archive SHA256**: `8818e4ffaf88a23989c36f0a17376843f8078adc522a32bddf682aed401816d2`  
@@ -15,12 +15,13 @@
 
 **Runtime Identity** (corrected): Container `model-test-zyg-a3`, Image `nightly-releases-v0.24.0rc-a3`, vLLM `0.24.0+empty`
 
-**Target**: ≥80% normalized throughput (per Decision D-020). All four cells **BELOW TARGET**; formal baseline established for optimization tracking.
+**Target**: ≥80% normalized throughput (active basis D-024, 6016; D-020 A3 basis historical). All four cells **BELOW TARGET**; formal baseline established for optimization tracking.
 
 ## Baseline Results
 
 | Result ID | Date | Status | Workload | Throughput | Achievement | Disposition |
 |---|---|---|---|---|---|---|
+| [CORRECTION-SUPPLEMENT-HARDWARE-NORMALIZATION-20260902](CORRECTION-SUPPLEMENT-HARDWARE-NORMALIZATION-20260902.md) | 2026-09-02 | **ACTIVE (normalization)** | All cells (D-024 basis 6016) | unchanged | 66.19 / 53.13 / 57.53 / 48.27 | **USE THIS for active normalization** |
 | [CORRECTION-SUPPLEMENT-BASELINE-EVIDENCE-run-20260902-140958](CORRECTION-SUPPLEMENT-BASELINE-EVIDENCE-run-20260902-140958.md) | 2026-09-02 | **AUTHORITATIVE** | All cells correction | See below | See below | **USE THIS** |
 | [RESULT-GLM52-W8A8-1K-BASELINE-EVIDENCE-run-20260902-140958](RESULT-GLM52-W8A8-1K-BASELINE-EVIDENCE-run-20260902-140958.md) | 2026-09-02 | SUPERSEDED | 1K input + 1K output, C64 | ~~676.59~~ → **676.60** tok/s | 65.84% | Superseded by correction (runtime ID + calculation) |
 | [RESULT-GLM52-W8A8-4K-BASELINE-EVIDENCE-run-20260902-140958](RESULT-GLM52-W8A8-4K-BASELINE-EVIDENCE-run-20260902-140958.md) | 2026-09-02 | SUPERSEDED | 4K input + 1K output, C64 | 820.76 tok/s | 52.85% | Superseded by correction (runtime ID only; value correct) |
@@ -34,7 +35,8 @@
 - **Evidence-backed baseline matrix**: All four cells (1K/4K/16K/64K) formally established with Evidence-backed Results from A3PerfRunner Evidence Acquisition Task (GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION, run-20260902-140958).
 - **PerfControl Formal Review and Acceptance**: Completed 2026-09-02 (correction review). Evidence completeness, workload contract, runtime identity, calculation integrity all verified. Runtime identity matches frozen baseline (Decision D-019). All four cells formally ACCEPTED.
 - **Historical 64K Result**: `RESULT-GLM52-W8A8-64K-BASELINE-USER-MEASURED.md` (927.45 tok/s, 2026-09-01) remains valid historical provenance, unchanged and immutable.
-- **Performance Assessment**: All cells below 80% normalized target (Decision D-020), establishing performance gap for optimization work.
+- **Performance Assessment**: All cells below 80% normalized target (active basis D-024), establishing performance gap for optimization work.
+- **Hardware basis correction (D-024, 2026-09-02)**: User corrected A3/910C basis to 752 × 8 = 6016 (was 756 × 8 = 6048). H100 unchanged. Active achievements/targets above are machine-recomputed on 6016 (see the hardware normalization correction supplement). Immutable Results and the first correction supplement remain unchanged.
 - **Runtime**: Container `model-test-zyg-a3`, Image `nightly-releases-v0.24.0rc-a3`, vLLM 0.24.0+empty (matches frozen baseline per D-019)
 - **Evidence Transport**: Per Decision D-022 (GitHub Release Asset Evidence Transport)
 
@@ -60,5 +62,5 @@ Notes:
 - No other runner-narrative SHA values are adopted into this Control record.
 - `OPT-01 remains BLOCKED until the accepted GLM baseline runtime is restored (User-authorized) and effective max_num_batched_tokens is re-observed.`
 
-- Manual runtime observation (2026-09-02): see [MANUAL-RUNTIME-OBSERVATION-20260902.md](../MANUAL-RUNTIME-OBSERVATION-20260902.md) — non-formal; manual 16K exploratory microgate **IN PROGRESS / RESULT PENDING**; `max_num_batched_tokens` UNVERIFIED.
+- Manual runtime observation (2026-09-02): see [MANUAL-RUNTIME-OBSERVATION-20260902.md](../MANUAL-RUNTIME-OBSERVATION-20260902.md) — non-formal; manual 16K exploratory microgate **COMPLETED** (Run2 960.45 tok/s; delta vs 957.94 = +0.262%; **MANUAL EXPLORATORY MICROGATE: NO_MATERIAL_GAIN**; not formal OPT-01 screening); `max_num_batched_tokens` remains UNVERIFIED.
 - Official upstream reference (commit `6443b2a38b95390e4f5174ff7ad2f8c3751e040f`, GLM5.2.md) verified 2026-09-02: `--max-num-batched-tokens 4096` is a REFERENCE CANDIDATE ONLY, NOT a found effective value.
