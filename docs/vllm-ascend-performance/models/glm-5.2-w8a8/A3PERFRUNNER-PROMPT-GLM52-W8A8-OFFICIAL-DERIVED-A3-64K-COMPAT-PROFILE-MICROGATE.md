@@ -89,7 +89,7 @@ User explicitly authorized `docker restart model-test-zyg-a3` (dedicated test co
 
 Launch the reference start (or current attempt's adjusted parameters). Wait READY; probe `/v1/models`. Extract `capacity-gate.txt` (PROCESS_ALIVE, API_READY, served_model, TP/DP/EP, max_model_len, max_num_seqs, max_num_batched_tokens, async, mtp, full_decode_only, capture_max, GRAPH_CAPTURE_*, GRAPH_COVERAGE_WARNING, FAILURE_REASON).
 
-Known starting failure (evidence, not new): the reference 0.95 launch failed: KV needed ~6.30 GiB vs available 6.28 GiB, vLLM estimated max length 69632; see Release `glm52-od-profile-16k-20260902-144217` (authoritative archive SHA256 (live GitHub metadata) `3d41a2254317bc887787ee7969d121558309229a2034c0bd05150bfc81500f6363`).
+Known starting failure (evidence, not new): the reference 0.95 launch failed: KV needed ~6.30 GiB vs available 6.28 GiB, vLLM estimated max length 69632; see Release `glm52-od-profile-16k-20260902-144217` (authoritative archive SHA256 (live GitHub metadata) `3d41a2254317bc887787ee7969d121558309229a2034c0bd05150bfc81500f63`).
 
 Recoverable issues (OOM/KV/graph/scheduler/launch/perf) are feedback. Diagnose from logs, form hypothesis, modify within §Adjustable (data-parallel-size, tensor-parallel-size, expert parallel, max-num-seqs, max-num-batched-tokens, gpu-memory-utilization, speculative/MTP count, cudagraph mode/capture size, async/prefix, BALANCE/ML, multistream, HCCL/OMP/allocator/memory controls, other vLLM/vLLM-Ascend flags), relaunch, re-gate, and continue. Multiple strongly coupled params may be changed together (state the bundle reason). Mark smaller-context experiments DIAGNOSTIC ONLY.
 

@@ -201,7 +201,7 @@ RESULT_DIR="<TASK_EVIDENCE_DIR>/benchmark-16k"
 mkdir -p "$RESULT_DIR"
 for RUN in 1 2; do
   vllm bench serve \
-    --backend vllm --base-url "$base-url" --endpoint /v1/completions \
+    --backend vllm --base-url "$BASE_URL" --endpoint /v1/completions \
     --model "$SERVED_MODEL" --tokenizer "$MODEL_PATH" --trust-remote-code \
     --dataset-name random --random-input-len 16384 --random-output-len 1024 \
     --random-range-ratio 0 --request-rate inf --max-concurrency 64 --num-prompts 256 \
