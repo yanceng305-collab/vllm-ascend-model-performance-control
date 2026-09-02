@@ -332,13 +332,18 @@ CELL_DIR="<Evidence root>/.../${CELL}/"
 [ -f "$CELL_DIR/run3.json" ] || echo "MISSING: run3.json"
 [ -f "$CELL_DIR/run4.json" ] || echo "MISSING: run4.json"
 
-# Parse and verify Run2/3/4 (example for Run2)
-COMPLETED=$(jq '.completed' "$CELL_DIR/run2.json")
-FAILED=$(jq '.failed' "$CELL_DIR/run3.json")
+# Parse and verify Runs2/3/4
+for RUN in 2 3 4; do
+  FILE="$CELL_DIR/run${RUN}.json"
 
-if [ "$COMPLETED" != "256" ] || [ "$FAILED" != "0" ]; then
-  echo "EVIDENCE_INCOMPLETE: ${CELL} Run2 completed=$COMPLETED failed=$FAILED"
-fi
+  COMPLETED=$(jq -r '.completed' "$FILE")
+  FAILED=$(jq -r '.failed // 0' "$FILE")
+
+  if [ "$COMPLETED" != "256" ] || [ "$FAILED" != "0" ]; then
+    echo "EVIDENCE_INCOMPLETE: ${CELL} Run${RUN} completed=$COMPLETED failed=$FAILED"
+    exit 1
+  fi
+done
 
 # Verify workload contract (input tokens, output tokens, etc.)
 # Verify runtime provenance (TP, model, versions)
@@ -360,8 +365,8 @@ For each cell:
 
 1. Read run2.json, run3.json, run4.json
 2. Extract from each:
-   - `completed_requests` (must == 256)
-   - `failed_requests` (must == 0)
+   - `completed` (must == 256)
+   - `failed` (must == 0)
    - `total_token_throughput` (tok/s)
    - `output_token_throughput`
    - `mean_ttft_ms`, `p99_ttft_ms`
