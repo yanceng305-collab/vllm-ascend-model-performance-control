@@ -1,0 +1,37 @@
+# Hardware Normalization Configuration
+
+# This file provides the authoritative machine-readable hardware compute basis
+# and normalization policy per Decision D-020 and Decision D-023.
+# All Formal Result generators and validators MUST use values from this file.
+# Manual transcription is prohibited.
+
+# Format: YAML-compatible (can be parsed by Python, validators, generators)
+
+# A3/910C Configuration
+a3:
+  cards: 8
+  tflops_per_card_fp16: 756  # FP16 precision suitable for W8A8 comparison
+  total_tflops: 6048  # 8 × 756
+
+# H100 Configuration (Customer Baseline)
+h100:
+  cards: 16
+  tflops_per_card_fp8: 989  # FP8 precision (customer baseline)
+  total_tflops: 15824  # 16 × 989
+
+# Normalization Policy
+normalization:
+  # Achievement = (A3_throughput / A3_total_tflops) / (H100_throughput / H100_total_tflops)
+  target_achievement_minimum: 0.80  # 80% normalized target
+
+# Decision Provenance
+decision_id: "D-020"
+effective_date: "2026-09-01"
+validation_decision_id: "D-023"
+validation_effective_date: "2026-09-02"
+
+# Notes:
+# - This is the SOLE authoritative definition of the compute basis.
+# - Do not use "8 × 1979" or any other H100 formulation.
+# - All Result generators must compute achievement using these exact values.
+# - All Result validators must verify Results against these exact values.

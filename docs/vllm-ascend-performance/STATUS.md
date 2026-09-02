@@ -99,3 +99,4 @@ See [DECISIONS.md](DECISIONS.md) for all formal decisions, including:
 - D-020: GLM-5.2-W8A8 hardware compute basis and normalization policy
 - D-021: Local PerfControl / Remote A3PerfRunner Separation (final role architecture; Runner produces Evidence, PerfControl produces formal Results)
 - D-022: GitHub Release Asset Evidence Transport
+- D-023: Machine-Verified Formal Result Gate (eliminates AI transcription errors)

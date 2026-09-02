@@ -18,7 +18,11 @@ PerfControl writes a bounded Task after identities and contract inputs are froze
 
 ## Result authorship and immutability
 
-Runner produces Evidence; PerfControl produces formal Results. A3PerfRunner's Evidence root, manifest, commands, checksums, and runtime identity are immutable once created; never rewrite them. Corrections or additional evidence are supplements or new Evidence captures. Per Decision D-022, A3PerfRunner may upload immutable Evidence bundles as GitHub Release Assets (transport/storage channel; PerfControl downloads and verifies SHA256 before Evidence review). After receiving Evidence, PerfControl independently recalcs the values, authors the formal `RESULT-*.md` snapshot once, and afterwards never rewrites it; corrections are supplement documents or follow-up Results. PerfControl Acceptance changes only the index, Status, Review, and Decision records. The server never commits or pushes the Control repo.
+Runner produces Evidence; PerfControl produces formal Results. A3PerfRunner's Evidence root, manifest, commands, checksums, and runtime identity are immutable once created; never rewrite them. Corrections or additional evidence are supplements or new Evidence captures. Per Decision D-022, A3PerfRunner may upload immutable Evidence bundles as GitHub Release Assets (transport/storage channel; PerfControl downloads and verifies SHA256 before Evidence review). 
+
+After receiving Evidence, PerfControl uses machine-verified Evidence ingestion and Result generation (Decision D-023) to eliminate AI transcription errors. PerfControl runs `validate_evidence.py` to auto-extract runtime identity, DISPATCH_CONTROL_SHA, and Run2/Run3/Run4 values from Evidence, then runs `generate_result.py` to auto-generate the formal `RESULT-*.md` with all factual fields machine-verified. AI authoring is limited to analysis, Formal Review rationale, and Next Steps. Before commit, PerfControl runs `validate_result.py` to verify all factual fields; validation failures block commit with `FORMAL_RESULT_VALIDATION_FAILED`.
+
+Once generated, formal Results are immutable snapshots; afterwards never rewrite them. Corrections are supplement documents or follow-up Results. PerfControl Acceptance changes only the index, Status, Review, and Decision records. The server never commits or pushes the Control repo.
 
 ## Acceptance states
 

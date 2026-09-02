@@ -150,6 +150,71 @@ Formal Results are authored by PerfControl after Evidence review.
 
 **Legacy**: The Stage 0A `CODEX2-...` prompt artifact explicitly remains historical per D-018 and the tasks `README`; immutable historical Results and records are not covered by this Decision and are not rewritten. Where earlier decisions describe A3PerfRunner actions such as "Result reporting," D-021 governs: the Runner delivers Evidence and a Runner Report; formal `RESULT-*.md` authoring belongs to PerfControl.
 
+## D-023 Machine-Verified Formal Result Gate
+
+**Effective**: 2026-09-02
+
+To prevent AI transcription errors in Formal Results (runtime identity, benchmark values, normalization calculations), PerfControl MUST use machine-verified Evidence ingestion and Result generation.
+
+**Scope**: All Formal Results created from Evidence bundles (GLM-5.2-W8A8, DeepSeek-V4-Flash-W8A8, MiniMax-M3, and all future models).
+
+**Prohibited Manual Fields**: AI agents are **prohibited** from manually filling the following factual fields in Formal Results:
+- Runtime/image identity and versions
+- DISPATCH_CONTROL_SHA
+- Run2/Run3/Run4 raw throughput values
+- Completed/failed counts
+- Mean(Run2, Run3, Run4) calculation
+- Evidence archive SHA256
+- Hardware normalization basis (A3/H100 TFLOPS)
+- Normalized throughput calculations
+- Achievement percentage
+
+**Required Components**:
+
+1. **Machine-readable normalization source**: `docs/vllm-ascend-performance/hardware-normalization-config.yaml`
+   - Authoritative A3/H100 compute basis per Decision D-020
+   - Target achievement threshold
+   - Sole source for all Result generators and validators
+
+2. **Evidence validation script**: `scripts/validate_evidence.py`
+   - Auto-extracts runtime identity from `runtime-identity.txt`
+   - Auto-extracts DISPATCH_CONTROL_SHA from `control-sha.txt`
+   - Auto-extracts Run2/Run3/Run4 throughput/completed/failed from benchmark logs
+   - Machine-computes Mean(Run2, Run3, Run4) with full precision
+   - Outputs machine-readable validated Evidence summary (JSON)
+
+3. **Result generator script**: `scripts/generate_result.py`
+   - Consumes validated Evidence JSON and normalization config
+   - Auto-generates all factual Result fields (no manual transcription)
+   - Machine-computes achievement percentage per Decision D-020
+   - AI authoring limited to: analysis, Formal Review rationale, Next Steps
+
+4. **Pre-commit Result validator**: `scripts/validate_result.py`
+   - Verifies Evidence runtime == Result runtime
+   - Verifies raw Run2/Run3/Run4 values == Result values
+   - Recomputes mean and verifies == Result mean
+   - Verifies normalization basis == hardware-normalization-config.yaml
+   - Recomputes achievement and verifies == Result achievement
+   - Verifies DISPATCH_CONTROL_SHA == Evidence provenance
+   - Verifies archive SHA256 == Evidence provenance
+   - Exits with code 1 (`FORMAL_RESULT_VALIDATION_FAILED`) if any check fails
+
+**Process**:
+
+1. PerfControl downloads and verifies Evidence bundle (SHA256)
+2. PerfControl runs `validate_evidence.py` → produces `validated-evidence.json`
+3. PerfControl runs `generate_result.py` for each cell → produces draft Result markdown with all factual fields auto-generated
+4. AI reviews draft Result, may edit only: analysis sections, Formal Review rationale, Next Steps
+5. Before commit: PerfControl runs `validate_result.py` on each Result markdown
+6. If validation PASS: proceed with commit/push
+7. If validation FAIL: `FORMAL_RESULT_VALIDATION_FAILED`, block commit, investigate error
+
+**Formal Acceptance**: Results with validation failures MUST NOT receive Formal Acceptance. Optimization track MUST NOT begin until corrected Results pass validation.
+
+**Historical Results**: This Decision does not retroactively invalidate historical Results created before 2026-09-02. They remain valid with their original provenance. Future Results MUST use machine-verified gate.
+
+**Rationale**: The correction review (commit cc97d55) identified AI transcription errors in runtime identity (vLLM version) and calculation rounding (1K/16K cells). Machine verification eliminates this entire class of error.
+
 ## D-022 GitHub Release Asset Evidence Transport
 
 **Effective**: 2026-09-02
