@@ -38,27 +38,31 @@
 
 ## GLM-5.2-W8A8 Current Status
 
-**Status**: BASELINE ESTABLISHED (Evidence-backed baseline matrix formally accepted 2026-09-02)
+**Status**: BASELINE ESTABLISHED (Evidence-backed baseline matrix formally accepted 2026-09-02, corrected 2026-09-02)
 
 **Execution mode**: USER-VERIFIED KNOWN-GOOD BASELINE → FAST PREFLIGHT → RUN FROZEN COMMANDS → EVIDENCE → RESULT → **OPTIMIZATION** (current phase)
 
-**Evidence-backed baseline matrix** (Evidence run: run-20260902-140958):
-- 1K: 676.59 tok/s, Achievement: 65.84% (BELOW TARGET)
+**Evidence-backed baseline matrix** (Evidence run: run-20260902-140958, corrected):
+- 1K: **676.60 tok/s**, Achievement: 65.84% (BELOW TARGET)
 - 4K: 820.76 tok/s, Achievement: 52.85% (BELOW TARGET)
-- 16K: 957.93 tok/s, Achievement: 57.23% (BELOW TARGET)
+- 16K: **957.94 tok/s**, Achievement: 57.23% (BELOW TARGET)
 - 64K: 927.59 tok/s, Achievement: 48.01% (BELOW TARGET)
 
 **Evidence Archive**: `GLM52-W8A8-BASELINE-EVIDENCE-run-20260902-140958.tar.gz` (SHA256: `8818e4ffa...01816d2`)  
 **Evidence Location**: GitHub Release `evidence-test-glm52-run-20260902-140958` (Decision D-022)
 
+**Runtime Identity** (corrected): Container `model-test-zyg-a3`, Image `nightly-releases-v0.24.0rc-a3`, vLLM `0.24.0+empty`
+
 **Target**: ≥80% normalized throughput for all cells (Decision D-020)
 
+**Correction Note**: Original Results (commit 371f5f0) contained runtime identity transcription error (incorrectly recorded as vLLM 0.6.4.post1; actual: vLLM 0.24.0+empty) and two calculation rounding errors (1K: 676.59→676.60; 16K: 957.93→957.94). Correction Supplement created; original Results superseded but unchanged.
+
 **Next steps**:
-1. Optimization track begins (separate OPT Tasks with controlled parameter changes)
+1. Optimization track may proceed (corrected baseline formally accepted)
 2. Root cause analysis and profiling
 3. Target achievement: ≥80% for all cells
 
-Stage 0 discovery is NOT required for GLM baseline performance work. GLM uses vLLM 0.6.4.post1+ascend as verified runtime. FlagOS-aligned 0.20.2 remains as historical reference only.
+Stage 0 discovery is NOT required for GLM baseline performance work. GLM uses vLLM 0.24.0+empty as frozen baseline runtime. FlagOS-aligned 0.20.2 remains as historical reference only.
 
 ## Pending Gates
 

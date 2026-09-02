@@ -1,10 +1,10 @@
 # GLM-5.2-W8A8 Status
 
-**Status**: `BASELINE ESTABLISHED` (Evidence-backed baseline matrix formally accepted 2026-09-02)
+**Status**: `BASELINE ESTABLISHED` (Evidence-backed baseline matrix formally accepted 2026-09-02, corrected 2026-09-02)
 
 **Execution mode**: USER-VERIFIED KNOWN-GOOD BASELINE → FAST PREFLIGHT → RUN FROZEN COMMANDS → EVIDENCE → RESULT → **OPTIMIZATION** (current phase)
 
-**Current baseline**: vLLM 0.6.4.post1 / vLLM-Ascend 0.6.4.post1+ascend1.0.0rc1 / CANN 8.0.0
+**Current baseline**: vLLM 0.24.0+empty / Image nightly-releases-v0.24.0rc-a3
 
 **Stage 0 discovery**: Not required for GLM-5.2-W8A8 baseline performance work. Stage 0 capability is retained for new servers, new hardware, unknown runtimes, and unverified models.
 
@@ -19,22 +19,26 @@
 
 ## Current Performance
 
-**Evidence-backed baseline matrix** (Evidence run: run-20260902-140958, formally accepted 2026-09-02):
+**Evidence-backed baseline matrix** (Evidence run: run-20260902-140958, corrected 2026-09-02):
 
 | Cell | A3 Total Throughput (tok/s) | H100 Reference (tok/s) | Achievement | Disposition | Status |
 |---|---|---|---|---|---|
-| 1K | 676.59 | 2688.71 | 65.84% | BELOW TARGET | Evidence-backed ACCEPTED |
+| 1K | **676.60** | 2688.71 | 65.84% | BELOW TARGET | Evidence-backed ACCEPTED (corrected) |
 | 4K | 820.76 | 4063.45 | 52.85% | BELOW TARGET | Evidence-backed ACCEPTED |
-| 16K | 957.93 | 4379.60 | 57.23% | BELOW TARGET | Evidence-backed ACCEPTED |
+| 16K | **957.94** | 4379.60 | 57.23% | BELOW TARGET | Evidence-backed ACCEPTED (corrected) |
 | 64K | 927.59 | 5054.66 | 48.01% | BELOW TARGET | Evidence-backed ACCEPTED |
 
 **Evidence Archive**: `GLM52-W8A8-BASELINE-EVIDENCE-run-20260902-140958.tar.gz` (SHA256: `8818e4ffa...01816d2`)  
 **Evidence Location**: GitHub Release `evidence-test-glm52-run-20260902-140958` (Decision D-022)  
 **DISPATCH_CONTROL_SHA**: `26eb575430bc1494f7d8d964a7ba4e16a4e0a2c5`
 
+**Runtime Identity** (corrected): Container `model-test-zyg-a3`, Image `nightly-releases-v0.24.0rc-a3`, vLLM `0.24.0+empty`
+
 **Target**: ≥80% normalized throughput for each cell
 
 **Performance Gap**: All four cells below 80% normalized target (Decision D-020). Baseline establishes formal reference for optimization tracking.
+
+**Correction Note**: Original Results (commit 371f5f0) contained runtime identity transcription error and two calculation rounding errors. Correction Supplement created; original Results superseded but unchanged. Use corrected values: 1K=676.60 (was 676.59), 16K=957.94 (was 957.93).
 
 **64K historical baseline** (User-measured 2026-09-01):
 - Total token throughput: 927.45 tok/s
