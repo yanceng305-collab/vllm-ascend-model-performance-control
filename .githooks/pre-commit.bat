@@ -35,15 +35,31 @@ if not exist validated-evidence.json (
     echo   validated-evidence.json not found
     echo.
     echo Before committing Results, you must:
-    echo   1. Run: python scripts/validate_evidence.py ^<evidence-dir^> ^> validated-evidence.json
+    echo   1. Run: python scripts/validate_evidence.py ^<evidence-dir^> --sha256 ^<hash^> --location ^<location^> ^> validated-evidence.json
     echo   2. Ensure validation passes
     echo   3. Then commit Results
     echo.
     exit /b 1
 )
 
-REM Detect model name from Result files (default to GLM-5.2-W8A8)
-set MODEL_NAME=GLM-5.2-W8A8
+REM Detect model name from validated Evidence (NO FALLBACK)
+python -c "import json; e=json.load(open('validated-evidence.json')); print(e['provenance']['task_id'].split('-')[0] if 'GLM' in e['provenance']['task_id'] else 'UNKNOWN')" > %TEMP%\model-name.txt 2>nul
+set /p MODEL_NAME=<%TEMP%\model-name.txt
+
+if "%MODEL_NAME%"=="" set MODEL_NAME=UNKNOWN
+if "%MODEL_NAME%"=="UNKNOWN" (
+    echo.
+    echo VALIDATION FAILED
+    echo.
+    echo FORMAL_RESULT_VALIDATION_FAILED:
+    echo   Could not determine model name from validated Evidence
+    echo   Task ID must contain model identifier
+    echo.
+    exit /b 1
+)
+
+REM Map task prefix to full model name
+if "%MODEL_NAME%"=="GLM52" set MODEL_NAME=GLM-5.2-W8A8
 
 set VALIDATION_FAILED=0
 

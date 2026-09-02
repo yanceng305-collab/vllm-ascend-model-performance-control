@@ -204,7 +204,8 @@ def verify_manifest_and_checksums(evidence_dir: Path) -> None:
         raise ValueError(f"Could not read manifest/checksums files: {e}")
 
 
-def validate_evidence(evidence_dir: Path, cells: List[str], expected_prompts: int = 256) -> Dict:
+def validate_evidence(evidence_dir: Path, cells: List[str], expected_prompts: int = 256,
+                     archive_sha256: str = None, evidence_location: str = None) -> Dict:
     """
     Validate Evidence bundle and extract all machine-readable facts.
     FAIL-CLOSED: Any validation failure raises exception and exits 1.
@@ -230,9 +231,17 @@ def validate_evidence(evidence_dir: Path, cells: List[str], expected_prompts: in
     for cell in cells:
         cells_data[cell] = validate_cell(evidence_dir, cell, expected_prompts)
     
+    # Build Evidence archive metadata
+    evidence_run_id = evidence_dir.name
+    archive_filename = f"{provenance['task_id']}-EVIDENCE-{evidence_run_id}.tar.gz"
+    
     # Build validated Evidence summary
     validated_evidence = {
         'evidence_directory': str(evidence_dir.absolute()),
+        'evidence_run_id': evidence_run_id,
+        'archive_filename': archive_filename,
+        'archive_sha256': archive_sha256 if archive_sha256 else "UNKNOWN",
+        'evidence_location': evidence_location if evidence_location else "UNKNOWN",
         'runtime_identity': runtime_identity,
         'provenance': provenance,
         'cells': cells_data,
@@ -245,15 +254,39 @@ def validate_evidence(evidence_dir: Path, cells: List[str], expected_prompts: in
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python validate_evidence.py <evidence_directory> [cell1 cell2 ...]", file=sys.stderr)
-        print("Example: python validate_evidence.py ./run-20260902-140958 1K 4K 16K 64K", file=sys.stderr)
+        print("Usage: python validate_evidence.py <evidence_directory> [cell1 cell2 ...] [--sha256 <hash>] [--location <location>]", file=sys.stderr)
+        print("Example: python validate_evidence.py ./run-20260902-140958 1K 4K 16K 64K --sha256 abc123... --location 'GitHub Release ...'", file=sys.stderr)
         sys.exit(1)
     
     evidence_dir = Path(sys.argv[1])
-    cells = sys.argv[2:] if len(sys.argv) > 2 else ['1K', '4K', '16K', '64K']
+    
+    # Parse arguments
+    cells = []
+    archive_sha256 = None
+    evidence_location = None
+    
+    i = 2
+    while i < len(sys.argv):
+        arg = sys.argv[i]
+        if arg == '--sha256' and i + 1 < len(sys.argv):
+            archive_sha256 = sys.argv[i + 1]
+            i += 2
+        elif arg == '--location' and i + 1 < len(sys.argv):
+            evidence_location = sys.argv[i + 1]
+            i += 2
+        elif not arg.startswith('--'):
+            cells.append(arg)
+            i += 1
+        else:
+            i += 1
+    
+    if not cells:
+        cells = ['1K', '4K', '16K', '64K']
     
     try:
-        validated_evidence = validate_evidence(evidence_dir, cells)
+        validated_evidence = validate_evidence(evidence_dir, cells, 
+                                              archive_sha256=archive_sha256,
+                                              evidence_location=evidence_location)
         
         # Output as JSON
         print(json.dumps(validated_evidence, indent=2))

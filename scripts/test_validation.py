@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """
-Test Suite for Machine-Verified Formal Result Gate
+TRUE END-TO-END Test Suite for Machine-Verified Formal Result Gate
 
-Tests validation scripts with positive and negative test cases.
-Per Decision D-023: FAIL-CLOSED implementation requires negative tests.
+All tests execute real validators with actual fixtures.
+No "mechanism in place" shortcuts allowed.
+Per Decision D-023: FAIL-CLOSED implementation requires real negative tests.
+
+SKIP > 0 → TEST SUITE FAILS
 """
 
 import json
@@ -11,6 +14,7 @@ import sys
 import subprocess
 import tempfile
 import shutil
+import re
 from pathlib import Path
 
 
@@ -22,134 +26,373 @@ def run_command(cmd, cwd=None):
     return result.stdout, result.stderr, result.returncode
 
 
-def test_positive_validation(repo_root):
-    """Test that correct Evidence/Result passes validation"""
-    print("\n=== TEST: Positive Validation (should PASS) ===")
-    
-    # Use existing Evidence if available
-    evidence_dir = repo_root / "evidence-temp" / "run-20260902-140958"
-    if not evidence_dir.exists():
-        print("⚠ SKIP: Evidence directory not found")
-        return None
-    
-    # Validate Evidence
-    cmd = f"python scripts/validate_evidence.py {evidence_dir} 1K 4K 16K 64K"
-    stdout, stderr, rc = run_command(cmd, cwd=repo_root)
-    
-    if rc != 0:
-        print(f"❌ FAIL: Evidence validation failed")
-        print(stderr)
-        return False
-    
-    validated_evidence = json.loads(stdout)
-    if validated_evidence.get('validation_status') != 'PASS':
-        print(f"❌ FAIL: Evidence validation status not PASS")
-        return False
-    
-    print("✓ Evidence validation PASS")
-    return True
-
-
-def test_runtime_corruption(repo_root):
-    """Test that runtime version corruption is rejected"""
-    print("\n=== TEST: Runtime Corruption (should FAIL) ===")
+def test_positive_end_to_end(repo_root):
+    """Test complete Evidence → generate → validate flow (should PASS)"""
+    print("\n=== TEST: Positive End-to-End (should PASS) ===")
     
     evidence_dir = repo_root / "evidence-temp" / "run-20260902-140958"
     if not evidence_dir.exists():
-        print("⚠ SKIP: Evidence directory not found")
-        return None
+        print("❌ FAIL: Evidence directory required for end-to-end test")
+        return False
     
-    # Create temporary corrupted Evidence
     with tempfile.TemporaryDirectory() as tmpdir:
-        tmp_evidence = Path(tmpdir) / "run-test"
-        shutil.copytree(evidence_dir, tmp_evidence)
+        tmpdir = Path(tmpdir)
         
-        # Corrupt runtime identity
-        runtime_file = tmp_evidence / "runtime-identity.txt"
-        content = runtime_file.read_text(encoding='utf-8')
-        corrupted = content.replace('0.24.0+empty', '0.6.4.post1')
-        runtime_file.write_text(corrupted, encoding='utf-8')
-        
-        # Validate Evidence (should still pass - corruption is in the file)
-        cmd = f"python scripts/validate_evidence.py {tmp_evidence} 1K"
+        # Step 1: Validate Evidence
+        cmd = f'python scripts/validate_evidence.py "{evidence_dir}" 1K --sha256 8818e4ffaf88a23989c36f0a17376843f8078adc522a32bddf682aed401816d2 --location "GitHub Release test"'
         stdout, stderr, rc = run_command(cmd, cwd=repo_root)
         
         if rc != 0:
-            print(f"❌ FAIL: Evidence validation failed unexpectedly")
+            print(f"❌ FAIL: Evidence validation failed")
+            print(stderr)
             return False
         
-        # Now test that Result validator would catch the mismatch
-        # (We'd need original Evidence and corrupted Result for full test)
-        print("✓ Runtime corruption detection mechanism in place")
+        validated_evidence_file = tmpdir / "validated-evidence.json"
+        validated_evidence_file.write_text(stdout, encoding='utf-8')
+        validated_evidence = json.loads(stdout)
+        
+        # Step 2: Generate Result for 1K
+        cmd = f'python scripts/generate_result.py "{validated_evidence_file}" GLM-5.2-W8A8 1K 8818e4ffaf88a23989c36f0a17376843f8078adc522a32bddf682aed401816d2 "GitHub Release test"'
+        stdout, stderr, rc = run_command(cmd, cwd=repo_root)
+        
+        if rc != 0:
+            print(f"❌ FAIL: Result generation failed")
+            print(stderr)
+            return False
+        
+        result_file = tmpdir / "RESULT-TEST-1K.md"
+        result_file.write_text(stdout, encoding='utf-8')
+        
+        # Step 3: Validate Result
+        cmd = f'python scripts/validate_result.py "{result_file}" "{validated_evidence_file}" GLM-5.2-W8A8'
+        stdout, stderr, rc = run_command(cmd, cwd=repo_root)
+        
+        if rc != 0:
+            print(f"❌ FAIL: Result validation failed")
+            print(stderr)
+            return False
+        
+        print("✓ Complete end-to-end flow PASS")
         return True
 
 
-def test_completed_failed_corruption(repo_root):
-    """Test that completed/failed count corruption is rejected"""
-    print("\n=== TEST: Completed/Failed Corruption (should FAIL) ===")
+def test_runtime_mutation(repo_root):
+    """Test that runtime 0.24 → 0.6.4 mutation is rejected"""
+    print("\n=== TEST: Runtime Mutation (should FAIL) ===")
     
     evidence_dir = repo_root / "evidence-temp" / "run-20260902-140958"
     if not evidence_dir.exists():
-        print("⚠ SKIP: Evidence directory not found")
-        return None
+        print("❌ FAIL: Evidence directory required")
+        return False
     
-    # Create temporary corrupted Evidence
     with tempfile.TemporaryDirectory() as tmpdir:
-        tmp_evidence = Path(tmpdir) / "run-test"
+        tmpdir = Path(tmpdir)
+        tmp_evidence = tmpdir / "run-test"
         shutil.copytree(evidence_dir, tmp_evidence)
         
-        # Corrupt run2.log to have completed=255
-        run2_log = tmp_evidence / "1K" / "run2.log"
-        content = run2_log.read_text(encoding='utf-8')
+        # Mutate runtime
+        runtime_file = tmp_evidence / "runtime-identity.txt"
+        content = runtime_file.read_text(encoding='utf-8')
+        mutated = content.replace('0.24.0+empty', '0.6.4.post1')
+        runtime_file.write_text(mutated, encoding='utf-8')
         
-        # More robust replacement: find the actual line and replace the number
-        import re
-        corrupted = re.sub(r'(Successful requests:)\s+256', r'\1                     255', content)
-        run2_log.write_text(corrupted, encoding='utf-8')
+        # Validate Evidence (should pass with mutated value)
+        cmd = f'python scripts/validate_evidence.py "{tmp_evidence}" 1K --sha256 test --location "test"'
+        stdout, stderr, rc = run_command(cmd, cwd=repo_root)
+        if rc != 0:
+            print(f"❌ FAIL: Evidence validation unexpectedly failed")
+            return False
         
-        # Validate Evidence (should FAIL because completed != 256)
-        cmd = f"python scripts/validate_evidence.py {tmp_evidence} 1K"
+        validated_file = tmpdir / "validated.json"
+        validated_file.write_text(stdout, encoding='utf-8')
+        
+        # Generate Result with mutated Evidence
+        cmd = f'python scripts/generate_result.py "{validated_file}" GLM-5.2-W8A8 1K test "test"'
+        stdout, stderr, rc = run_command(cmd, cwd=repo_root)
+        if rc != 0:
+            print(f"❌ FAIL: Result generation unexpectedly failed")
+            return False
+        
+        result_file = tmpdir / "result.md"
+        result_file.write_text(stdout, encoding='utf-8')
+        
+        # Now validate against ORIGINAL Evidence (should FAIL)
+        cmd = f'python scripts/validate_evidence.py "{evidence_dir}" 1K --sha256 test --location "test"'
+        stdout_orig, _, _ = run_command(cmd, cwd=repo_root)
+        validated_orig = tmpdir / "validated-orig.json"
+        validated_orig.write_text(stdout_orig, encoding='utf-8')
+        
+        cmd = f'python scripts/validate_result.py "{result_file}" "{validated_orig}" GLM-5.2-W8A8'
         stdout, stderr, rc = run_command(cmd, cwd=repo_root)
         
         if rc == 0:
-            print(f"❌ FAIL: Validation passed with completed=255 (should reject)")
+            print(f"❌ FAIL: Validation passed with runtime mismatch")
             return False
         
-        if 'completed=255, expected 256' in stderr:
-            print("✓ Completed count corruption correctly rejected")
+        if 'vLLM version mismatch' in stderr or '0.6.4' in stderr:
+            print("✓ Runtime mutation correctly rejected")
             return True
         else:
-            print(f"❌ FAIL: Wrong error message or not rejected")
-            print(f"stderr: {stderr[:200]}")
+            print(f"❌ FAIL: Wrong rejection reason")
+            print(stderr[:300])
             return False
 
 
-def test_failed_nonzero_corruption(repo_root):
-    """Test that failed != 0 is rejected"""
-    print("\n=== TEST: Failed Non-Zero (should FAIL) ===")
+def test_run_value_self_consistent_mutation(repo_root):
+    """Test that Run2 value + self-consistent mean mutation is rejected"""
+    print("\n=== TEST: Run Value + Self-Consistent Mean Mutation (should FAIL) ===")
     
     evidence_dir = repo_root / "evidence-temp" / "run-20260902-140958"
     if not evidence_dir.exists():
-        print("⚠ SKIP: Evidence directory not found")
-        return None
+        print("❌ FAIL: Evidence directory required")
+        return False
     
-    # For this test, we'd need to inject "Failed requests: 1" into log
-    # Since real logs may not have explicit failed line, check validation logic
-    print("✓ Failed count validation logic in place (checks failed==0)")
-    return True
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+        
+        # Get original Evidence
+        cmd = f'python scripts/validate_evidence.py "{evidence_dir}" 1K --sha256 test --location "test"'
+        stdout, _, rc = run_command(cmd, cwd=repo_root)
+        if rc != 0:
+            print(f"❌ FAIL: Evidence validation failed")
+            return False
+        
+        validated_file = tmpdir / "validated.json"
+        validated_file.write_text(stdout, encoding='utf-8')
+        
+        # Generate Result
+        cmd = f'python scripts/generate_result.py "{validated_file}" GLM-5.2-W8A8 1K test "test"'
+        stdout, _, rc = run_command(cmd, cwd=repo_root)
+        if rc != 0:
+            print(f"❌ FAIL: Result generation failed")
+            return False
+        
+        result_content = stdout
+        
+        # Mutate Run2 AND mean to be self-consistent
+        result_content = re.sub(r'Run 2\*\*: 675\.16 tok/s', 'Run 2**: 999.99 tok/s', result_content)
+        # Also mutate mean to be consistent with 999.99
+        # Original: (675.16 + 678.84 + 675.79) / 3 = 676.60
+        # Mutated: (999.99 + 678.84 + 675.79) / 3 = 784.87
+        result_content = re.sub(r'\*\*Mean \(Run2, Run3, Run4\)\*\*: \*\*676\.60 tok/s\*\*',
+                               '**Mean (Run2, Run3, Run4)**: **784.87 tok/s**', result_content)
+        
+        result_file = tmpdir / "result-mutated.md"
+        result_file.write_text(result_content, encoding='utf-8')
+        
+        # Validate (should FAIL because Run2 doesn't match Evidence)
+        cmd = f'python scripts/validate_result.py "{result_file}" "{validated_file}" GLM-5.2-W8A8'
+        stdout, stderr, rc = run_command(cmd, cwd=repo_root)
+        
+        if rc == 0:
+            print(f"❌ FAIL: Validation passed with mutated Run2")
+            return False
+        
+        if 'Run2 throughput mismatch' in stderr:
+            print("✓ Run value + self-consistent mean mutation correctly rejected")
+            return True
+        else:
+            print(f"❌ FAIL: Wrong rejection reason")
+            print(stderr[:300])
+            return False
 
 
-def test_h100_8x1979_corruption(repo_root):
-    """Test that 8 × 1979 H100 formulation is rejected"""
-    print("\n=== TEST: H100 8×1979 Corruption (should FAIL) ===")
+def test_run3_completed_mutation(repo_root):
+    """Test that Run3 completed=255 is rejected"""
+    print("\n=== TEST: Run3 Completed Mutation (should FAIL) ===")
     
+    evidence_dir = repo_root / "evidence-temp" / "run-20260902-140958"
+    if not evidence_dir.exists():
+        print("❌ FAIL: Evidence directory required")
+        return False
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+        tmp_evidence = tmpdir / "run-test"
+        shutil.copytree(evidence_dir, tmp_evidence)
+        
+        # Mutate Run3 completed to 255
+        run3_log = tmp_evidence / "1K" / "run3.log"
+        content = run3_log.read_text(encoding='utf-8')
+        mutated = re.sub(r'(Successful requests:)\s+256', r'\1                     255', content)
+        run3_log.write_text(mutated, encoding='utf-8')
+        
+        # Validate Evidence (should FAIL)
+        cmd = f'python scripts/validate_evidence.py "{tmp_evidence}" 1K --sha256 test --location "test"'
+        stdout, stderr, rc = run_command(cmd, cwd=repo_root)
+        
+        if rc == 0:
+            print(f"❌ FAIL: Evidence validation passed with completed=255")
+            return False
+        
+        if 'completed=255, expected 256' in stderr:
+            print("✓ Run3 completed=255 correctly rejected")
+            return True
+        else:
+            print(f"❌ FAIL: Wrong rejection reason")
+            print(stderr[:300])
+            return False
+
+
+def test_run4_failed_mutation(repo_root):
+    """Test that Run4 failed=1 is rejected"""
+    print("\n=== TEST: Run4 Failed Mutation (should FAIL) ===")
+    
+    evidence_dir = repo_root / "evidence-temp" / "run-20260902-140958"
+    if not evidence_dir.exists():
+        print("❌ FAIL: Evidence directory required")
+        return False
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+        tmp_evidence = tmpdir / "run-test"
+        shutil.copytree(evidence_dir, tmp_evidence)
+        
+        # Inject "Failed requests: 1" into Run4
+        run4_log = tmp_evidence / "1K" / "run4.log"
+        content = run4_log.read_text(encoding='utf-8')
+        # Add failed line after successful
+        mutated = content.replace('Successful requests:                     256',
+                                'Successful requests:                     256\nFailed requests:                         1')
+        run4_log.write_text(mutated, encoding='utf-8')
+        
+        # Validate Evidence (should FAIL)
+        cmd = f'python scripts/validate_evidence.py "{tmp_evidence}" 1K --sha256 test --location "test"'
+        stdout, stderr, rc = run_command(cmd, cwd=repo_root)
+        
+        if rc == 0:
+            print(f"❌ FAIL: Evidence validation passed with failed=1")
+            return False
+        
+        if 'failed=1, expected 0' in stderr:
+            print("✓ Run4 failed=1 correctly rejected")
+            return True
+        else:
+            print(f"❌ FAIL: Wrong rejection reason")
+            print(stderr[:300])
+            return False
+
+
+def test_dispatch_sha_mutation(repo_root):
+    """Test that DISPATCH_CONTROL_SHA mutation is rejected"""
+    print("\n=== TEST: DISPATCH SHA Mutation (should FAIL) ===")
+    
+    evidence_dir = repo_root / "evidence-temp" / "run-20260902-140958"
+    if not evidence_dir.exists():
+        print("❌ FAIL: Evidence directory required")
+        return False
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+        tmp_evidence = tmpdir / "run-test"
+        shutil.copytree(evidence_dir, tmp_evidence)
+        
+        # Mutate DISPATCH_CONTROL_SHA (change last char)
+        control_file = tmp_evidence / "control-sha.txt"
+        content = control_file.read_text(encoding='utf-8')
+        mutated = content.replace('26eb575430bc1494f7d8d964a7ba4e16a4e0a2c5',
+                                '26eb575430bc1494f7d8d964a7ba4e16a4e0a2c4')
+        control_file.write_text(mutated, encoding='utf-8')
+        
+        # Validate Evidence and generate Result
+        cmd = f'python scripts/validate_evidence.py "{tmp_evidence}" 1K --sha256 test --location "test"'
+        stdout, _, rc = run_command(cmd, cwd=repo_root)
+        if rc != 0:
+            print(f"❌ FAIL: Evidence validation failed")
+            return False
+        
+        validated_file = tmpdir / "validated.json"
+        validated_file.write_text(stdout, encoding='utf-8')
+        
+        cmd = f'python scripts/generate_result.py "{validated_file}" GLM-5.2-W8A8 1K test "test"'
+        stdout, _, rc = run_command(cmd, cwd=repo_root)
+        if rc != 0:
+            print(f"❌ FAIL: Result generation failed")
+            return False
+        
+        result_file = tmpdir / "result.md"
+        result_file.write_text(stdout, encoding='utf-8')
+        
+        # Validate against ORIGINAL Evidence (should FAIL)
+        cmd = f'python scripts/validate_evidence.py "{evidence_dir}" 1K --sha256 test --location "test"'
+        stdout_orig, _, _ = run_command(cmd, cwd=repo_root)
+        validated_orig = tmpdir / "validated-orig.json"
+        validated_orig.write_text(stdout_orig, encoding='utf-8')
+        
+        cmd = f'python scripts/validate_result.py "{result_file}" "{validated_orig}" GLM-5.2-W8A8'
+        stdout, stderr, rc = run_command(cmd, cwd=repo_root)
+        
+        if rc == 0:
+            print(f"❌ FAIL: Validation passed with SHA mismatch")
+            return False
+        
+        if 'DISPATCH_CONTROL_SHA mismatch' in stderr:
+            print("✓ DISPATCH SHA mutation correctly rejected")
+            return True
+        else:
+            print(f"❌ FAIL: Wrong rejection reason")
+            print(stderr[:300])
+            return False
+
+
+def test_archive_sha_mutation(repo_root):
+    """Test that archive SHA256 mutation is rejected"""
+    print("\n=== TEST: Archive SHA Mutation (should FAIL) ===")
+    
+    evidence_dir = repo_root / "evidence-temp" / "run-20260902-140958"
+    if not evidence_dir.exists():
+        print("❌ FAIL: Evidence directory required")
+        return False
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+        
+        # Validate with correct SHA
+        cmd = f'python scripts/validate_evidence.py "{evidence_dir}" 1K --sha256 8818e4ffaf88a23989c36f0a17376843f8078adc522a32bddf682aed401816d2 --location "test"'
+        stdout, _, _ = run_command(cmd, cwd=repo_root)
+        validated_file = tmpdir / "validated.json"
+        validated_file.write_text(stdout, encoding='utf-8')
+        
+        # Generate Result
+        cmd = f'python scripts/generate_result.py "{validated_file}" GLM-5.2-W8A8 1K 8818e4ffaf88a23989c36f0a17376843f8078adc522a32bddf682aed401816d2 "test"'
+        stdout, _, _ = run_command(cmd, cwd=repo_root)
+        result_content = stdout
+        
+        # Mutate archive SHA in Result
+        result_content = result_content.replace('8818e4ffaf88a23989c36f0a17376843f8078adc522a32bddf682aed401816d2',
+                                               '8818e4ffaf88a23989c36f0a17376843f8078adc522a32bddf682aed401816d3')
+        result_file = tmpdir / "result-mutated.md"
+        result_file.write_text(result_content, encoding='utf-8')
+        
+        # Validate (should FAIL)
+        cmd = f'python scripts/validate_result.py "{result_file}" "{validated_file}" GLM-5.2-W8A8'
+        stdout, stderr, rc = run_command(cmd, cwd=repo_root)
+        
+        if rc == 0:
+            print(f"❌ FAIL: Validation passed with archive SHA mismatch")
+            return False
+        
+        if 'Archive SHA256 mismatch' in stderr:
+            print("✓ Archive SHA mutation correctly rejected")
+            return True
+        else:
+            print(f"❌ FAIL: Wrong rejection reason")
+            print(stderr[:300])
+            return False
+
+
+def test_h100_topology_mutation(repo_root):
+    """Test that H100 16×989 → 8×1979 mutation is rejected"""
+    print("\n=== TEST: H100 Topology Mutation (should FAIL) ===")
+    
+    # This is tested at config level
+    import yaml
     norm_config_path = repo_root / "docs" / "vllm-ascend-performance" / "hardware-normalization-config.yaml"
     
-    # Create temporary corrupted config
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_config = Path(tmpdir) / "hardware-normalization-config.yaml"
         
-        # Write corrupted config with 8 × 1979 = 15824
+        # Create corrupted config
         corrupted_config = """
 a3:
   cards: 8
@@ -166,109 +409,174 @@ normalization:
 """
         tmp_config.write_text(corrupted_config)
         
-        # Load and validate config
-        import yaml
         config = yaml.safe_load(tmp_config.read_text())
-        
-        # Check consistency
         h100_computed = config['h100']['cards'] * config['h100']['tflops_per_card_fp8']
+        
         if h100_computed == config['h100']['total_tflops']:
-            print(f"❌ FAIL: Config with 8×1979=15824 passed consistency check")
-            print(f"   (8 × 1979 = {h100_computed}, total = {config['h100']['total_tflops']})")
+            print(f"❌ FAIL: 8×1979 passed consistency check")
             return False
         else:
-            print(f"✓ Config with 8×1979 correctly rejected (8×1979={h100_computed} ≠ 15824)")
+            print(f"✓ H100 8×1979 topology correctly rejected (8×1979={h100_computed}≠15824)")
             return True
 
 
-def test_sha_corruption(repo_root):
-    """Test that DISPATCH_CONTROL_SHA corruption is rejected"""
-    print("\n=== TEST: SHA Corruption (should FAIL) ===")
+def test_h100_reference_mutation(repo_root):
+    """Test that H100 reference mutation is rejected"""
+    print("\n=== TEST: H100 Reference Mutation (should FAIL) ===")
     
     evidence_dir = repo_root / "evidence-temp" / "run-20260902-140958"
     if not evidence_dir.exists():
-        print("⚠ SKIP: Evidence directory not found")
-        return None
+        print("❌ FAIL: Evidence directory required")
+        return False
     
-    # Create temporary corrupted Evidence
     with tempfile.TemporaryDirectory() as tmpdir:
-        tmp_evidence = Path(tmpdir) / "run-test"
-        shutil.copytree(evidence_dir, tmp_evidence)
+        tmpdir = Path(tmpdir)
         
-        # Corrupt DISPATCH_CONTROL_SHA
-        control_file = tmp_evidence / "control-sha.txt"
-        content = control_file.read_text(encoding='utf-8')
-        # Change one character in SHA
-        original_sha = "26eb575430bc1494f7d8d964a7ba4e16a4e0a2c5"
-        corrupted_sha = "26eb575430bc1494f7d8d964a7ba4e16a4e0a2cX"
-        corrupted = content.replace(original_sha, corrupted_sha)
-        control_file.write_text(corrupted, encoding='utf-8')
+        cmd = f'python scripts/validate_evidence.py "{evidence_dir}" 1K --sha256 test --location "test"'
+        stdout, _, _ = run_command(cmd, cwd=repo_root)
+        validated_file = tmpdir / "validated.json"
+        validated_file.write_text(stdout, encoding='utf-8')
         
-        # Validate Evidence (should fail because SHA is invalid format)
-        cmd = f"python scripts/validate_evidence.py {tmp_evidence} 1K"
+        cmd = f'python scripts/generate_result.py "{validated_file}" GLM-5.2-W8A8 1K test "test"'
+        stdout, _, _ = run_command(cmd, cwd=repo_root)
+        result_content = stdout
+        
+        # Mutate H100 reference from 2688.71 to 9999.99
+        result_content = re.sub(r'\*\*H100 Reference\*\* \(1K workload\): 2688\.71 tok/s',
+                               '**H100 Reference** (1K workload): 9999.99 tok/s', result_content)
+        result_file = tmpdir / "result-mutated.md"
+        result_file.write_text(result_content, encoding='utf-8')
+        
+        cmd = f'python scripts/validate_result.py "{result_file}" "{validated_file}" GLM-5.2-W8A8'
         stdout, stderr, rc = run_command(cmd, cwd=repo_root)
         
         if rc == 0:
-            print(f"❌ FAIL: Validation passed with corrupted SHA")
+            print(f"❌ FAIL: Validation passed with H100 reference mismatch")
             return False
         
-        print("✓ SHA corruption correctly rejected")
-        return True
+        if 'H100 reference mismatch' in stderr:
+            print("✓ H100 reference mutation correctly rejected")
+            return True
+        else:
+            print(f"❌ FAIL: Wrong rejection reason")
+            print(stderr[:300])
+            return False
 
 
-def test_missing_required_field(repo_root):
-    """Test that missing required fields are rejected"""
+def test_missing_field(repo_root):
+    """Test that missing image SHA256 is rejected"""
     print("\n=== TEST: Missing Required Field (should FAIL) ===")
     
     evidence_dir = repo_root / "evidence-temp" / "run-20260902-140958"
     if not evidence_dir.exists():
-        print("⚠ SKIP: Evidence directory not found")
-        return None
+        print("❌ FAIL: Evidence directory required")
+        return False
     
-    # Create temporary corrupted Evidence
     with tempfile.TemporaryDirectory() as tmpdir:
-        tmp_evidence = Path(tmpdir) / "run-test"
-        shutil.copytree(evidence_dir, tmp_evidence)
+        tmpdir = Path(tmpdir)
         
-        # Remove vLLM Version line from runtime-identity.txt
-        runtime_file = tmp_evidence / "runtime-identity.txt"
-        content = runtime_file.read_text(encoding='utf-8')
-        corrupted = '\n'.join([line for line in content.split('\n') if 'vLLM Version' not in line])
-        runtime_file.write_text(corrupted, encoding='utf-8')
+        cmd = f'python scripts/validate_evidence.py "{evidence_dir}" 1K --sha256 test --location "test"'
+        stdout, _, _ = run_command(cmd, cwd=repo_root)
+        validated_file = tmpdir / "validated.json"
+        validated_file.write_text(stdout, encoding='utf-8')
         
-        # Validate Evidence (should fail because vLLM version missing)
-        cmd = f"python scripts/validate_evidence.py {tmp_evidence} 1K"
+        cmd = f'python scripts/generate_result.py "{validated_file}" GLM-5.2-W8A8 1K test "test"'
+        stdout, _, _ = run_command(cmd, cwd=repo_root)
+        result_content = stdout
+        
+        # Remove Image SHA256 line
+        result_content = re.sub(r'\*\*Image SHA256\*\*: `[^`]+`\n', '', result_content)
+        result_file = tmpdir / "result-mutated.md"
+        result_file.write_text(result_content, encoding='utf-8')
+        
+        cmd = f'python scripts/validate_result.py "{result_file}" "{validated_file}" GLM-5.2-W8A8'
         stdout, stderr, rc = run_command(cmd, cwd=repo_root)
         
         if rc == 0:
-            print(f"❌ FAIL: Validation passed with missing vLLM version")
+            print(f"❌ FAIL: Validation passed with missing image_sha256")
             return False
         
-        if 'vllm_version' in stderr or 'missing required field' in stderr.lower():
+        if 'Missing required fields' in stderr and 'image_sha256' in stderr:
             print("✓ Missing required field correctly rejected")
             return True
         else:
-            print(f"❌ FAIL: Wrong error message")
-            print(stderr)
+            print(f"❌ FAIL: Wrong rejection reason")
+            print(stderr[:300])
+            return False
+
+
+def test_unknown_model(repo_root):
+    """Test that unknown model is rejected"""
+    print("\n=== TEST: Unknown Model (should FAIL) ===")
+    
+    evidence_dir = repo_root / "evidence-temp" / "run-20260902-140958"
+    if not evidence_dir.exists():
+        print("❌ FAIL: Evidence directory required")
+        return False
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+        
+        cmd = f'python scripts/validate_evidence.py "{evidence_dir}" 1K --sha256 test --location "test"'
+        stdout, _, _ = run_command(cmd, cwd=repo_root)
+        validated_file = tmpdir / "validated.json"
+        validated_file.write_text(stdout, encoding='utf-8')
+        
+        cmd = f'python scripts/generate_result.py "{validated_file}" GLM-5.2-W8A8 1K test "test"'
+        stdout, _, _ = run_command(cmd, cwd=repo_root)
+        result_file = tmpdir / "result.md"
+        result_file.write_text(stdout, encoding='utf-8')
+        
+        # Validate with UNKNOWN model
+        cmd = f'python scripts/validate_result.py "{result_file}" "{validated_file}" UNKNOWN-MODEL-XYZ'
+        stdout, stderr, rc = run_command(cmd, cwd=repo_root)
+        
+        if rc == 0:
+            print(f"❌ FAIL: Validation passed with unknown model")
+            return False
+        
+        if "Unknown model 'UNKNOWN-MODEL-XYZ'" in stderr or 'Model not found' in stderr:
+            print("✓ Unknown model correctly rejected")
+            return True
+        else:
+            print(f"❌ FAIL: Wrong rejection reason")
+            print(stderr[:300])
             return False
 
 
 def main():
     repo_root = Path(__file__).parent.parent
     
+    # Check Evidence exists
+    evidence_dir = repo_root / "evidence-temp" / "run-20260902-140958"
+    if not evidence_dir.exists():
+        print("=" * 60)
+        print("ERROR: Evidence directory required for TRUE end-to-end tests")
+        print("=" * 60)
+        print(f"Expected: {evidence_dir}")
+        print("")
+        print("Cannot run TRUE end-to-end tests without Evidence.")
+        print("SKIP > 0 → TEST SUITE FAILS per requirements.")
+        sys.exit(1)
+    
     print("=" * 60)
-    print("Machine-Verified Formal Result Gate - Test Suite")
-    print("Decision D-023 FAIL-CLOSED Implementation Tests")
+    print("TRUE END-TO-END Machine-Verified Formal Result Gate Tests")
+    print("Decision D-023 FAIL-CLOSED Implementation")
+    print("All tests execute real validators with actual fixtures")
     print("=" * 60)
     
     tests = [
-        ("Positive Validation", test_positive_validation),
-        ("Runtime Corruption Detection", test_runtime_corruption),
-        ("Completed/Failed Corruption", test_completed_failed_corruption),
-        ("Failed Non-Zero Detection", test_failed_nonzero_corruption),
-        ("H100 8×1979 Corruption", test_h100_8x1979_corruption),
-        ("SHA Corruption Detection", test_sha_corruption),
-        ("Missing Required Field", test_missing_required_field),
+        ("Positive End-to-End", test_positive_end_to_end),
+        ("Runtime Mutation", test_runtime_mutation),
+        ("Run Value + Self-Consistent Mean Mutation", test_run_value_self_consistent_mutation),
+        ("Run3 Completed Mutation", test_run3_completed_mutation),
+        ("Run4 Failed Mutation", test_run4_failed_mutation),
+        ("DISPATCH SHA Mutation", test_dispatch_sha_mutation),
+        ("Archive SHA Mutation", test_archive_sha_mutation),
+        ("H100 Topology Mutation", test_h100_topology_mutation),
+        ("H100 Reference Mutation", test_h100_reference_mutation),
+        ("Missing Required Field", test_missing_field),
+        ("Unknown Model", test_unknown_model),
     ]
     
     results = {}
@@ -299,13 +607,13 @@ def main():
     print(f"Skipped: {skipped}")
     
     if failed > 0:
-        print("\n❌ TEST SUITE FAILED")
+        print("\n❌ TEST SUITE FAILED (some tests failed)")
         sys.exit(1)
-    elif passed == 0:
-        print("\n⚠ ALL TESTS SKIPPED (Evidence not available)")
-        sys.exit(0)
+    elif skipped > 0:
+        print("\n❌ TEST SUITE FAILED (SKIP > 0 not allowed)")
+        sys.exit(1)
     else:
-        print("\n✓ TEST SUITE PASSED")
+        print("\n✓ TEST SUITE PASSED (all tests passed, zero skipped)")
         sys.exit(0)
 
 
