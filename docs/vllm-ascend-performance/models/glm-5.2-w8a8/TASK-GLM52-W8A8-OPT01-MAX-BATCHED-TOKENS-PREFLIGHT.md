@@ -97,7 +97,7 @@ Verify this matches frozen baseline identity from `BASELINE.md`.
 
 ### 4. Effective max_num_batched_tokens Value
 
-**Two possible outcomes**:
+The runtime-identity gate (Step 8) decides among three outcomes: `VALUE_VERIFIED`, `BASELINE_VALUE_UNVERIFIED`, or `RUNTIME_IDENTITY_MISMATCH`.
 
 #### Outcome A: VALUE_VERIFIED
 
@@ -317,12 +317,12 @@ Per D-022:
 
 **Task**: GLM52-W8A8-OPT01-MAX-BATCHED-TOKENS-PREFLIGHT
 **Status**: COMPLETE
-**Outcome**: <VALUE_VERIFIED / BASELINE_VALUE_UNVERIFIED>
+**Outcome**: <VALUE_VERIFIED / BASELINE_VALUE_UNVERIFIED / RUNTIME_IDENTITY_MISMATCH>
 
 **Process PID**: <pid>
 **Model path**: /data/tiankuan/zyg/model/GLM-5.2-w8a8
 **Container**: model-test-zyg-a3
-**Runtime verified**: <YES / DISCREPANCY_DETECTED>
+**Runtime identity**: <OK / MISMATCH> (computed gate; never hard-coded YES)
 
 **max_num_batched_tokens**:
 <if VALUE_VERIFIED>
