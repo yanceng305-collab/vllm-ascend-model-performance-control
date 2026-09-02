@@ -5,19 +5,17 @@
 # All Formal Result generators and validators MUST use values from this file.
 # Manual transcription is prohibited.
 
-# Format: YAML-compatible (can be parsed by Python, validators, generators)
-
 # A3/910C Configuration
 a3:
   cards: 8
   tflops_per_card_fp16: 756  # FP16 precision suitable for W8A8 comparison
-  total_tflops: 6048  # 8 × 756
+  total_tflops: 6048  # MUST equal cards × tflops_per_card_fp16
 
 # H100 Configuration (Customer Baseline)
 h100:
   cards: 16
   tflops_per_card_fp8: 989  # FP8 precision (customer baseline)
-  total_tflops: 15824  # 16 × 989
+  total_tflops: 15824  # MUST equal cards × tflops_per_card_fp8
 
 # Normalization Policy
 normalization:
@@ -25,13 +23,13 @@ normalization:
   target_achievement_minimum: 0.80  # 80% normalized target
 
 # Decision Provenance
-decision_id: "D-020"
-effective_date: "2026-09-01"
-validation_decision_id: "D-023"
-validation_effective_date: "2026-09-02"
+metadata:
+  decision_id: "D-020"
+  effective_date: "2026-09-01"
+  validation_decision_id: "D-023"
+  validation_effective_date: "2026-09-02"
 
-# Notes:
-# - This is the SOLE authoritative definition of the compute basis.
-# - Do not use "8 × 1979" or any other H100 formulation.
-# - All Result generators must compute achievement using these exact values.
-# - All Result validators must verify Results against these exact values.
+# Validation Rules (checked by validators):
+# - a3.cards × a3.tflops_per_card_fp16 MUST == a3.total_tflops
+# - h100.cards × h100.tflops_per_card_fp8 MUST == h100.total_tflops
+# - Any other formulation (e.g., "8 × 1979 = 15824") MUST be rejected

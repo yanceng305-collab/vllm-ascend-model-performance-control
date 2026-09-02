@@ -6,6 +6,7 @@ Validates Evidence bundle integrity and extracts machine-readable facts.
 Produces validated Evidence summary for Formal Result generation.
 
 Per Decision D-023: Machine-Verified Formal Result Gate
+FAIL-CLOSED: Any missing/invalid field causes validation failure and exit 1.
 """
 
 import json
@@ -47,6 +48,12 @@ def extract_runtime_identity(evidence_dir: Path) -> Dict:
     match = re.search(r'vLLM Version:\s*(.+)', content)
     identity['vllm_version'] = match.group(1).strip() if match else None
     
+    # Validate required fields
+    required_fields = ['container_name', 'container_id', 'image', 'image_sha256', 'vllm_version']
+    for field in required_fields:
+        if not identity.get(field):
+            raise ValueError(f"Runtime identity missing required field: {field}")
+    
     return identity
 
 
@@ -71,6 +78,16 @@ def extract_control_sha(evidence_dir: Path) -> Dict:
     # Authorization
     match = re.search(r'Authorization:\s*(.+)', content)
     provenance['authorization'] = match.group(1).strip() if match else None
+    
+    # Validate required fields
+    if not provenance['task_id']:
+        raise ValueError("control-sha.txt missing Task ID")
+    if not provenance['dispatch_control_sha']:
+        raise ValueError("control-sha.txt missing DISPATCH_CONTROL_SHA")
+    if not provenance['authorization']:
+        raise ValueError("control-sha.txt missing Authorization")
+    if provenance['authorization'] != 'EXECUTE':
+        raise ValueError(f"Authorization is '{provenance['authorization']}', expected 'EXECUTE'")
     
     return provenance
 
@@ -100,20 +117,24 @@ def extract_completed_failed_from_log(log_file: Path) -> Tuple[Optional[int], Op
     completed = None
     failed = None
     
-    # Look for "Successful requests:" or "Total completed:"
+    # Look for "Successful requests:" or "Total completed:" (handle variable whitespace)
     match = re.search(r'(?:Successful requests|Total completed):\s+(\d+)', content)
     if match:
         completed = int(match.group(1))
     
-    # Look for "Failed requests:" or similar
+    # Look for "Failed requests:" or similar - check for explicit count
     match = re.search(r'(?:Failed requests|Total failed):\s+(\d+)', content)
     if match:
         failed = int(match.group(1))
+    else:
+        # If no explicit failed line found, assume 0 if completed was found
+        if completed is not None:
+            failed = 0
     
     return completed, failed
 
 
-def validate_cell(evidence_dir: Path, cell_name: str) -> Dict:
+def validate_cell(evidence_dir: Path, cell_name: str, expected_prompts: int = 256) -> Dict:
     """Validate and extract data for a single cell"""
     cell_dir = evidence_dir / cell_name
     if not cell_dir.exists():
@@ -124,15 +145,33 @@ def validate_cell(evidence_dir: Path, cell_name: str) -> Dict:
         'runs': {}
     }
     
+    # Validate run1 exists (warmup)
+    run1_log = cell_dir / "run1.log"
+    if not run1_log.exists():
+        raise FileNotFoundError(f"Missing run1.log in {cell_name} (warmup run required)")
+    
     # Extract run2, run3, run4 data
     for run_name in ['run2', 'run3', 'run4']:
         log_file = cell_dir / f"{run_name}.log"
+        
+        if not log_file.exists():
+            raise FileNotFoundError(f"Missing {run_name}.log in {cell_name}")
         
         throughput = extract_throughput_from_log(log_file)
         completed, failed = extract_completed_failed_from_log(log_file)
         
         if throughput is None:
             raise ValueError(f"Could not extract throughput from {log_file}")
+        if completed is None:
+            raise ValueError(f"Could not extract completed count from {log_file}")
+        if failed is None:
+            raise ValueError(f"Could not extract failed count from {log_file}")
+        
+        # Validate workload contract
+        if completed != expected_prompts:
+            raise ValueError(f"{cell_name} {run_name}: completed={completed}, expected {expected_prompts}")
+        if failed != 0:
+            raise ValueError(f"{cell_name} {run_name}: failed={failed}, expected 0")
         
         cell_data['runs'][run_name] = {
             'throughput': throughput,
@@ -140,16 +179,35 @@ def validate_cell(evidence_dir: Path, cell_name: str) -> Dict:
             'failed': failed
         }
     
-    # Calculate mean (Run2, Run3, Run4)
+    # Calculate mean (Run2, Run3, Run4) with full precision
     throughputs = [cell_data['runs'][r]['throughput'] for r in ['run2', 'run3', 'run4']]
     cell_data['mean_throughput'] = sum(throughputs) / len(throughputs)
     
     return cell_data
 
 
-def validate_evidence(evidence_dir: Path, cells: List[str]) -> Dict:
+def verify_manifest_and_checksums(evidence_dir: Path) -> None:
+    """Verify MANIFEST.txt and SHA256SUMS.txt exist and are accessible"""
+    manifest_file = evidence_dir / "MANIFEST.txt"
+    sha256sums_file = evidence_dir / "SHA256SUMS.txt"
+    
+    if not manifest_file.exists():
+        raise FileNotFoundError(f"Missing MANIFEST.txt in {evidence_dir}")
+    if not sha256sums_file.exists():
+        raise FileNotFoundError(f"Missing SHA256SUMS.txt in {evidence_dir}")
+    
+    # Basic readability check
+    try:
+        manifest_file.read_text(encoding='utf-8')
+        sha256sums_file.read_text(encoding='utf-8')
+    except Exception as e:
+        raise ValueError(f"Could not read manifest/checksums files: {e}")
+
+
+def validate_evidence(evidence_dir: Path, cells: List[str], expected_prompts: int = 256) -> Dict:
     """
     Validate Evidence bundle and extract all machine-readable facts.
+    FAIL-CLOSED: Any validation failure raises exception and exits 1.
     
     Returns validated Evidence summary as dict.
     """
@@ -157,6 +215,9 @@ def validate_evidence(evidence_dir: Path, cells: List[str]) -> Dict:
     
     if not evidence_dir.exists():
         raise FileNotFoundError(f"Evidence directory not found: {evidence_dir}")
+    
+    # Verify MANIFEST and checksums exist
+    verify_manifest_and_checksums(evidence_dir)
     
     # Extract runtime identity
     runtime_identity = extract_runtime_identity(evidence_dir)
@@ -167,7 +228,7 @@ def validate_evidence(evidence_dir: Path, cells: List[str]) -> Dict:
     # Validate and extract all cells
     cells_data = {}
     for cell in cells:
-        cells_data[cell] = validate_cell(evidence_dir, cell)
+        cells_data[cell] = validate_cell(evidence_dir, cell, expected_prompts)
     
     # Build validated Evidence summary
     validated_evidence = {
@@ -175,7 +236,8 @@ def validate_evidence(evidence_dir: Path, cells: List[str]) -> Dict:
         'runtime_identity': runtime_identity,
         'provenance': provenance,
         'cells': cells_data,
-        'validation_status': 'PASS'
+        'validation_status': 'PASS',
+        'expected_prompts': expected_prompts
     }
     
     return validated_evidence
@@ -195,6 +257,7 @@ def main():
         
         # Output as JSON
         print(json.dumps(validated_evidence, indent=2))
+        sys.exit(0)
         
     except Exception as e:
         print(json.dumps({

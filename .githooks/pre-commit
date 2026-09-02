@@ -1,0 +1,74 @@
+#!/bin/bash
+# Pre-commit hook for Machine-Verified Formal Result Gate
+# Per Decision D-023
+#
+# Validates Formal Results before commit to prevent transcription errors.
+# Blocks commit if validation fails.
+
+# Check if any Result files are being committed
+RESULT_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E 'RESULT-.*\.md$' | grep -v 'CORRECTION' | grep -v 'USER-MEASURED')
+
+if [ -z "$RESULT_FILES" ]; then
+    # No Result files being committed, allow commit
+    exit 0
+fi
+
+echo "====================================================="
+echo "Machine-Verified Formal Result Gate (D-023)"
+echo "Validating Formal Results before commit..."
+echo "====================================================="
+
+# Check if validated Evidence JSON exists
+if [ ! -f "validated-evidence.json" ]; then
+    echo "❌ VALIDATION FAILED"
+    echo ""
+    echo "FORMAL_RESULT_VALIDATION_FAILED:"
+    echo "  validated-evidence.json not found"
+    echo ""
+    echo "Before committing Results, you must:"
+    echo "  1. Run: python scripts/validate_evidence.py <evidence-dir> > validated-evidence.json"
+    echo "  2. Ensure validation passes"
+    echo "  3. Then commit Results"
+    echo ""
+    exit 1
+fi
+
+# Detect model name from Result files
+MODEL_NAME=$(echo "$RESULT_FILES" | head -n1 | grep -oP 'GLM-5\.2-W8A8|DeepSeek-V4|MiniMax' | head -n1)
+if [ -z "$MODEL_NAME" ]; then
+    MODEL_NAME="GLM-5.2-W8A8"  # Default fallback
+fi
+
+VALIDATION_FAILED=0
+
+# Validate each Result file
+for result_file in $RESULT_FILES; do
+    echo ""
+    echo "Validating: $result_file"
+    
+    if python scripts/validate_result.py "$result_file" validated-evidence.json "$MODEL_NAME"; then
+        echo "  ✓ Validation PASS"
+    else
+        echo "  ❌ Validation FAIL"
+        VALIDATION_FAILED=1
+    fi
+done
+
+echo ""
+echo "====================================================="
+
+if [ $VALIDATION_FAILED -eq 1 ]; then
+    echo "❌ COMMIT BLOCKED: One or more Results failed validation"
+    echo ""
+    echo "FORMAL_RESULT_VALIDATION_FAILED"
+    echo ""
+    echo "Fix validation errors before committing."
+    echo "See error messages above for details."
+    echo ""
+    exit 1
+else
+    echo "✓ All Results validated successfully"
+    echo "Proceeding with commit..."
+    echo ""
+    exit 0
+fi

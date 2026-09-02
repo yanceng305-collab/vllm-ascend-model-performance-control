@@ -1,0 +1,48 @@
+# Model and Workload Reference Configuration
+
+# This file provides machine-readable H100 reference throughput values
+# and model-specific metadata for Formal Result generation.
+# Per Decision D-023: Machine-Verified Formal Result Gate
+
+# Format: YAML
+
+models:
+  GLM-5.2-W8A8:
+    model_name: "GLM-5.2-W8A8"
+    h100_references:
+      # Workload format: <input_tokens>in_<output_tokens>out
+      1024in_1024out:
+        throughput_tok_s: 2688.71
+        workload_description: "1024 input tokens, 1024 output tokens"
+        cell_name: "1K"
+      4096in_1024out:
+        throughput_tok_s: 4063.45
+        workload_description: "4096 input tokens, 1024 output tokens"
+        cell_name: "4K"
+      16384in_1024out:
+        throughput_tok_s: 4379.60
+        workload_description: "16384 input tokens, 1024 output tokens"
+        cell_name: "16K"
+      65536in_1024out:
+        throughput_tok_s: 5054.66
+        workload_description: "65536 input tokens, 1024 output tokens"
+        cell_name: "64K"
+    
+    # Workload contract (common across all cells)
+    workload_contract:
+      max_concurrency: 64
+      num_prompts: 256
+      dataset: "random"
+      endpoint: "/v1/completions"
+      ignore_eos: true
+      request_rate: "inf"
+      random_range_ratio: 0
+      runs: 4  # run1 warmup/discard, mean of run2/run3/run4
+
+  # Future models: DeepSeek-V4-Flash-W8A8, MiniMax-M3, etc.
+  # Add their H100 references here
+
+# Decision Provenance
+decision_d020: "Hardware compute basis and normalization"
+decision_d023: "Machine-Verified Formal Result Gate"
+effective_date: "2026-09-02"

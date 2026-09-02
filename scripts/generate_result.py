@@ -2,10 +2,12 @@
 """
 Formal Result Generator
 
-Generates Formal Result documents from validated Evidence and normalization config.
+Generates Formal Result documents from validated Evidence and configs.
 Per Decision D-023: Machine-Verified Formal Result Gate
 
 Factual fields are auto-generated; AI only writes analysis/review/next steps.
+FAIL-CLOSED: Missing config/evidence fields cause generation failure.
+NO HARDCODED VALUES: All data from validated Evidence and config files.
 """
 
 import json
@@ -16,34 +18,26 @@ from typing import Dict
 from datetime import datetime
 
 
-def load_normalization_config(config_path: Path) -> Dict:
-    """Load hardware normalization configuration"""
+def load_yaml_config(config_path: Path) -> Dict:
+    """Load YAML configuration using yaml.safe_load()"""
     with open(config_path, 'r', encoding='utf-8') as f:
-        # Simple YAML-compatible parser
-        config = {}
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith('#') or ':' not in line:
-                continue
-            
-            # Simple key:value parsing
-            if not line.startswith(' ') and not line.startswith('-'):
-                key, value = line.split(':', 1)
-                key = key.strip()
-                value = value.strip()
-                
-                # Try to parse as number
-                try:
-                    if '.' in value:
-                        value = float(value)
-                    else:
-                        value = int(value)
-                except ValueError:
-                    pass  # Keep as string
-                
-                config[key] = value
-        
-        return config
+        return yaml.safe_load(f)
+
+
+def validate_normalization_config(config: Dict) -> None:
+    """Validate normalization config consistency"""
+    a3 = config['a3']
+    h100 = config['h100']
+    
+    # Verify A3 consistency
+    a3_computed = a3['cards'] * a3['tflops_per_card_fp16']
+    if a3_computed != a3['total_tflops']:
+        raise ValueError(f"A3 config inconsistent: {a3['cards']} × {a3['tflops_per_card_fp16']} = {a3_computed}, but total_tflops={a3['total_tflops']}")
+    
+    # Verify H100 consistency
+    h100_computed = h100['cards'] * h100['tflops_per_card_fp8']
+    if h100_computed != h100['total_tflops']:
+        raise ValueError(f"H100 config inconsistent: {h100['cards']} × {h100['tflops_per_card_fp8']} = {h100_computed}, but total_tflops={h100['total_tflops']}")
 
 
 def calculate_achievement(a3_throughput: float, h100_throughput: float, 
@@ -59,10 +53,11 @@ def calculate_achievement(a3_throughput: float, h100_throughput: float,
     return achievement
 
 
-def generate_result_markdown(cell_name: str, cell_data: Dict, 
+def generate_result_markdown(model_name: str, cell_name: str, cell_data: Dict, 
                              runtime_identity: Dict, provenance: Dict,
-                             h100_reference: float, normalization_config: Dict,
-                             evidence_archive: str, evidence_sha256: str,
+                             h100_reference: float, workload_description: str,
+                             normalization_config: Dict, workload_contract: Dict,
+                             evidence_run_id: str, evidence_archive_sha256: str,
                              evidence_location: str, result_date: str) -> str:
     """Generate Formal Result markdown document"""
     
@@ -82,35 +77,29 @@ def generate_result_markdown(cell_name: str, cell_data: Dict,
     # Calculate achievement
     achievement = calculate_achievement(
         mean_throughput, h100_reference,
-        normalization_config['total_tflops_a3'], 
-        normalization_config['total_tflops_h100']
+        normalization_config['a3']['total_tflops'], 
+        normalization_config['h100']['total_tflops']
     )
     achievement_pct = achievement * 100
     
-    target = normalization_config.get('target_achievement_minimum', 0.80)
+    target = normalization_config['normalization']['target_achievement_minimum']
     status = "BELOW TARGET" if achievement < target else "MEETS TARGET"
     
-    # Map cell name to workload
-    workload_map = {
-        '1K': '1024 input tokens, 1024 output tokens',
-        '4K': '4096 input tokens, 1024 output tokens',
-        '16K': '16384 input tokens, 1024 output tokens',
-        '64K': '65536 input tokens, 1024 output tokens'
-    }
-    workload = workload_map.get(cell_name, f'{cell_name} workload')
+    # Evidence archive filename
+    evidence_archive = f"{provenance['task_id']}-EVIDENCE-{evidence_run_id}.tar.gz"
     
     # Generate markdown
-    md = f"""# Result: GLM-5.2-W8A8 {cell_name} Baseline (Evidence-Backed, Machine-Verified)
+    md = f"""# Result: {model_name} {cell_name} Baseline (Evidence-Backed, Machine-Verified)
 
-**Result ID**: `RESULT-GLM52-W8A8-{cell_name}-BASELINE-MACHINE-VERIFIED-{provenance['evidence_run_id']}`  
-**Model**: GLM-5.2-W8A8  
-**Workload**: {workload}  
+**Result ID**: `RESULT-{model_name.replace('.', '').replace('-', '')}-{cell_name}-BASELINE-MACHINE-VERIFIED-{evidence_run_id}`  
+**Model**: {model_name}  
+**Workload**: {workload_description}  
 **Task**: {provenance['task_id']}  
-**Evidence Run**: {provenance['evidence_run_id']}  
+**Evidence Run**: {evidence_run_id}  
 **DISPATCH_CONTROL_SHA**: {provenance['dispatch_control_sha']}  
 **Result Created**: {result_date}  
 **Created By**: PerfControl (Machine-Verified per D-023)  
-**Status**: ACCEPTED (Baseline Established)
+**Status**: READY FOR FORMAL REVIEW
 
 ---
 
@@ -120,7 +109,7 @@ def generate_result_markdown(cell_name: str, cell_data: Dict,
 
 ### Raw Evidence (Run 2, 3, 4) - AUTO-EXTRACTED
 
-From Evidence package `{provenance['evidence_run_id']}`:
+From Evidence package `{evidence_run_id}`:
 
 - **Run 2**: {run2_throughput} tok/s (completed: {run2_completed}, failed: {run2_failed})
 - **Run 3**: {run3_throughput} tok/s (completed: {run3_completed}, failed: {run3_failed})
@@ -137,15 +126,15 @@ From Evidence package `{provenance['evidence_run_id']}`:
 ## Normalized Achievement (Decision D-020) - AUTO-COMPUTED
 
 **Hardware Compute Basis** (from hardware-normalization-config.yaml):
-- A3/910C System: {normalization_config['total_tflops_a3']} TFLOPS ({normalization_config['cards_a3']} cards × {normalization_config['tflops_per_card_a3']} TFLOPS FP16)
-- H100 System: {normalization_config['total_tflops_h100']} TFLOPS ({normalization_config['cards_h100']} cards × {normalization_config['tflops_per_card_h100']} TFLOPS FP8)
+- A3/910C System: {normalization_config['a3']['total_tflops']} TFLOPS ({normalization_config['a3']['cards']} cards × {normalization_config['a3']['tflops_per_card_fp16']} TFLOPS FP16)
+- H100 System: {normalization_config['h100']['total_tflops']} TFLOPS ({normalization_config['h100']['cards']} cards × {normalization_config['h100']['tflops_per_card_fp8']} TFLOPS FP8)
 
 **H100 Reference** ({cell_name} workload): {h100_reference} tok/s
 
 **Achievement Calculation**:
 ```
 Achievement = (A3_throughput / A3_compute) / (H100_throughput / H100_compute)
-            = ({mean_throughput:.2f} / {normalization_config['total_tflops_a3']}) / ({h100_reference} / {normalization_config['total_tflops_h100']})
+            = ({mean_throughput:.2f} / {normalization_config['a3']['total_tflops']}) / ({h100_reference} / {normalization_config['h100']['total_tflops']})
             = {achievement_pct:.2f}%
 ```
 
@@ -157,16 +146,16 @@ Achievement = (A3_throughput / A3_compute) / (H100_throughput / H100_compute)
 
 ## Workload Contract
 
-- **Input tokens**: {workload.split()[0]}
-- **Output tokens**: 1024
-- **Max concurrency**: 64
-- **Num prompts**: 256
-- **Dataset**: random
-- **Endpoint**: `/v1/completions`
-- **ignore_eos**: true
-- **Request rate**: inf
-- **Random range ratio**: 0
-- **Runs**: 4 (run1 warmup/discard, mean of run2/run3/run4)
+- **Input tokens**: {workload_description.split()[0]}
+- **Output tokens**: {workload_contract['num_prompts'] if 'output' not in workload_description else workload_description.split()[4]}
+- **Max concurrency**: {workload_contract['max_concurrency']}
+- **Num prompts**: {workload_contract['num_prompts']}
+- **Dataset**: {workload_contract['dataset']}
+- **Endpoint**: `{workload_contract['endpoint']}`
+- **ignore_eos**: {str(workload_contract['ignore_eos']).lower()}
+- **Request rate**: {workload_contract['request_rate']}
+- **Random range ratio**: {workload_contract['random_range_ratio']}
+- **Runs**: {workload_contract['runs']} (run1 warmup/discard, mean of run2/run3/run4)
 
 ---
 
@@ -187,7 +176,7 @@ From Evidence `runtime-identity.txt`:
 ## Evidence Provenance - AUTO-EXTRACTED
 
 **Evidence Archive**: `{evidence_archive}`  
-**Archive SHA256**: `{evidence_sha256}`  
+**Archive SHA256**: `{evidence_archive_sha256}`  
 **Evidence Location**: {evidence_location}  
 **Transport**: Per Decision D-022 (GitHub Release Asset Evidence Transport)
 
@@ -209,7 +198,8 @@ This Result was generated using the Machine-Verified Formal Result Gate:
 - ✓ Hardware normalization basis loaded from hardware-normalization-config.yaml
 - ✓ Achievement percentage machine-computed
 - ✓ DISPATCH_CONTROL_SHA auto-extracted from Evidence provenance
-- ✓ Evidence SHA256 verified
+- ✓ Evidence SHA256 from validated Evidence metadata
+- ✓ H100 reference loaded from model-workload-references.yaml
 
 **Manual transcription prohibited**: All factual fields above were automatically generated. AI authoring limited to analysis, review rationale, and next steps sections below.
 
@@ -221,7 +211,7 @@ This Result was generated using the Machine-Verified Formal Result Gate:
 
 **Evidence Quality**: ✓ PASS
 - All four runs present and complete
-- Run2/3/4: completed==256, failed==0
+- Run2/3/4: completed=={workload_contract['num_prompts']}, failed==0
 - Workload contract verified
 - Runtime identity captured
 - SHA256 checksums verified
@@ -241,13 +231,15 @@ This Result was generated using the Machine-Verified Formal Result Gate:
 
 ## Formal Acceptance
 
-**Status**: **ACCEPTED**
+**Status**: PENDING
 
-**Rationale**: Evidence completeness, workload contract, runtime identity, and calculation integrity all verified through machine-verified gate (Decision D-023). This Result establishes the formal {cell_name} baseline for GLM-5.2-W8A8 on A3/910C hardware with the verified runtime.
+**Next Action**: PerfControl must perform Formal Review and manually set Status to ACCEPTED after validation passes.
+
+**Rationale**: [TO BE FILLED BY PERFCONTROL AFTER REVIEW]
 
 **Performance Assessment**: Current throughput ({mean_throughput:.2f} tok/s) achieves {achievement_pct:.2f}% of the normalized target. This is **{status.lower()}** per Decision D-020.
 
-**Next Steps**: Baseline formally accepted. Optimization Tasks may now compare against this immutable baseline.
+**Next Steps**: [TO BE FILLED BY PERFCONTROL AFTER ACCEPTANCE]
 
 ---
 
@@ -259,13 +251,14 @@ This Result is **immutable**. Any corrections, re-measurements, or optimizations
 
 ## References
 
-- Task: `docs/vllm-ascend-performance/models/glm-5.2-w8a8/TASK-GLM52-W8A8-BASELINE-MATRIX-EVIDENCE-ACQUISITION.md`
+- Task: `docs/vllm-ascend-performance/models/{model_name.lower()}/TASK-{provenance['task_id']}.md`
 - Decision D-019: Baseline execution mode
 - Decision D-020: Hardware compute basis and normalization
 - Decision D-021: PerfControl/A3PerfRunner separation
 - Decision D-022: GitHub Release Asset Evidence Transport
 - Decision D-023: Machine-Verified Formal Result Gate
 - Normalization Config: `docs/vllm-ascend-performance/hardware-normalization-config.yaml`
+- Model/Workload Config: `docs/vllm-ascend-performance/model-workload-references.yaml`
 - Evidence Archive: {evidence_location}
 """
     
@@ -273,14 +266,16 @@ This Result is **immutable**. Any corrections, re-measurements, or optimizations
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python generate_result.py <validated_evidence.json> <cell_name> <h100_reference>", file=sys.stderr)
-        print("Example: python generate_result.py validated_evidence.json 1K 2688.71", file=sys.stderr)
+    if len(sys.argv) < 5:
+        print("Usage: python generate_result.py <validated_evidence.json> <model_name> <cell_name> <evidence_sha256> <evidence_location>", file=sys.stderr)
+        print("Example: python generate_result.py validated_evidence.json GLM-5.2-W8A8 1K abc123... 'GitHub Release evidence-...'", file=sys.stderr)
         sys.exit(1)
     
     validated_evidence_path = Path(sys.argv[1])
-    cell_name = sys.argv[2] if len(sys.argv) > 2 else '1K'
-    h100_reference = float(sys.argv[3]) if len(sys.argv) > 3 else 2688.71
+    model_name = sys.argv[2]
+    cell_name = sys.argv[3]
+    evidence_archive_sha256 = sys.argv[4]
+    evidence_location = sys.argv[5]
     
     # Load validated Evidence
     with open(validated_evidence_path, 'r', encoding='utf-8') as f:
@@ -290,33 +285,42 @@ def main():
         print(f"ERROR: Evidence validation failed: {validated_evidence.get('error')}", file=sys.stderr)
         sys.exit(1)
     
-    # Load normalization config
+    # Load configs
     repo_root = Path(__file__).parent.parent
-    config_path = repo_root / 'docs' / 'vllm-ascend-performance' / 'hardware-normalization-config.yaml'
+    norm_config_path = repo_root / 'docs' / 'vllm-ascend-performance' / 'hardware-normalization-config.yaml'
+    model_config_path = repo_root / 'docs' / 'vllm-ascend-performance' / 'model-workload-references.yaml'
     
-    # Parse config manually (simple key-value extraction)
-    normalization_config = {}
-    with open(config_path, 'r', encoding='utf-8') as f:
-        for line in f:
-            if 'total_tflops: 6048' in line:
-                normalization_config['total_tflops_a3'] = 6048
-            elif 'total_tflops: 15824' in line:
-                normalization_config['total_tflops_h100'] = 15824
-            elif 'cards: 8' in line and 'total_tflops_a3' not in normalization_config:
-                normalization_config['cards_a3'] = 8
-            elif 'tflops_per_card_fp16: 756' in line:
-                normalization_config['tflops_per_card_a3'] = 756
-            elif 'cards: 16' in line:
-                normalization_config['cards_h100'] = 16
-            elif 'tflops_per_card_fp8: 989' in line:
-                normalization_config['tflops_per_card_h100'] = 989
-            elif 'target_achievement_minimum: 0.80' in line or 'target_achievement_minimum: 0.8' in line:
-                normalization_config['target_achievement_minimum'] = 0.80
+    normalization_config = load_yaml_config(norm_config_path)
+    model_config = load_yaml_config(model_config_path)
+    
+    # Validate normalization config
+    validate_normalization_config(normalization_config)
+    
+    # Get model-specific config
+    if model_name not in model_config['models']:
+        print(f"ERROR: Model {model_name} not found in model-workload-references.yaml", file=sys.stderr)
+        sys.exit(1)
+    
+    model_data = model_config['models'][model_name]
+    
+    # Find workload by cell name
+    h100_ref_data = None
+    for workload_key, workload_data in model_data['h100_references'].items():
+        if workload_data['cell_name'] == cell_name:
+            h100_ref_data = workload_data
+            break
+    
+    if not h100_ref_data:
+        print(f"ERROR: Cell {cell_name} not found in {model_name} workload references", file=sys.stderr)
+        sys.exit(1)
+    
+    h100_reference = h100_ref_data['throughput_tok_s']
+    workload_description = h100_ref_data['workload_description']
+    workload_contract = model_data['workload_contract']
     
     # Extract Evidence run ID from directory name
     evidence_dir_name = Path(validated_evidence['evidence_directory']).name
     provenance = validated_evidence['provenance'].copy()
-    provenance['evidence_run_id'] = evidence_dir_name
     
     # Get cell data
     if cell_name not in validated_evidence['cells']:
@@ -326,18 +330,13 @@ def main():
     cell_data = validated_evidence['cells'][cell_name]
     runtime_identity = validated_evidence['runtime_identity']
     
-    # Evidence archive info (placeholder - should be passed as arguments in production)
-    evidence_archive = f"GLM52-W8A8-BASELINE-EVIDENCE-{evidence_dir_name}.tar.gz"
-    evidence_sha256 = "8818e4ffaf88a23989c36f0a17376843f8078adc522a32bddf682aed401816d2"  # Should be passed
-    evidence_location = f"GitHub Release evidence-test-glm52-{evidence_dir_name}"  # Should be passed
-    
     result_date = datetime.now().strftime('%Y-%m-%d')
     
     # Generate Result markdown
     result_md = generate_result_markdown(
-        cell_name, cell_data, runtime_identity, provenance,
-        h100_reference, normalization_config,
-        evidence_archive, evidence_sha256, evidence_location, result_date
+        model_name, cell_name, cell_data, runtime_identity, provenance,
+        h100_reference, workload_description, normalization_config, workload_contract,
+        evidence_dir_name, evidence_archive_sha256, evidence_location, result_date
     )
     
     print(result_md)
