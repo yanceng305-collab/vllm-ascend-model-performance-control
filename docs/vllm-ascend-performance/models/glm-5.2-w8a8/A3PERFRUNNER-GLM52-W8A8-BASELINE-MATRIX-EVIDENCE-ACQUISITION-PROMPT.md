@@ -5,7 +5,7 @@
 **Task Status**: READY (awaiting User explicit dispatch)  
 **A3PerfRunner Role**: Evidence acquisition and Evidence package delivery; formal Results are authored by PerfControl (D-021)  
 **Created**: 2026-09-02  
-**Updated**: 2026-09-02 (Pre-dispatch corrections; final role architecture per D-021)
+**Updated**: 2026-09-02 (Pre-dispatch corrections; final role architecture per D-021; GitHub Release Asset transport per D-022)
 
 ---
 
@@ -473,7 +473,7 @@ Evidence Delivered (Runner):
 - Evidence completeness status per cell
 - COMPARISON-REPORT.txt
 - This final Runner Report
-- Optional Evidence bundle (tar/zip + checksum)
+- Evidence bundle (tar/zip + checksum); per Decision D-022, may be delivered via GitHub Release Asset (upload as immutable asset with tag `evidence-<task-slug>-<run-id>`, communicate release tag/asset filename/SHA256 to PerfControl)
 
 Baseline Matrix Performance (Evidence-Backed):
 - 1K: <VALUE> tok/s (Achievement: <PERCENT>%, BELOW TARGET)
@@ -527,7 +527,7 @@ Next Steps:
 - `docs/vllm-ascend-performance/models/glm-5.2-w8a8/ASCEND-TARGETS.md`
 - `docs/vllm-ascend-performance/models/glm-5.2-w8a8/BASELINE.md`
 - `docs/vllm-ascend-performance/models/glm-5.2-w8a8/RUNBOOK.md`
-- `docs/vllm-ascend-performance/DECISIONS.md` (D-019, D-020, D-021)
+- `docs/vllm-ascend-performance/DECISIONS.md` (D-019, D-020, D-021, D-022)
 
 ---
 

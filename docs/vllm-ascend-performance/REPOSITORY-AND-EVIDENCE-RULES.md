@@ -18,7 +18,7 @@ PerfControl writes a bounded Task after identities and contract inputs are froze
 
 ## Result authorship and immutability
 
-Runner produces Evidence; PerfControl produces formal Results. A3PerfRunner's Evidence root, manifest, commands, checksums, and runtime identity are immutable once created; never rewrite them. Corrections or additional evidence are supplements or new Evidence captures. After receiving Evidence, PerfControl independently recalcs the values, authors the formal `RESULT-*.md` snapshot once, and afterwards never rewrites it; corrections are supplement documents or follow-up Results. PerfControl Acceptance changes only the index, Status, Review, and Decision records. The server never commits or pushes the Control repo.
+Runner produces Evidence; PerfControl produces formal Results. A3PerfRunner's Evidence root, manifest, commands, checksums, and runtime identity are immutable once created; never rewrite them. Corrections or additional evidence are supplements or new Evidence captures. Per Decision D-022, A3PerfRunner may upload immutable Evidence bundles as GitHub Release Assets (transport/storage channel; PerfControl downloads and verifies SHA256 before Evidence review). After receiving Evidence, PerfControl independently recalcs the values, authors the formal `RESULT-*.md` snapshot once, and afterwards never rewrites it; corrections are supplement documents or follow-up Results. PerfControl Acceptance changes only the index, Status, Review, and Decision records. The server never commits or pushes the Control repo.
 
 ## Acceptance states
 

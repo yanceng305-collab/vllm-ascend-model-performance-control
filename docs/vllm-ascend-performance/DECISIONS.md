@@ -149,3 +149,47 @@ Formal Results are authored by PerfControl after Evidence review.
 **Result authorship**: Runner produces Evidence; PerfControl produces formal Results. After the Runner delivers Evidence, PerfControl independently reproduces the calculations, authors the one-per-cell formal `RESULT-*.md` documents, updates INDEX/STATUS, performs Formal Review, performs Formal Acceptance, and commits/pushes to GitHub.
 
 **Legacy**: The Stage 0A `CODEX2-...` prompt artifact explicitly remains historical per D-018 and the tasks `README`; immutable historical Results and records are not covered by this Decision and are not rewritten. Where earlier decisions describe A3PerfRunner actions such as "Result reporting," D-021 governs: the Runner delivers Evidence and a Runner Report; formal `RESULT-*.md` authoring belongs to PerfControl.
+
+## D-022 GitHub Release Asset Evidence Transport
+
+**Effective**: 2026-09-02
+
+A3PerfRunner is authorized to use **GitHub Release Assets** as an immutable Evidence transport and storage channel.
+
+**Scope**: This Decision supplements D-021 (local PerfControl / remote A3PerfRunner separation) by formalizing how Evidence bundles cross the network boundary when direct SCP/shared-storage is unavailable.
+
+**Rules**:
+
+1. **PerfControl remains the sole formal Control Git writer**. A3PerfRunner is still prohibited from:
+   - `git commit` the Control repo
+   - `git push` the Control repo
+   - Modifying STATUS / Task / Result / Decision documents in Git
+
+2. **A3PerfRunner may upload Evidence bundles as GitHub Release Assets**:
+   - Each Evidence bundle is uploaded as a single immutable `.tar.gz` asset
+   - Release tag naming convention: `evidence-<task-slug>-<run-id>` (e.g., `evidence-test-glm52-run-20260902-140958`)
+   - Asset filename convention: `<TASK_ID>-EVIDENCE-<run-id>.tar.gz`
+   - Each asset must record in its internal provenance: Task ID, DISPATCH_CONTROL_SHA, Evidence run ID, asset filename, asset SHA256
+   - Runner must communicate the release tag, asset filename, and expected SHA256 to PerfControl
+
+3. **Release Assets are Evidence transport, not formal Control Git state**:
+   - Assets do not replace formal Results (which remain in `docs/.../results/` within Git)
+   - Assets are immutable: no overwrite, no deletion by the Runner; corrections require a new run ID and new asset
+   - PerfControl downloads the asset, independently verifies SHA256, and only then proceeds with Evidence review
+
+4. **PerfControl Evidence ingestion workflow**:
+   - `gh release download <tag> --pattern <asset-filename>`
+   - Verify SHA256 matches Runner-provided expected value
+   - If mismatch: STOP, report `EVIDENCE_INTEGRITY_FAILURE`
+   - If match: unpack (without modifying the original archive), perform Evidence completeness/contract/identity gates, independently recalculate aggregations, author formal Results, perform Formal Review and Acceptance, commit and push Git
+
+5. **Evidence bundle integrity**:
+   - MANIFEST.txt, COMMANDS.txt, SHA256SUMS.txt, runtime-identity.txt, control-sha.txt (Task ID + DISPATCH_CONTROL_SHA + Authorization)
+   - Per-cell raw artifacts (run1-run4 JSON, logs)
+   - Per-cell independent Run2/Run3/Run4 aggregation calculations
+   - Completeness status, comparison summary, final Runner Report
+   - All internal checksums verified before upload
+
+**Rationale**: This Decision enables Evidence delivery when SSH password-based authentication blocks direct SCP, without compromising the D-021 separation (PerfControl = Git writer, Runner = execution/Evidence only). GitHub Release Assets provide authenticated, checksummed, immutable storage that both roles can access programmatically.
+
+**Not covered by this Decision**: Runner uploading anything other than Evidence bundles (e.g., partial logs, interim drafts, or formal Results) to GitHub Releases; such actions remain prohibited.

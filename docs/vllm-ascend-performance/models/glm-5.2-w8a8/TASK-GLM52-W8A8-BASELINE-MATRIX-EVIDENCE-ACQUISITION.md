@@ -4,7 +4,7 @@
 **Task Type**: Evidence Acquisition (Read-Only)  
 **Status**: READY  
 **Created**: 2026-09-02  
-**Updated**: 2026-09-02 (Pre-dispatch corrections; final role architecture per D-021)  
+**Updated**: 2026-09-02 (Pre-dispatch corrections; final role architecture per D-021; GitHub Release Asset transport per D-022)  
 **Assigned to**: A3PerfRunner  
 **Priority**: HIGH
 
@@ -280,7 +280,8 @@ The Runner delivers Evidence only (Decision D-021):
 - Evidence completeness status per cell (COMPLETE / INCOMPLETE / MISSING)
 - Comparison summary vs. User-provided matrix values (including the 64K three-way provenance)
 - Final Runner Report
-- Evidence bundle (tar/zip + checksum) when transfer is required
+- Evidence bundle (tar/zip + checksum)
+- Per Decision D-022, Runner may deliver the Evidence bundle via GitHub Release Asset (immutable transport/storage); PerfControl downloads and verifies SHA256 before Evidence review
 
 ## 2b. Formal Results (authored by PerfControl, NOT by this Runner)
 
@@ -379,6 +380,7 @@ For each cell, report:
 - Decision D-019: GLM-5.2-W8A8 User-verified baseline execution mode
 - Decision D-020: Hardware compute basis and normalization policy
 - Decision D-021: Local PerfControl / Remote A3PerfRunner Separation (Runner produces Evidence; PerfControl authors formal Results)
+- Decision D-022: GitHub Release Asset Evidence Transport (Runner may upload Evidence bundles as immutable Release Assets)
 - BASELINE.md: Frozen baseline configuration
 - RUNBOOK.md: Benchmark execution procedures
 - scripts/: Frozen benchmark scripts
