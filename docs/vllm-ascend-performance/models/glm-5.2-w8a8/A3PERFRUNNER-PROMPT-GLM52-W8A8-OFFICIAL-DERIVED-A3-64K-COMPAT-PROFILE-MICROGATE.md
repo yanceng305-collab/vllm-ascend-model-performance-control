@@ -95,20 +95,65 @@ Authorization: EXECUTE
 
 Only proceed when all three are present.
 
-## Step 2 - Replacement safety
+## Step 2 - Container-level clean restart (User-authorized)
 
-Inspect before touching anything:
+User explicitly authorized `docker restart model-test-zyg-a3` for this Task (dedicated test container): it stops the old exploratory GLM service and gives a clean runtime state. No separate PID / worker kill is required or allowed.
 
-- `ss -ltnp | grep :8000` / `curl` check of port 8000
-- current serve process cmdline (`ps -ef | grep -E 'vllm|serve'`)
-- confirm model path `/data/tiankuan/zyg/model/GLM-5.2-w8a8`
+Frozen sequence:
 
-STOP immediately (`UNAUTHORIZED_RUNTIME_REPLACEMENT`, no benchmark, package the STOP evidence and upload per D-022) when the current service is NOT clearly the User-manual GLM service on that model path (e.g., non-GLM workload, MiniMax, other user task, or ambiguous ownership).
+1. Host: confirm unique container match:
 
-Only when the current service is confirmed as the User-manual GLM exploratory service (`/data/tiankuan/zyg/model/GLM-5.2-w8a8`) may you stop it and launch the frozen command below. Do not kill any other workload.
+```bash
+docker ps -a --filter "name=^/model-test-zyg-a3$"
+```
 
-Record replacement evidence: before-PID, after-PID, exact stop/start timestamps.
+else STOP `TARGET_CONTAINER_NOT_FOUND_OR_AMBIGUOUS`.
 
+2. Before restart save evidence:
+
+```bash
+docker inspect model-test-zyg-a3 > replacement-before-inspect.txt
+npu-smi info > npu-before.txt
+```
+
+3. Execute the authorized restart:
+
+```bash
+docker restart model-test-zyg-a3
+```
+
+No other container may be restarted/stopped/removed.
+
+4. Confirm RUNNING:
+
+```bash
+docker ps --filter "name=^/model-test-zyg-a3$"
+```
+
+5. On HOST run `npu-smi info` (save `npu-after-restart.txt`) and confirm the NPUs used by this Task have no stale inference process. This is the mandatory pre-launch quiescence gate. If residual processes are present right after restart, wait and re-check; do NOT kill them yourself. If they persist after a reasonable wait, STOP `NPU_NOT_QUIESCENT_AFTER_CONTAINER_RESTART` (keep evidence; go to Evidence/upload).
+
+6. Only when container RUNNING and NPU quiescent:
+
+```bash
+docker exec -it model-test-zyg-a3 bash
+```
+
+then run the frozen launch command (Step 3).
+
+Write `replacement-evidence.txt` with at least:
+
+TARGET_CONTAINER=model-test-zyg-a3
+USER_AUTHORIZED_CONTAINER_RESTART=YES
+CONTAINER_BEFORE_STATUS=<...>
+CONTAINER_RESTART_COMMAND=docker restart model-test-zyg-a3
+CONTAINER_RESTART_RESULT=<...>
+CONTAINER_AFTER_STATUS=<...>
+NPU_BEFORE=npu-before.txt
+NPU_AFTER_RESTART=npu-after-restart.txt
+NPU_QUIESCENT_BEFORE_NEW_LAUNCH=YES/NO
+OLD_PROCESS_KILL_USED=NO
+
+All fields must be true; nothing fabricated.
 ## Step 3 - Launch and Capacity Gate (Phase A)
 
 Launch with the frozen command above. Wait for readiness. Do NOT benchmark yet.
