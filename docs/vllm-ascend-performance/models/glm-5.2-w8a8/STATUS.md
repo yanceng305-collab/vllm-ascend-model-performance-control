@@ -81,3 +81,5 @@
 - Decision D-021: PerfControl/A3PerfRunner separation (Runner produces Evidence; PerfControl produces formal Results)
 - Decision D-022: GitHub Release Asset Evidence Transport
 - Decision D-024: A3/910C hardware compute basis correction (active basis 752 × 8 = 6016)
+
+**Full-matrix validation prepared (2026-09-03)**: Task GLM52-W8A8-PROFILE-CANDIDATE-FULL-MATRIX-VALIDATION created (READY / PENDING USER DISPATCH), profile 0.95/67000/cap96/MTP-OFF/DP2-TP8-EP/48/4096/async/multistream/FULL_DECODE_ONLY/prefix-OFF, 4-run per cell; extractor + matrix validator scripts added.

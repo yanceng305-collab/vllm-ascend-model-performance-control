@@ -109,3 +109,6 @@ See [DECISIONS.md](DECISIONS.md) for all formal decisions, including:
 - D-022: GitHub Release Asset Evidence Transport
 - D-023: Machine-Verified Formal Result Gate (eliminates AI transcription errors)
 - D-024: GLM-5.2-W8A8 A3/910C hardware compute basis correction (active basis 752 × 8 = 6016; supersedes the A3 compute-basis portion of D-020)
+
+
+- Full-matrix candidate validation Task prepared (2026-09-03): profile candidate (0.95/67000) 4-run matrix; extractor+validator scripts; READY / PENDING USER DISPATCH.
