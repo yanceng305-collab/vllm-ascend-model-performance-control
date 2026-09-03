@@ -67,8 +67,18 @@ for RUN in 1 2 3 4; do
     --ignore-eos --save-result --result-dir "$CELL_DIR" --result-filename "run${RUN}.json")
 
   # 1) CANONICAL command artifact FIRST: the exact argv that will execute (JSON list)
-  python3 -c 'import json,sys; json.dump(sys.argv[1:], open(sys.argv[1],"w"), indent=1)' \
-    "$CELL_DIR/run${RUN}.command.txt" "${BENCH_ARGS[@]}" || exit 1
+  #    sys.argv[1] is the artifact path itself, so the argv payload is sys.argv[2:];
+  #    the snippet self-verifies the written JSON == the argv that will execute.
+  python3 -c '
+import json, sys
+p = sys.argv[1]
+argv = sys.argv[2:]
+with open(p, "w", encoding="utf-8", newline="\n") as f:
+    json.dump(argv, f, indent=2)
+    f.write("\n")
+got = json.load(open(p, encoding="utf-8"))
+assert got == argv and got and got[0] == "vllm", "command artifact corruption"
+' "$CELL_DIR/run${RUN}.command.txt" "${BENCH_ARGS[@]}" || exit 1
 
   # 2) execute with that exact argv; log covers tee (log may omit argv — contract comes from command.txt)
   "${BENCH_ARGS[@]}" 2>&1 | tee "$CELL_DIR/run${RUN}.log"
@@ -78,10 +88,13 @@ done
 - `runN.command.txt` is the canonical workload-contract artifact; the validator reads the contract from it, never from the tee'd log.
 - runN.json (if produced): keep; 0-byte/absent is a recorded writer anomaly, not a FAIL when log+metrics+validator PASS.
 
-For EVERY run (including run1): machine-derived metrics:
+For EVERY run (including run1): machine-derived metrics — ALWAYS from the pinned checkout, never from cwd scripts:
 
 ```bash
-python scripts/extract_bench_metrics.py "$CELL_DIR/runN.log" --out "$CELL_DIR/runN.metrics.json" --strict
+python3 "$CONTROL_DIR/scripts/extract_bench_metrics.py" \
+  "$CELL_DIR/run${RUN}.log" \
+  --out "$CELL_DIR/run${RUN}.metrics.json" \
+  --strict
 ```
 
 - `--strict` = any required metric field missing => exit 1; abort and re-run that run attempt.

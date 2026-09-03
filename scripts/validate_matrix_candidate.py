@@ -93,6 +93,16 @@ def validate_cell(cell_dir, cell, cfg, matrix_config_sha):
             if parsed.get("failed_requests") != 0:
                 run_problems.append("failed_requests=%r != 0" % parsed.get("failed_requests"))
 
+        if run == WARMUP_RUN:
+            role_file = cell_dir / "run1.role.txt"
+            entry["role_gate"] = "run1.role.txt"
+            if not role_file.exists():
+                run_problems.append("run1.role.txt missing (required, content must be WARMUP_DISCARD)")
+            else:
+                role = io.open(role_file, encoding="utf-8", errors="replace").read().strip()
+                if role != "WARMUP_DISCARD":
+                    run_problems.append("run1.role.txt content %r != WARMUP_DISCARD" % role)
+
         if cmd_path.exists():
             tokens = _load_command_tokens(cmd_path)
             if tokens is None:
