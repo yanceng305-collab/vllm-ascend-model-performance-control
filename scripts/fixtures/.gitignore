@@ -1,0 +1,3 @@
+# Regression fixture: the review-verified raw 64K run2.log must stay committed
+# even though *.log is gitignored at repo root.
+!*.log

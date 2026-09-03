@@ -100,6 +100,28 @@ python scripts/validate_result.py docs/vllm-ascend-performance/models/glm-5.2-w8
 
 ---
 
+## Full-Matrix Candidate Tooling (D-025, 2026-09-03)
+
+Used by the Full-Matrix Profile Candidate validation Task
+(`GLM52-W8A8-PROFILE-CANDIDATE-FULL-MATRIX-VALIDATION`).
+
+| Script | Scope | Produces |
+|---|---|---|
+| `extract_bench_metrics.py` | RAW log -> metrics (`--strict` = fail-closed; handles labels with unit parens like `Total token throughput (tok/s):`) | `runN.metrics.json` |
+| `validate_matrix_candidate.py` | PER-CELL: deterministic regen, counts 256/0, contract from `runN.command.txt`, Run1 `WARMUP_DISCARD` gate, mean/min/max/std/CV, delta + D-024 from config | `validation.json`, `aggregation.json` (via `--out-dir`) |
+| `validate_full_matrix_candidate.py` | MATRIX level only: per-cell PASS everywhere, identical profile snapshots, identical runtime identity, measured==12, warmup==4, formal value == Mean(run2,3,4) | `matrix-validation.json` (via `--out`) |
+| `bench_common.py` | shared deterministic parser / config / contract helpers | — |
+| `test_matrix_tooling.py` | mandated regression suite A–F (real 64K fixture + deterministic synthetic cells); no SKIP allowed | — |
+
+Determinism: derived JSON has no timestamps; same raw inputs -> byte-identical outputs.
+All baseline/delta/achievement inputs come from
+`docs/.../glm-5.2-w8a8/candidate-matrix-config.json` (D-024 6016/15824/80%);
+validators compute, never handwrite.
+The Runner obtains these scripts at the exact DISPATCH_CONTROL_SHA (git checkout
+detached) and records control-sha.txt + script-sha256sums.txt in Evidence.
+
+---
+
 ## Workflow
 
 ### PerfControl Formal Result Creation Workflow

@@ -109,6 +109,8 @@ See [DECISIONS.md](DECISIONS.md) for all formal decisions, including:
 - D-022: GitHub Release Asset Evidence Transport
 - D-023: Machine-Verified Formal Result Gate (eliminates AI transcription errors)
 - D-024: GLM-5.2-W8A8 A3/910C hardware compute basis correction (active basis 752 × 8 = 6016; supersedes the A3 compute-basis portion of D-020)
+- D-025: Full-Matrix Formal Evidence Contract (canonical runN.command.txt artifact + pinned DISPATCH_CONTROL_SHA script acquisition + two-stage per-cell/matrix validation)
 
 
 - Full-matrix candidate validation Task prepared (2026-09-03): profile candidate (0.95/67000) 4-run matrix; extractor+validator scripts; READY / PENDING USER DISPATCH.
+- Pre-dispatch tooling review + fix (2026-09-03): the 64K real raw evidence (Release `glm52-od-64k-followup-20260903`, asset SHA256 `15bb96cd...43fa5`, live verified) exposed an extractor regex bug — labels with unit parentheses (e.g. `Total token throughput (tok/s):`) parsed as null. Extractor rewritten (unit-paren tolerant, `--strict` fail-closed, deterministic); per-cell validator scoped to per-cell (contract from `runN.command.txt`, Run1 `WARMUP_DISCARD` gate, D-024 inputs from `candidate-matrix-config.json`); matrix-level validator `validate_full_matrix_candidate.py` added (cross-cell profile-snapshot identity only). Regression suite `scripts/test_matrix_tooling.py` A–F PASS on real fixture + synthetic cells. Runner Prompt Rev 2 documents pinned checkout at DISPATCH_CONTROL_SHA + canonical argv artifact. Task stays `READY / PENDING USER DISPATCH` (no server execution; warm service untouched).

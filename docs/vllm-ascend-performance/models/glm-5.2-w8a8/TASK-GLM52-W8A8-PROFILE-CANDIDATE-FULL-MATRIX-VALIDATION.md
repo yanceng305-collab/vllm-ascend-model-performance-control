@@ -70,27 +70,40 @@ Prompt flow:
 ## 5. Machine artifacts & JSON writer
 
 - If vllm `--save-result` produces runN.json normally: keep it (raw + machine-readable proof).
-- If runN.json is 0-byte / missing: record writer anomaly; formal validation still passes when `runN.log` + `runN.metrics.json` + validator all PASS.
-- RAW SOURCE: `runN.log`
-- MACHINE DERIVED: `runN.metrics.json` via `scripts/extract_bench_metrics.py`
+- If runN.json is 0-byte / missing: record writer anomaly; formal validation still passes when `runN.log` + `runN.command.txt` + `runN.metrics.json` + validators all PASS.
+- RAW SOURCE: `runN.log` (immutable bench stdout) and `runN.command.txt` (canonical exact argv as a JSON list, written before execution).
+- MACHINE DERIVED: `runN.metrics.json` via `scripts/extract_bench_metrics.py --strict`;
+  per cell `validation.json` + `aggregation.json` via `scripts/validate_matrix_candidate.py --out-dir`;
+  matrix `matrix-validation.json` via `scripts/validate_full_matrix_candidate.py --out`.
+- All derived JSON is deterministic (no timestamps; sorted keys).
+- Execution contract is validated from `runN.command.txt`, NEVER from the tee'd log (which may
+  not contain the CLI argv).
+- Run1 role is machine-identified `WARMUP_DISCARD` (`run1.role.txt`) and excluded from every mean
+  (`run1_excluded: true`).
 - Do NOT modify vLLM runtime/site-packages/image to fix the writer (would change runtime identity).
 
-## 6. D-023 machine gate extension
+## 6. D-023 machine gate extension (two-stage, FAIL-CLOSED)
 
-Before any Formal acceptance, run per cell:
-`python scripts/validate_matrix_candidate.py --cell-dir <cell_dir> --cell <CELL>`
+Stage 1 per cell (`scripts/validate_matrix_candidate.py --cell 1K|4K|16K|64K`):
+1. run1..run4 raw logs + canonical runN.command.txt present; run1 role WARMUP_DISCARD (never in mean)
+2. metrics JSON is deterministically regenerable from runN.log (stored == re-extract)
+3. required metric fields all present; successful_requests == 256; failed_requests == 0
+4. workload contract (input/output/concurrency/prompts/ignore_eos/request-rate/range-ratio/endpoint) matched from runN.command.txt
+5. mean/eligible sets exactly Mean(Run2, Run3, Run4); stability min/max/std/CV% machine-computed
+6. delta vs baseline, D-024 achievement (6016/15824), 80% target all computed from
+   `candidate-matrix-config.json` — the D-024/baseline inputs are machine artifact, never typed into the validator
+7. this validator does NOT compare against any Formal Result (later gate)
 
-Validator checks:
-1. metrics JSON is deterministically regenerable from runN.log;
-2. successful_requests == 256 and failed_requests == 0 for Run2/3/4;
-3. workload/contract token for the cell present in each run log (input/output/concurrency/prompts/ignore_eos);
-4. Run1 explicitly discarded (never in the mean);
-5. mean = mean(Run2,3,4) machine-computed;
-6. raw values agree with the generated Formal Candidate Result;
-7. runtime identity / effective profile identical across the four cells;
-8. baseline raw/delta/normalized achievement/80% target all machine-computed (D-024 basis 6016/15824).
+Stage 2 matrix-level (`scripts/validate_full_matrix_candidate.py`):
+8. per-cell validation & aggregation all PASS; measured==12; warmup discard count == 4
+9. profile-snapshot.json identical across all 4 cells (single field change => FAIL);
+10. runtime-identity identical across cells
+11. formal candidate value = Mean(Run2,3,4) per cell
 
-## 7. STOP / INVALID policy (formal validation)
+Formal Result comparison is the Formal Candidate Result gate, a separate stage after
+Evidence review PASS — the matrix validators do not consume a Formal Result.
+
+## 7 STOP / INVALID policy (formal validation)
 
 - Client client wedge: allow to discard only that run attempt (ABORTED/INVALID) and re-run the same run on the same profile.
 - Engine crash / device error / OOM / KV rejection / profile mismatch / correctness failure: do NOT change parameters to rescue;

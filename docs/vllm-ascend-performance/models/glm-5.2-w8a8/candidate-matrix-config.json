@@ -1,0 +1,57 @@
+{
+  "model": "GLM-5.2-W8A8",
+  "task_id": "GLM52-W8A8-PROFILE-CANDIDATE-FULL-MATRIX-VALIDATION",
+  "cells": {
+    "1K": {
+      "cell_name": "1K-1K",
+      "input_len": 1024,
+      "output_len": 1024,
+      "baseline_tok_s": 676.60,
+      "h100_tok_s": 2688.71
+    },
+    "4K": {
+      "cell_name": "4K-1K",
+      "input_len": 4096,
+      "output_len": 1024,
+      "baseline_tok_s": 820.76,
+      "h100_tok_s": 4063.45
+    },
+    "16K": {
+      "cell_name": "16K-1K",
+      "input_len": 16384,
+      "output_len": 1024,
+      "baseline_tok_s": 957.94,
+      "h100_tok_s": 4379.60
+    },
+    "64K": {
+      "cell_name": "64K-1K",
+      "input_len": 65536,
+      "output_len": 1024,
+      "baseline_tok_s": 927.59,
+      "h100_tok_s": 5054.66
+    }
+  },
+  "workload_contract": {
+    "backend": "vllm",
+    "endpoint": "/v1/completions",
+    "dataset": "random",
+    "random_range_ratio": "0",
+    "request_rate": "inf",
+    "max_concurrency": 64,
+    "num_prompts": 256,
+    "ignore_eos": true,
+    "runs_total_per_cell": 4,
+    "warmup_run": "run1",
+    "measured_runs": ["run2", "run3", "run4"]
+  },
+  "hardware": {
+    "A3_cards": 8,
+    "A3_tflops_per_card": 752,
+    "A3_total_tflops": 6016,
+    "H100_cards": 16,
+    "H100_tflops_per_card": 989,
+    "H100_total_tflops": 15824,
+    "target_achievement_minimum": 0.80,
+    "decision": "D-024"
+  }
+}

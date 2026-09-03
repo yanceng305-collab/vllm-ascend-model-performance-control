@@ -279,3 +279,22 @@ A3PerfRunner is authorized to use **GitHub Release Assets** as an immutable Evid
 10. All derived normalization values are machine-computed from `hardware-normalization-config.yaml` (now 752/6016) plus accepted raw data — no manual transcription.
 
 **Rationale**: User identified `756/6048` as an input error and provided the corrected A3/910C specification `752 × 8 = 6016`.
+## D-025 Full-Matrix Formal Evidence Contract: canonical command artifact + pinned script acquisition
+
+**Effective**: 2026-09-03 (PRE-DISPATCH TOOLING REVIEW + FIX session)
+
+**Task**: GLM52-W8A8-PROFILE-CANDIDATE-FULL-MATRIX-VALIDATION (profile-level candidate, frozen 0.95/67000 profile)
+
+1. **runN.command.txt is the canonical workload-contract artifact**: written by the Runner immediately BEFORE execution from the exact argv array that will run (a JSON list); the validator reads the contract from it. The tee'd runN.log is RAW SOURCE for metrics only and is never trusted for the CLI contract (vLLM bench may not echo argv into the log).
+2. **Script acquisition is pinned to DISPATCH_CONTROL_SHA**: the Runner clones the Control repo and checks out the exact dispatch SHA; extractor/validators execute from that checkout; `control-sha.txt` (rev-parse HEAD) and `script-sha256sums.txt` (sha256sum of the four tool scripts) become part of Evidence. No drifting main for formal executions.
+3. **FAIL-CLOSED extractor**: `extract_bench_metrics.py --strict` exits non-zero when any required metric field (e.g. Total token throughput) is missing from the raw log. Labels with unit parentheses (`Total token throughput (tok/s):`) are parsed.
+4. **Run1 is explicitly WARMUP_DISCARD**: `run1.role.txt` plus `role: WARMUP_DISCARD` / `in_mean: false` in validation.json; only Mean(Run2, Run3, Run4) is eligible.
+5. **Two-stage validation split**:
+   - `scripts/validate_matrix_candidate.py` = PER-CELL metrics validation only (deterministic regen, counts, contract from runN.command.txt, aggregation mean/min/max/std/CV, delta/D-024 from candidate-matrix-config.json).
+   - `scripts/validate_full_matrix_candidate.py` = MATRIX level only (per-cell PASS everywhere, profile-snapshot.json identical across the four cells, runtime identity identical, measured==12, warmup discard==4, formal value == Mean(run2,3,4)).
+   Neither validator compares against any Formal Result; that is the later Formal Candidate Result gate after Control Evidence Review PASS.
+6. **No baseline/delta/achievement literals in validators**: all such inputs come from `candidate-matrix-config.json` (Control artifact reflecting D-024 6016/15824/80% and accepted baseline/H100 references); validators compute, never handwrite.
+7. **Determinism**: derived JSON has no timestamps; same raw input => byte-identical derived JSON (regression-tested).
+8. Formal OPT-01 remains BLOCKED_PENDING_BASELINE_VALUE_VERIFICATION; untouched by this Decision.
+
+**Rationale**: eliminates (a) post-dispatch script drift, (b) reliance on a tee'd log that may lack the CLI argv, (c) Run1 cross-contamination of the mean, (d) the per-cell validator claiming cross-cell scope it does not verify, (e) hand-transcribed baseline/delta/achievement values, (f) non-deterministic derived Evidence.
