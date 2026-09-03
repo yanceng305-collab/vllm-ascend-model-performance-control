@@ -1,75 +1,155 @@
 # TASK-GLM52-W8A8-OFFICIAL-DERIVED-A3-64K-FOLLOWUP
 
 **Task ID**: GLM52-W8A8-OFFICIAL-DERIVED-A3-64K-FOLLOWUP  
-**Task Type**: 64K follow-up validation (exploratory) of Attempt-003 candidate  
+**Task Type**: 64K follow-up validation (exploratory) - Attempt-003-derived memory-headroom candidate  
 **Requires**: Evidence Review PASS (16K microgate) of `GLM52-W8A8-OFFICIAL-DERIVED-A3-64K-COMPAT-PROFILE-MICROGATE`  
 **Status**: READY / PENDING USER DISPATCH  
 **Created**: 2026-09-02  
+**Revision**: 2026-09-02 (candidate = gpu-memory-utilization 0.95 / max-model-len 67000)  
 **Assigned to**: A3PerfRunner (AUTONOMOUS PERFORMANCE OPTIMIZATION RUNNER)  
 **Priority**: HIGH
 
 ## 1. Purpose
 
-Validate the reviewed Attempt-003 candidate profile under the project's final 64K workload:
+Validate a memory-headroom 64K candidate derived from Attempt-003, under the project 64K workload (input 65536 + output 1024):
 
-1. capacity at max-model-len 70000 OK;
+1. capacity at `max-model-len >= 66560` OK;
 2. correctness OK (no device errors);
 3. 256/256 success;
-4. 64K performance vs accepted 64K baseline 927.59 tok/s.
+4. 64K performance vs accepted baseline 927.59 tok/s.
 
-This is exploratory 64K follow-up; NOT a Formal Result, NOT 4-run formal matrix.
+Exploratory; NOT a Formal Result; NOT a 4-run formal matrix.
 
-## 2. Reviewed candidate profile (recorded; from evidence review)
+## 2. Historical Attempt-003 (immutable execution fact - do not rewrite)
 
-- model GLM-5.2-W8A8; runtime accepted vLLM 0.24 family
-- max-model-len 70000; DP2/TP8/EP ON; gpu-memory-utilization 0.97; max_cudagraph_capture_size 96; max-num-seqs 48; max-num-batched-tokens 4096; MTP OFF; async ON; multistream_overlap_shared_expert ON; FULL_DECODE_ONLY; prefix cache OFF
+Attempt-003 was reviewed PASS. Its ACTUAL effective profile stays recorded exactly:
 
-## 3. Service reuse (preferred)
+- gpu-memory-utilization = 0.97
+- max-model-len = 70000
+- max_cudagraph_capture_size = 96
+- MTP = OFF
+- DP2 / TP8 / EP ON
+- max-num-seqs = 48
+- max-num-batched-tokens = 4096
+- async ON; multistream_overlap_shared_expert ON; FULL_DECODE_ONLY; prefix cache OFF
+- 16K Run2 2116.32 tok/s (machine delta +120.9241% vs 957.94)
 
-Current Attempt-003 service: `SERVICE_LEFT_RUNNING=YES`, PID 257285, port 8000, log /workspace/glm52_od_attempt-003.log.
+These numbers are immutable; do NOT rewrite Attempt-003 into 0.95 / 67000.
 
-Prompt flow:
+## 3. 64K FOLLOW-UP TARGET PROFILE (new candidate)
 
-1. verify service alive (ps/API), PID/cmdline, model identity, exact effective profile, /v1/models, max-model-len>=70000, no residual device errors; compare against your reviewed candidate
-2. if the running service EXACTLY matches the Attempt-003 candidate profile: reuse it (NO restart, NO re-graph-capture);
-3. only if service absent / identity mismatch / profile mismatch: the runner restores the reviewed candidate (bounded autonomous remediation within HARD BOUNDARIES);
-4. max-model-len >= 70000 is a HARD BOUNDARY for the final candidate: never lowered to force 64K.
+Classification: **ATTEMPT-003-DERIVED MEMORY-HEADROOM 64K CANDIDATE** (NOT identical to Attempt-003).
 
-## 4. 64K benchmark contract
+| Parameter | Value |
+|---|---|
+| gpu-memory-utilization | **0.95** |
+| max-model-len | **67000** (initial) |
+| max_cudagraph_capture_size | 96 |
+| MTP / speculative | OFF |
+| data-parallel | 2 |
+| tensor-parallel | 8 |
+| expert parallel | ON |
+| max-num-seqs | 48 |
+| max-num-batched-tokens | 4096 |
+| async scheduling | ON |
+| multistream_overlap_shared_expert | ON |
+| graph | FULL_DECODE_ONLY |
+| prefix cache | OFF |
+| other params | inherit from reviewed Attempt-003 |
 
-- input 65536; output 1024; concurrency 64; num-prompts 256; dataset random; range-ratio 0; inf; ignore-eos; /v1/completions; client vllm bench serve
-- Run1 warmup/discard; Run2 measured
+## 4. 64K capability hard boundary (right-sizing)
 
-Accepted 64K baseline: 927.59 tok/s  
-D-024 normalized target (80%): machine-computed (see §5)
+Formal workload: input 65536 + output 1024 → **REQUIRED TOTAL SEQUENCE CAPACITY = 66560 tokens**.
 
-## 5. Machine-computed metrics (not handwriting)
+- **MINIMUM REQUIRED MAX MODEL LENGTH = 66560**
+- 64K follow-up initial candidate: `67000` (small engineering headroom over 66560)
+- allowed convergence toward the floor when KV capacity is tight:
+  `67000 → 66800 → 66600 → 66560`
+- **HARD FLOOR = 66560**: never lower max-model-len below 66560 (e.g., NOT 65536 / 64000), even for performance or memory. A smaller value cannot host 64K input + 1K output.
 
-- delta vs accepted 64K baseline = (Run2_total / 927.59 - 1) * 100 (machine)
-- active D-024 normalization: A3 basis 6016 (752x8); H100 basis 15824 (989x16); H100 64K reference 5054.66; 80% absolute target = 5054.66 / 15824 * 6016 * 0.80 (machine)
-  → 1537.35 tok/s (recomputed by the same formula in Control; value embedded here only as the current machine value)
+The prior `>= 70000` engineering conservative value is RELEASED for THIS Task in favor of the real business requirement of 64K + 1K; this is capacity right-sizing, NOT workload reduction. The final 64K workload and benchmark contract (section 8) are unchanged.## 5. gpu-memory-utilization = 0.95: fixed verification target
 
-## 6. Autonomous policy
+User decision: this Task verifies whether `gpu-memory-utilization = 0.95` is sufficient when only the real 64K+1K capacity is kept. Therefore:
 
-Runner remains AUTONOMOUS OPTIMIZATION RUNNER within HARD boundaries. Recoverable 64K issues (OOM/KV/graph/scheduler/performance) are feedback: diagnose/modify/retry with recorded he, evidence; do not wait User for recoverable issues. Parameters may be adjusted (same adjustable list as the parent micro gate: DP/TP/EP, seqs, batched tokens, gpu-mem, capture, async, MTP, allocator...). Never lower max-model-len < 70000 for 64K; smaller context diagnostics clearly MUST be marked DIAGNOSTIC ONLY / NOT CANDIDATE.
+- `0.95` is the formal target candidate value for this Task;
+- do NOT auto-raise it on capacity struggles;
+- **preferred remediation order**:
+  1. shrink `max-model-len` from 67000 toward the floor in steps (66800 / 66600 / 66560);
+  2. inspect actual KV / graph / memory evidence;
+  3. keep `capture = 96` (preferred);
+  4. keep MTP OFF;
+  5. other engineering fixes that do not break the candidate identity (within adjustable set).
+- If CAPACITY PASS still fails at `gpu-memory-utilization = 0.95` AND `max-model-len = 66560`, STOP and report:
 
-## 7. 64K exploratory disposition
+  `GPU_MEMORY_UTILIZATION_095_INSUFFICIENT_FOR_REQUIRED_64K_PLUS_1K_CAPACITY`
 
-- Run2 Total Token Throughput vs 927.59:
-  - * >= 1537.35 (80% target, machine-computed) → QUALIFICATION: above target → `64K_FOLLOWUP_PASS` (formal NOT; flag for review)
-  - > 927.59 but < 1537 → `64K_FOLLOWUP_IMPROVED_BELOW_TARGET` (report delta)
-  - <= 927.59 → `64K_FOLLOWUP_NO_IMPROVEMENT` (report delta)
-  - failed/OOM/crash/correctness → `64K_FOLLOWUP_INVALID_OR_ROLLBACK_CANDIDATE`
-- Correctness gates: 256/0 unless failing; otherwise flag.
+  then User + ChatGPT decide whether raising to 0.96 / 0.97 is allowed. Do NOT raise utilization above 0.95 yourself.
 
-No auto anything beyond 64K run; report to PerfControl + User.
+Rationale: Attempt-003 (0.97 / 70000) proved strong performance but 0.97 is aggressive; this follow-up removes the un-needed context headroom (70000 vs 66560) to try a more conservative 0.95 while keeping the real business workload. This is MEMORY/HEADROOM AND CAPACITY RIGHT-SIZING - not performance cheating, not workload reduction.
 
-## 8. Evidence (all outcomes) + SERVICE_LEFT_RUNNING default
+## 6. Capacity gate (before any 64K benchmark)
 
-Devices/attemp-metric files per parent Task; control-sha; profile photo; use snapshots; capacity/update; bench run1/run2 json|log|summary; machine extraction; optimization-summary update or new 64K summary; service-left-running YES + PID/port/log if reuse. D-022 upload tar.gz.
+Confirm all (evidence):
 
-## 9. Status notes
+- gpu-memory-utilization = 0.95
+- max-model-len >= 66560 (target first 67000)
+- capture = 96
+- MTP OFF
+- DP2 / TP8 / EP ON
+- max-num-batched-tokens = 4096
+- max-num-seqs = 48
+- async ON; multistream ON; FULL_DECODE_ONLY; prefix cache OFF
+- API READY (/v1/models)
+- no KV rejection, no fatal OOM, no device correctness error
 
-- Formal OPT-01 unchanged (BLOCKED_PENDING_BASELINE_VALUE_VERIFICATION).
-- This branch remains exploratory until governance sees the 64K result.
-- No Formal result authored here.
+Only CAPACITY PASS proceeds to the 64K benchmark.
+
+## 7. Warm service reuse policy (PRIOR WARM REFERENCE SERVICE)
+
+The current warm Attempt-003 service (SERVICE_LEFT_RUNNING=YES; PID 257285; port 8000; log /workspace/glm52_od_attempt003.log; profile 0.97/70000) may stay up until dispatch; do not close it now. However it is NO LONGER the target candidate:
+
+1. on dispatch, verify identity and record it as `PRIOR WARM REFERENCE SERVICE`;
+2. to switch, stop only the Task-owned Attempt-003 service (never other workloads);
+3. launch the new 0.95 / 67000 target candidate;
+4. complete graph capture / readiness / capacity gate;
+5. then run the 64K benchmark.
+
+Never benchmark the 0.97/70000 service as the 64K candidate.
+
+## 8. 64K benchmark contract (UNCHANGED)
+
+- input 65536; output 1024; concurrency 64; num-prompts 256; dataset random; range-ratio 0; inf; ignore-eos; endpoint /v1/completions; client vllm bench serve
+- Run1 warmup/discard; Run2 measured; gate metric = Total Token Throughput
+- accepted baseline 927.59; active 80% target (D-024 basis 6016/15824; H100 64K ref 5054.66) = 1537.35 tok/s (machine recompute)
+
+Do NOT modify the workload because max-model-len changed 70000->67000.
+
+## 9. Result record (+ evidence)
+
+Evidence / Runner Report must record:
+
+REQUESTED_INPUT_TOKENS=65536
+REQUESTED_OUTPUT_TOKENS=1024
+REQUIRED_TOTAL_SEQUENCE_CAPACITY=66560
+EFFECTIVE_MAX_MODEL_LEN=<actual>
+GPU_MEMORY_UTILIZATION=0.95
+CAPACITY_MARGIN_TOKENS=<effective_max_model_len - 66560>
+KV cache evidence
+
+this can prove full 64K + 1K workload support even though max-model-len < 70000.
+
+Fill per attempt: attempt-xxx.md (OBJECTIVE/OBSERVED/HYPOTHESIS/PARAMS_BEFORE/CHANGED/AFTER/REASON/EVIDENCE/EXACT_CMD/START/END/CAPACITY_RESULT/64K_RESULT/NEXT). `optimization-summary-64k.txt` with Attempt/Effective profile/Capacity/64K total/delta vs 927/58/disposition.
+
+## 10. Autonomy + STOP conditions
+
+Same autonomous policy as parent (diagnose/modify/retry; multiple param bundles OK; DIAGNOSTIC ONLY marks). In this Task:
+
+- never raise util > 0.95
+- never go below floor 66560
+- MTP stays OFF, capture 96 preferred
+- True STOP (return to user) incl. the 0.95-insufficient token
+
+## 11. Governance
+
+- 64K Task stays exploratory; formal OPT-01 remains BLOCKED_PENDING_BASELINE_VALUE_VERIFICATION
+- no Formal Result; D-022 evidence; STATUS READY / PENDING USERDISPATCH
