@@ -1,0 +1,19 @@
+{
+  "baseline_tok_s": 820.76,
+  "cell": "4K",
+  "cv_pct": 0.1133254886928471,
+  "d024_achievement_pct": 105.48895232704558,
+  "d024_target_80_tok_s": 1235.880444893832,
+  "delta_vs_baseline_pct": 98.55337329629448,
+  "formal_value_tok_s": 1629.6466666666665,
+  "max_tok_s": 1631.8,
+  "mean_tok_s": 1629.6466666666665,
+  "min_tok_s": 1627.29,
+  "run1_excluded": true,
+  "run2_tok_s": 1631.8,
+  "run3_tok_s": 1629.85,
+  "run4_tok_s": 1627.29,
+  "status": "PASS",
+  "stddev_pop_tok_s": 1.8468050489666927,
+  "target_met": true
+}

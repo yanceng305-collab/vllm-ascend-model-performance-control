@@ -1,0 +1,8 @@
+container=model-test-zyg-a3
+image=quay.io/ascend/vllm-ascend:nightly-releases-v0.24.0rc-a3
+vllm=0.24.0
+vllm_ascend_plugin=ascend
+model_path=/data/tiankuan/zyg/model/GLM-5.2-w8a8
+pid_host=3164838
+port=8000
+log=/workspace/glm52_od_64k_candidate.log

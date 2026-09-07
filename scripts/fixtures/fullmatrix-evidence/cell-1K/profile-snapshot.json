@@ -1,0 +1,23 @@
+{
+  "task_id": "GLM52-W8A8-PROFILE-CANDIDATE-FULL-MATRIX-VALIDATION",
+  "reuse_decision": "YES",
+  "pid": "3164838",
+  "port": 8000,
+  "log_path": "/workspace/glm52_od_64k_candidate.log",
+  "v1_models": "glm52-w8a8",
+  "max_model_len": 67000,
+  "gpu_memory_utilization": 0.95,
+  "max_cudagraph_capture_size": 96,
+  "mtp": "OFF",
+  "data_parallel_size": 2,
+  "tensor_parallel_size": 8,
+  "expert_parallel": true,
+  "max_num_seqs": 48,
+  "max_num_batched_tokens": 4096,
+  "async_scheduling": true,
+  "multistream_overlap_shared_expert": true,
+  "cudagraph_mode": "FULL_DECODE_ONLY",
+  "prefix_cache": false,
+  "image": "quay.io/ascend/vllm-ascend:nightly-releases-v0.24.0rc-a3",
+  "network": "host"
+}

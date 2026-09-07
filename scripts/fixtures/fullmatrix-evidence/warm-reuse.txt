@@ -1,0 +1,11 @@
+REUSE=YES
+PID=3164838
+PORT=8000
+LOG=/workspace/glm52_od_64k_candidate.log
+v1_models: glm52-w8a8, max_model_len=67000
+effective profile verified from process cmdline + API:
+  gpu-memory-utilization=0.95; max-model-len=67000; capture=96; MTP=OFF (no speculative-config);
+  DP=2; TP=8; EP=ON; max-num-seqs=48; max-num-batched-tokens=4096; async=ON;
+  multistream_overlap_shared_expert=true; cudagraph=FULL_DECODE_ONLY; prefix-cache=OFF
+image=quay.io/ascend/vllm-ascend:nightly-releases-v0.24.0rc-a3; network=host
+decision: REUSE for whole matrix (no restart; no re-graph-capture)

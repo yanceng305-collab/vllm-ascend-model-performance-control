@@ -1,0 +1,101 @@
+{
+  "cell": "1K",
+  "cell_dir": "/data/tiankuan/fullmatrix-evidence/cell-1K",
+  "expected_successful_requests": 256,
+  "formal_value_definition": "Mean(run2, run3, run4) total_token_throughput (tok/s)",
+  "matrix_config_sha256": "5f8d0bab45eabcdf1f2cfe195baf758ec8577a3ff3f0e7611e2712ef95ebcc43",
+  "runs": {
+    "run1": {
+      "in_mean": false,
+      "log_sha256": "f46b23eb9b7b0d0737aac5211784c3a00fe07f8c619394cb3cc734c836bc28ac",
+      "metrics": {
+        "benchmark_duration_s": 438.03,
+        "failed_requests": 0,
+        "mean_itl_ms": 103.2,
+        "mean_tpot_ms": 103.2,
+        "mean_ttft_ms": 3736.29,
+        "output_token_throughput": 598.46,
+        "p99_itl_ms": 104.27,
+        "p99_tpot_ms": 106.26,
+        "p99_ttft_ms": 9417.09,
+        "request_throughput": 0.58,
+        "successful_requests": 256,
+        "total_input_tokens": 262144,
+        "total_output_tokens": 262144,
+        "total_token_throughput": 1196.91
+      },
+      "role": "WARMUP_DISCARD",
+      "role_gate": "run1.role.txt",
+      "status": "PASS"
+    },
+    "run2": {
+      "in_mean": true,
+      "log_sha256": "b6a7efded6b29305ae9990f4d7a09d161da4a27058ac6cc3b182c94a4d00b3fc",
+      "metrics": {
+        "benchmark_duration_s": 437.59,
+        "failed_requests": 0,
+        "mean_itl_ms": 103.16,
+        "mean_tpot_ms": 103.16,
+        "mean_ttft_ms": 3754.81,
+        "output_token_throughput": 599.07,
+        "p99_itl_ms": 104.39,
+        "p99_tpot_ms": 107.52,
+        "p99_ttft_ms": 9350.11,
+        "request_throughput": 0.59,
+        "successful_requests": 256,
+        "total_input_tokens": 262144,
+        "total_output_tokens": 262144,
+        "total_token_throughput": 1198.14
+      },
+      "role": "MEASURED",
+      "status": "PASS"
+    },
+    "run3": {
+      "in_mean": true,
+      "log_sha256": "b08aeb0c38511d35d5b2a46647673e93cd2d47a949b09706242c2fa93edc7cb5",
+      "metrics": {
+        "benchmark_duration_s": 438.8,
+        "failed_requests": 0,
+        "mean_itl_ms": 103.61,
+        "mean_tpot_ms": 103.61,
+        "mean_ttft_ms": 3624.43,
+        "output_token_throughput": 597.41,
+        "p99_itl_ms": 104.19,
+        "p99_tpot_ms": 106.07,
+        "p99_ttft_ms": 9296.9,
+        "request_throughput": 0.58,
+        "successful_requests": 256,
+        "total_input_tokens": 262144,
+        "total_output_tokens": 262144,
+        "total_token_throughput": 1194.81
+      },
+      "role": "MEASURED",
+      "status": "PASS"
+    },
+    "run4": {
+      "in_mean": true,
+      "log_sha256": "65f083fd03e68cff6753807aed5388ed265bd4ceadf96e1c189f1f803e0d857c",
+      "metrics": {
+        "benchmark_duration_s": 428.93,
+        "failed_requests": 0,
+        "mean_itl_ms": 101.12,
+        "mean_tpot_ms": 101.12,
+        "mean_ttft_ms": 3686.17,
+        "output_token_throughput": 611.16,
+        "p99_itl_ms": 101.75,
+        "p99_tpot_ms": 103.86,
+        "p99_ttft_ms": 9327.88,
+        "request_throughput": 0.6,
+        "successful_requests": 256,
+        "total_input_tokens": 262144,
+        "total_output_tokens": 262144,
+        "total_token_throughput": 1222.32
+      },
+      "role": "MEASURED",
+      "status": "PASS"
+    }
+  },
+  "scope": "per-cell",
+  "status": "PASS",
+  "tool": "validate_matrix_candidate.py"
+}

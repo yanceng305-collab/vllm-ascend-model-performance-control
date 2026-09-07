@@ -1,0 +1,5 @@
+Task ID: GLM52-W8A8-PROFILE-CANDIDATE-FULL-MATRIX-VALIDATION
+DISPATCH_CONTROL_SHA: 2711b6ed366d84187a1102b60186d42c5ba198cd
+MAIN_HEAD_CONFIRMED: 2711b6ed366d84187a1102b60186d42c5ba198cd (live main == dispatch, gh api verified)
+CONTROL_DIR: /data/tiankuan/matrix-ctl (pinned extraction of exact SHA tarball; git channel blocked; content identical to commit tree)
+Authorization: EXECUTE

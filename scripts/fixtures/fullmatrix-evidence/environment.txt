@@ -1,0 +1,14 @@
+# Frozen runtime env (verbatim from candidate profile; same for all cells)
+unset VLLM_VERSION
+unset LD_PRELOAD
+unset VLLM_ASCEND_ENABLE_FLASHCOMM1
+unset VLLM_ASCEND_FLASHCOMM2_PARALLEL_SIZE
+unset ASCEND_LAUNCH_BLOCKING
+export ASCEND_RT_VISIBLE_DEVICES=0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
+export HCCL_OP_EXPANSION_MODE="AIV"
+export OMP_PROC_BIND=false
+export OMP_NUM_THREADS=1
+export HCCL_BUFFSIZE=200
+export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
+export VLLM_ASCEND_BALANCE_SCHEDULING=1
+export VLLM_ASCEND_ENABLE_MLAPO=1

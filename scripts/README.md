@@ -100,6 +100,24 @@ python scripts/validate_result.py docs/vllm-ascend-performance/models/glm-5.2-w8
 
 ---
 
+## Full-Matrix Profile Candidate Result Workflow (D-026)
+
+The D-023 Baseline workflow above is the closed lane for immutable baseline Results.
+The FULL-MATRIX PROFILE CANDIDATE lane is a SEPARATE machine workflow; the old
+`generate_result.py` can NOT produce a Candidate Result (hard-coded `Baseline`,
+per-cell, non-deterministic date).
+
+| Step | Command |
+|---|---|
+| 1. canonical machine input | `python scripts/build_candidate_result_input.py --evidence-dir <EVD> --matrix-config docs/.../candidate-matrix-config.json --release-json <release-meta.json> --dispatch-sha <40hex> --evidence-review-classification FULL_MATRIX_CANDIDATE_EVIDENCE_REVIEW_PASS --review-date YYYY-MM-DD --out candidate-result-input.json` |
+| 2. generate ONE Full-Matrix Result | `python scripts/generate_candidate_result.py --input candidate-result-input.json --out RESULT-GLM52-W8A8-PROFILE-CANDIDATE-FULL-MATRIX-XXXX.md` |
+| 3. pre-commit FAIL-CLOSED validate | `python scripts/validate_candidate_result.py --result <md> --input <input.json> [--release-json <new-metadata>.json]` |
+| 4. tests | `python scripts/test_candidate_result_tooling.py` (TEST A-P; 0 skip) |
+
+Result status starts `READY_FOR_FORMAL_REVIEW`, never `ACCEPTED` at generation;
+`NOT_YET_FORMALLY_ACCEPTED` is explicit. Formal Review and Acceptance are separate
+stages. Legacy baseline lane is untouched.
+
 ## Full-Matrix Candidate Tooling (D-025, 2026-09-03)
 
 Used by the Full-Matrix Profile Candidate validation Task

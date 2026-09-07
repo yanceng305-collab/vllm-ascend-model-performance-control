@@ -1,0 +1,49 @@
+{
+  "cells": {
+    "16K": {
+      "aggregation_status": "PASS",
+      "d024_achievement_pct": 116.25450893698637,
+      "delta_vs_baseline_pct": 102.06797920537815,
+      "mean_tok_s": 1935.6899999999998,
+      "target_met": true,
+      "validation_status": "PASS"
+    },
+    "1K": {
+      "aggregation_status": "PASS",
+      "d024_achievement_pct": 117.89189995170506,
+      "delta_vs_baseline_pct": 78.10966597694353,
+      "mean_tok_s": 1205.09,
+      "target_met": true,
+      "validation_status": "PASS"
+    },
+    "4K": {
+      "aggregation_status": "PASS",
+      "d024_achievement_pct": 105.48895232704558,
+      "delta_vs_baseline_pct": 98.55337329629448,
+      "mean_tok_s": 1629.6466666666665,
+      "target_met": true,
+      "validation_status": "PASS"
+    },
+    "64K": {
+      "aggregation_status": "PASS",
+      "d024_achievement_pct": 91.91749465060724,
+      "delta_vs_baseline_pct": 90.42572688364471,
+      "mean_tok_s": 1766.3700000000001,
+      "target_met": true,
+      "validation_status": "PASS"
+    }
+  },
+  "d024_exact_basis": {
+    "A3_total_tflops": 6016,
+    "H100_total_tflops": 15824
+  },
+  "formal_result_boundary": "This gate validates Evidence only; Formal Result comparison is a later stage.",
+  "matrix_dir": "/data/tiankuan/fullmatrix-evidence",
+  "measured_runs_count": 12,
+  "profile_identical_across_cells": true,
+  "runtime_identity_identical_across_cells": true,
+  "scope": "matrix-level",
+  "status": "PASS",
+  "tool": "validate_full_matrix_candidate.py",
+  "warmup_runs_discarded_count": 4
+}

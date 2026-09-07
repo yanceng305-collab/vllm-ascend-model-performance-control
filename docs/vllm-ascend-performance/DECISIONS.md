@@ -297,4 +297,58 @@ A3PerfRunner is authorized to use **GitHub Release Assets** as an immutable Evid
 7. **Determinism**: derived JSON has no timestamps; same raw input => byte-identical derived JSON (regression-tested).
 8. Formal OPT-01 remains BLOCKED_PENDING_BASELINE_VALUE_VERIFICATION; untouched by this Decision.
 
-**Rationale**: eliminates (a) post-dispatch script drift, (b) reliance on a tee'd log that may lack the CLI argv, (c) Run1 cross-contamination of the mean, (d) the per-cell validator claiming cross-cell scope it does not verify, (e) hand-transcribed baseline/delta/achievement values, (f) non-deterministic derived Evidence.
+**Rationale**: eliminates (a) post-dispatch script drift, (b) reliance on a tee'd log that may lack the CLI argv, (c) Run1 cross-contamination of the mean, (d) the per-cell validator claiming cross-cell scope it does not verify, (e) hand-transcribed baseline/delta/achievement values, (f) non-deterministic derived Evidence.## D-026 Machine-Generated Full-Matrix Profile Candidate Result Gate
+
+**Effective**: 2026-09-07
+
+**Task context**: GLM52-W8A8-PROFILE-CANDIDATE-FULL-MATRIX-VALIDATION (Evidence Review PASS, 0.95/67000 = FINAL_RECOMMENDED_PROFILE_CANDIDATE).
+
+1. **Compatibility audit (2026-09-07)** — the legacy D-023 tooling
+   (`validate_evidence.py`, `generate_result.py`, `validate_result.py`) implements the per-cell
+   BASELINE Result workflow and is NOT directly compatible with the D-025 Full-Matrix Profile
+   Candidate stage. Specific, observed incompatibilities:
+   - legacy expects cell dirs named `1K`/`4K`/... at the evidence root; the full-matrix archive
+     uses `cell-1K`... and adds `matrix-validation.json`, per-cell `validation.json`,
+     `aggregation.json`, `profile-snapshot.json`, `script-sha256sums.txt`;
+   - legacy `extract_runtime_identity` parses `Name:`/`Image:`/`SHA256:`/`vLLM Version:` keys;
+     the full-matrix `runtime-identity.txt` uses `container=/image=/vllm=/pid_host=/port=` and
+     would fail identity extraction;
+   - `generate_result.py` hard-codes `Baseline` in the Result title and Result ID, emits one
+     per-cell document, and embeds `datetime.now()` (non-deterministic)
+     — it cannot emit a single deterministic Full-Matrix Profile Candidate Result;
+   - `validate_result.py` validates a legacy per-cell Baseline Result against the legacy
+     validated-evidence schema and never checks matrix gates.
+   Classification recorded: `LEGACY_D023_BASELINE_RESULT_TOOLING_NOT_DIRECTLY_COMPATIBLE_WITH_D025_FULL_MATRIX_CANDIDATE`.
+
+2. **New Candidate tooling (Control-only, machine)**:
+   - `scripts/build_candidate_result_input.py` -> deterministic `candidate-result-input.json`
+     (schema `candidate-result-input` v1), built only from the reviewed Evidence
+     (D-025 layout) + `candidate-matrix-config.json` (D-024/normalization) + a GitHub release
+     metadata JSON (provenance). No performance number is hand-typed.
+   - `scripts/generate_candidate_result.py` -> renders ONE Full-Matrix Profile Candidate Result
+     markdown from the input; every factual field machine-inserted; no timestamps.
+   - `scripts/validate_candidate_result.py` -> FAIL-CLOSED: re-parses the Result markdown,
+     compares every factual field to the input, re-computes derived values (mean/min/max/std/CV,
+     delta, D-024 achievement, 80% target), optionally cross-checks the release digest against a
+     fresh GitHub metadata snapshot, and exits non-zero on any mismatch (blocks commit).
+   - `scripts/test_candidate_result_tooling.py` -> mandated TEST A-P, 16/16 PASS with 0 skip,
+     exercising the real pipeline (fixture: immutable fullmatrix-evidence + fullmatrix-release.json).
+
+3. **Pipeline separation (four stages, unchanged):**
+   Evidence Review PASS -> machine Candidate Result generation & validation -> Formal Review ->
+   Formal Acceptance (only after a separate stage; no generator can print `ACCEPTED`).
+
+4. Candidate Result State is `READY_FOR_FORMAL_REVIEW` at generation; the generator never writes
+   `ACCEPTED`; `FINAL_RECOMMENDED_PROFILE_CANDIDATE` classification is allowed (carried from the
+   Evidence Review PASS) but is explicitly marked `NOT_YET_FORMALLY_ACCEPTED`.
+
+5. Baseline workflow untouched: old `generate_result.py`/`validate_result.py`/`validate_evidence.py`
+   and the old baseline Results remain the closed D-023 lane; candidate mode is a separate,
+   backward compatible, fail-closed extension.
+
+6. Formal OPT-01 remains `BLOCKED_PENDING_BASELINE_VALUE_VERIFICATION`, independent of and not
+   unlocked by any Profile Candidate Result.
+
+**Rationale**: D-025 Evidence proves the candidate profile; D-026 supplies the machine-gencional
+tooling that turns that into a single Full-Matrix Profile Candidate Result with a FAIL-CLOSED
+pre-commit validator, without touching the immutable baseline workflow.

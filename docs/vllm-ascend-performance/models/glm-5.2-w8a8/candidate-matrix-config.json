@@ -1,6 +1,23 @@
 {
   "model": "GLM-5.2-W8A8",
   "task_id": "GLM52-W8A8-PROFILE-CANDIDATE-FULL-MATRIX-VALIDATION",
+  "frozen_profile": {
+    "gpu_memory_utilization": 0.95,
+    "max_model_len": 67000,
+    "max_cudagraph_capture_size": 96,
+    "mtp": "OFF",
+    "data_parallel_size": 2,
+    "tensor_parallel_size": 8,
+    "expert_parallel": true,
+    "max_num_seqs": 48,
+    "max_num_batched_tokens": 4096,
+    "async_scheduling": true,
+    "multistream_overlap_shared_expert": true,
+    "cudagraph_mode": "FULL_DECODE_ONLY",
+    "prefix_cache": false,
+    "model_path": "/data/tiankuan/zyg/model/GLM-5.2-w8a8",
+    "runtime_environment": "HCCL_OP_EXPANSION_MODE=AIV; OMP_PROC_BIND=false; OMP_NUM_THREADS=1; PYTORCH_NPU_ALLOC_CONF=expandable_segments:True; VLLM_ASCEND_BALANCE_SCHEDULING=1; VLLM_ASCEND_ENABLE_MLAPO=1 (identical across cells)"
+  },
   "cells": {
     "1K": {
       "cell_name": "1K-1K",

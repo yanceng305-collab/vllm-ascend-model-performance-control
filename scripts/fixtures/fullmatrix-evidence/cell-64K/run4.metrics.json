@@ -1,0 +1,16 @@
+{
+  "benchmark_duration_s": 9627.35,
+  "failed_requests": 0,
+  "mean_itl_ms": 46.33,
+  "mean_tpot_ms": 46.33,
+  "mean_ttft_ms": 2067988.68,
+  "output_token_throughput": 27.23,
+  "p99_itl_ms": 46.25,
+  "p99_tpot_ms": 47.44,
+  "p99_ttft_ms": 2434978.08,
+  "request_throughput": 0.03,
+  "successful_requests": 256,
+  "total_input_tokens": 16777216,
+  "total_output_tokens": 262144,
+  "total_token_throughput": 1769.89
+}
