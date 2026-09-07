@@ -66,6 +66,17 @@
 
 ## Next Steps
 
+0. **Profile-level candidate Full-Matrix Evidence Review PASS (2026-09-04)**: Task
+   `GLM52-W8A8-PROFILE-CANDIDATE-FULL-MATRIX-VALIDATION` Evidence reviewed at dispatch SHA
+   `2711b6ed366d84187a1102b60186d42c5ba198cd` (Release `glm52-od-profile-full-matrix-20260903`, asset digest
+   `01eb1b5f7163fe52956483fae2316851e4fcdaaa064c43301af3c69deb94ee03`): Release provenance /
+   archive digest / SHA256SUMS(92/92) / control-sha / pinned tools / 16 raw logs re-extraction /
+   4 per-cell validators / matrix validator / frozen-profile values — ALL PASS.
+   Machine numbers (mean total tok/s): 1K=1205.09, 4K=1629.65, 16K=1935.69, 64K=1766.37; all cells
+   ≥80% norm. achievement (117.9 / 105.5 / 116.3 / 91.9); 12 measured, 4 warmup discarded.
+   **Candidate = `0.95 / 67000 = FINAL_RECOMMENDED_PROFILE_CANDIDATE`** (not yet a Formal Result).
+   Next gating: `MACHINE-GENERATED FORMAL CANDIDATE RESULT STAGE`. Formal OPT-01 remains
+   `BLOCKED_PENDING_BASELINE_VALUE_VERIFICATION`; no unlock.
 1. **Baseline established**: Evidence-backed baseline matrix formally accepted (all four cells: 1K/4K/16K/64K)
 2. **Optimization track begins**: Create OPT Tasks (HCCL tuning, memory tuning, KV cache tuning, scheduler tuning, etc.) with controlled parameter changes
 3. **Target achievement**: ≥80% normalized throughput for all cells
