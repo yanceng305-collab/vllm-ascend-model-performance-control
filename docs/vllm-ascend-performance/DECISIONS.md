@@ -333,8 +333,8 @@ A3PerfRunner is authorized to use **GitHub Release Assets** as an immutable Evid
      compares every factual field to the input, re-computes derived values (mean/min/max/std/CV,
      delta, D-024 achievement, 80% target), optionally cross-checks the release digest against a
      fresh GitHub metadata snapshot, and exits non-zero on any mismatch (blocks commit).
-    - `scripts/test_candidate_result_tooling.py` -> TEST A-BB, with semantic
-      fail-closed negative assertions, 54/54 PASS with 0 skip, exercising the
+    - `scripts/test_candidate_result_tooling.py` -> TEST A-BM, with semantic
+      fail-closed negative assertions, 65/65 PASS with 0 skip, exercising the
       real pipeline (fixture: immutable fullmatrix-evidence + fullmatrix-release.json).
 
 3. **Pipeline separation (four stages, unchanged):**

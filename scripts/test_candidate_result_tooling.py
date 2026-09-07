@@ -22,6 +22,8 @@ TEST O  Status ACCEPTED -> FAIL
 TEST P  legacy tooling smoke / backward-compatibility sanity
 TEST AM-BB last-mile correctness: duplicate keys, explicit unset, fresh
            provenance, exact D-024, and runtime identity Result gates
+TEST BC-BM final Result-field coverage: exact ID/date/classification, tag object,
+           OPT-01, schema/version, pinned count, identity aggregate, redundancy
 
 All negative cases require rc=1, an expected blocker token, and no traceback or
 uncaught exception. 0 skip; any FAIL exits 1.
@@ -493,6 +495,75 @@ def result_identity_failure(tmp, inp, md, label, key, replacement):
     assert_semantic_failure(validate(p, inp), "runtime identity %s mismatch" % key, label)
 
 
+def bc_result_id(tmp, inp, md):
+    p = Path(tmp) / "bc-result.md"
+    expected = "RESULT-GLM52-W8A8-PROFILE-CANDIDATE-FULL-MATRIX-20260907"
+    mutate(md, p, expected, "RESULT-GLM52-W8A8-PROFILE-CANDIDATE-FULL-MATRIX-20260908")
+    assert_semantic_failure(validate(p, inp), "Result ID exact mismatch", "BC")
+
+
+def bd_review_date(tmp, inp, md):
+    p = Path(tmp) / "bd-result.md"
+    mutate(md, p, "| Review date | 2026-09-07 |", "| Review date | 2026-09-04 |")
+    assert_semantic_failure(validate(p, inp), "Review date mismatch", "BD")
+
+
+def be_input_classification(tmp, inp, md):
+    p, result = matching_bad_input(tmp, inp, "BE",
+                                   lambda d: d.__setitem__("candidate_classification", "OTHER"))
+    assert_semantic_failure(validate(result, p), "input: candidate_classification != FINAL_RECOMMENDED_PROFILE_CANDIDATE", "BE")
+
+
+def bf_result_classification(tmp, inp, md):
+    p = Path(tmp) / "bf-result.md"
+    mutate(md, p, "| Candidate classification | `FINAL_RECOMMENDED_PROFILE_CANDIDATE` |",
+           "| Candidate classification | `OTHER` |")
+    assert_semantic_failure(validate(p, inp), "Candidate classification mismatch", "BF")
+
+
+def bg_tag_object(tmp, inp, md):
+    p = Path(tmp) / "bg-result.md"
+    original = jread(inp)["release"]["tag_object_commit"]
+    mutate(md, p, "| tag object commit | `%s` |" % original,
+           "| tag object commit | `%s` |" % ("0" + original[1:]))
+    assert_semantic_failure(validate(p, inp), "tag object commit mismatch", "BG")
+
+
+def bh_opt01(tmp, inp, md):
+    p = Path(tmp) / "bh-result.md"
+    mutate(md, p, "| Formal OPT-01 | `BLOCKED_PENDING_BASELINE_VALUE_VERIFICATION` |",
+           "| Formal OPT-01 | `OTHER` |")
+    assert_semantic_failure(validate(p, inp), "Formal OPT-01 exact field mismatch", "BH")
+
+
+def bi_schema(tmp, inp, md):
+    p, result = matching_bad_input(tmp, inp, "BI",
+                                   lambda d: d.__setitem__("schema", "wrong-schema"))
+    assert_semantic_failure(validate(result, p), "input: schema != candidate-result-input", "BI")
+
+
+def bj_version(tmp, inp, md):
+    p, result = matching_bad_input(tmp, inp, "BJ",
+                                   lambda d: d.__setitem__("version", 3))
+    assert_semantic_failure(validate(result, p), "input: version != 2", "BJ")
+
+
+def bk_pinned_count(tmp, inp, md):
+    p = Path(tmp) / "bk-result.md"
+    mutate(md, p, "| pinned tooling | 4 files recorded |", "| pinned tooling | 3 files recorded |")
+    assert_semantic_failure(validate(p, inp), "pinned tooling count mismatch", "BK")
+
+
+def bl_identity_aggregate(tmp, inp, md):
+    p = Path(tmp) / "bl-result.md"
+    mutate(md, p, "| identical across cells | True |", "| identical across cells | False |")
+    assert_semantic_failure(validate(p, inp), "runtime identity identical across cells mismatch", "BL")
+
+
+def bm_no_redundant_runtime_environment(tmp, inp, md):
+    assert "| runtime environment | `{" not in read(md)
+
+
 def main():
     with FixedTestDirectory() as tmp:
         w = Path(tmp)
@@ -634,24 +705,6 @@ def main():
         it("O", o_case)
         it("P", p_case)
 
-        def ad_bad_input():
-            d = jread(inp)
-            d["matrix"]["profile_identical_across_cells"] = False
-            bad = w / "bad-input.json"
-            write(bad, json.dumps(d, indent=2))
-            m2 = w / "bad-result.md"
-            assert gen(bad, m2).returncode == 0
-            assert validate(m2, bad).returncode != 0
-
-        def ae_bad_input():
-            d = jread(inp)
-            d["matrix"]["matrix_validation_status"] = "FAIL"
-            bad = w / "bad-input2.json"
-            write(bad, json.dumps(d, indent=2))
-            m2 = w / "bad-result2.md"
-            assert gen(bad, m2).returncode == 0
-            assert validate(m2, bad).returncode != 0
-
         def af_bad_input():
             d = jread(inp)
             d["cells"]["64K"]["d024_achievement_pct"] = 93.0
@@ -660,16 +713,6 @@ def main():
             m2 = w / "bad-result3.md"
             assert gen(bad, m2).returncode == 0
             assert_semantic_failure(validate(m2, bad), "input recompute 64K ach", "AF")
-
-        def ah_fresh():
-            rel_bad = w / "rel-fresh.json"
-            d = jread(REL)
-            d["assets"] = [dict(a) for a in d["assets"]]
-            a0 = d["assets"][0]
-            a0["digest"] = "0" + a0["digest"][1:]
-            write(rel_bad, json.dumps(d, indent=2))
-            r = validate(md, inp, rel=rel_bad, tagref=TAGREF, formal=True)
-            assert r.returncode != 0
 
         it("Q", lambda: q_mat_status(w))
         it("R", lambda: r_measured(w))
@@ -684,11 +727,11 @@ def main():
         it("AA", lambda: aa_sums(w))
         it("AB", lambda: ab_manifest(w))
         it("AC", lambda: ac_config(w))
-        it("AD", lambda: ad_bad_input())
-        it("AE", lambda: ae_bad_input())
+        it("AD", lambda: ad_bad_input_profile(w, inp, md))
+        it("AE", lambda: ae_bad_input_matrix(w, inp, md))
         it("AF", lambda: af_bad_input())
         it("AG", lambda: ag_tagref(w))
-        it("AH", lambda: ah_fresh())
+        it("AH", lambda: ah_fresh(w, inp, md))
         it("AI", lambda: ai_review_class(w))
         it("AJ", lambda: aj_review_date(w))
         it("AK", lambda: ak_model_path(w))
@@ -713,16 +756,30 @@ def main():
         it("AZ", lambda: result_identity_failure(w, inp, md, "AZ", "model_path", "/data/wrong/model"))
         it("BA", lambda: result_identity_failure(w, inp, md, "BA", "image", "wrong/image:tag"))
         it("BB", lambda: result_identity_failure(w, inp, md, "BB", "vllm", "0.0.0"))
+        it("BC", lambda: bc_result_id(w, inp, md))
+        it("BD", lambda: bd_review_date(w, inp, md))
+        it("BE", lambda: be_input_classification(w, inp, md))
+        it("BF", lambda: bf_result_classification(w, inp, md))
+        it("BG", lambda: bg_tag_object(w, inp, md))
+        it("BH", lambda: bh_opt01(w, inp, md))
+        it("BI", lambda: bi_schema(w, inp, md))
+        it("BJ", lambda: bj_version(w, inp, md))
+        it("BK", lambda: bk_pinned_count(w, inp, md))
+        it("BL", lambda: bl_identity_aggregate(w, inp, md))
+        it("BM", lambda: bm_no_redundant_runtime_environment(w, inp, md))
         print("SUMMARY A-P: %d PASS / 0 FAIL / 0 SKIP" % (16 - len([x for x in failed if len(x) == 1 and x <= "P"])))
         q_al = ["Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
                 "AA", "AB", "AC", "AD", "AE", "AF", "AG", "AH", "AI", "AJ", "AK", "AL"]
         am_bb = ["AM", "AN", "AO", "AP", "AQ", "AR", "AS", "AT", "AU",
                  "AV", "AW", "AX", "AY", "AZ", "BA", "BB"]
+        bc_bm = ["BC", "BD", "BE", "BF", "BG", "BH", "BI", "BJ", "BK", "BL", "BM"]
         print("SUMMARY Q-AL: %d PASS / %d FAIL / 0 SKIP" %
               (len(q_al) - len([x for x in failed if x in q_al]), len([x for x in failed if x in q_al])))
         print("SUMMARY AM-BB: %d PASS / %d FAIL / 0 SKIP" %
               (len(am_bb) - len([x for x in failed if x in am_bb]), len([x for x in failed if x in am_bb])))
-        print("SUMMARY TOTAL: %d PASS / %d FAIL / 0 SKIP" % (54 - len(failed), len(failed)))
+        print("SUMMARY BC-BM: %d PASS / %d FAIL / 0 SKIP" %
+              (len(bc_bm) - len([x for x in failed if x in bc_bm]), len([x for x in failed if x in bc_bm])))
+        print("SUMMARY TOTAL: %d PASS / %d FAIL / 0 SKIP" % (65 - len(failed), len(failed)))
         print("UNEXPECTED CRASH / TRACEBACK COUNT: %d" % CRASH_COUNT["value"])
         return 1 if failed else 0
 

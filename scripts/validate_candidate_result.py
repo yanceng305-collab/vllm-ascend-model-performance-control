@@ -48,6 +48,10 @@ def fmt(v):
 def input_eligibility_failures(inp):
     """Fail any hand-made bad candidate-result-input.json on its own."""
     pf = []
+    if inp.get("schema") != "candidate-result-input":
+        pf.append("input: schema != candidate-result-input")
+    if inp.get("version") != 2:
+        pf.append("input: version != 2")
     if inp.get("evidence_review_classification") != "FULL_MATRIX_CANDIDATE_EVIDENCE_REVIEW_PASS":
         pf.append("input: evidence_review_classification != PASS")
     if inp.get("result_type") != "PROFILE_CANDIDATE_FULL_MATRIX":
@@ -56,6 +60,8 @@ def input_eligibility_failures(inp):
         pf.append("input: result_state != READY_FOR_FORMAL_REVIEW")
     if inp.get("formal_status_note") != "NOT_YET_FORMALLY_ACCEPTED":
         pf.append("input: formal_status_note mismatch")
+    if inp.get("candidate_classification") != "FINAL_RECOMMENDED_PROFILE_CANDIDATE":
+        pf.append("input: candidate_classification != FINAL_RECOMMENDED_PROFILE_CANDIDATE")
     if inp.get("opt01_status") != "BLOCKED_PENDING_BASELINE_VALUE_VERIFICATION":
         pf.append("input: opt01_status mismatch")
     ei2 = inp.get("evidence_integrity", {})
@@ -205,6 +211,9 @@ def _main(argv=None):
         problems.append("Result ID missing PROFILE: %r" % rid)
     if "BASELINE" in rid.upper():
         problems.append("Result ID must not be BASELINE: %r" % rid)
+    expected_id = "RESULT-GLM52-W8A8-PROFILE-CANDIDATE-FULL-MATRIX-%s" % inp["review_date"].replace("-", "")
+    if rid != expected_id:
+        problems.append("Result ID exact mismatch: %r != %r" % (rid, expected_id))
     if kv(content, "Result State") != "READY_FOR_FORMAL_REVIEW":
         problems.append("Result State not READY_FOR_FORMAL_REVIEW")
     if kv(content, "Formal note") != "NOT_YET_FORMALLY_ACCEPTED":
@@ -219,8 +228,14 @@ def _main(argv=None):
     if not m_er or m_er.group(1) != inp["evidence_review_classification"] or \
        m_er.group(2) != inp["evidence_review_document"]:
         problems.append("Evidence Review reference mismatch")
-    if "BLOCKED_PENDING_BASELINE_VALUE_VERIFICATION" not in content:
-        problems.append("OPT-01 phrase missing")
+    if kvp(content, "Review date") != inp["review_date"]:
+        problems.append("Review date mismatch")
+    if kv(content, "Candidate classification") != inp["candidate_classification"]:
+        problems.append("Candidate classification mismatch")
+    if "FINAL_RECOMMENDED_PROFILE_CANDIDATE" not in content:
+        problems.append("candidate classification statement missing")
+    if kv(content, "Formal OPT-01") != inp["opt01_status"]:
+        problems.append("Formal OPT-01 exact field mismatch")
     if "NOT YET FORMALLY ACCEPTED" not in content:
         problems.append("NOT_YET_FORMALLY_ACCEPTED missing")
 
@@ -236,6 +251,8 @@ def _main(argv=None):
         got = kv(content, key)
         if got != str(want):
             problems.append("provenance %s: %r != %r" % (key, got, str(want)))
+    if kv(content, "tag object commit") != str(r["tag_object_commit"]):
+        problems.append("tag object commit mismatch")
     m_a = re.search(r"^\| asset \| `([^`]+)` \(([0-9]+) bytes\) \| *$", content, re.M)
     if not m_a or m_a.group(1) != r["asset_name"] or int(m_a.group(2)) != r["asset_size"]:
         problems.append("asset line mismatch")
@@ -257,6 +274,10 @@ def _main(argv=None):
                       ("control-sha match", ei["control_sha_match"])):
         if kvp(content, key) != fmt(flag):
             problems.append("integrity %s mismatch" % key)
+    pinned = kvp(content, "pinned tooling")
+    expected_pinned = "%s files recorded" % len(ei["pinned_tooling_hashes"])
+    if pinned != expected_pinned:
+        problems.append("pinned tooling count mismatch")
 
     # . frozen profile
     for k, v in sorted(inp["frozen_profile"].items()):
@@ -367,6 +388,8 @@ def _main(argv=None):
     for key, want in sorted(identity.items()):
         if kv(content, key) != str(want):
             problems.append("runtime identity %s mismatch" % key)
+    if kvp(content, "identical across cells") != str(inp["runtime_identity"]["identical_across_cells"]):
+        problems.append("runtime identity identical across cells mismatch")
     for key, want in sorted(inp.get("runtime_environment", {}).items()):
         expected_value = ",".join(want) if key == "_unset" else str(want)
         if kv(content, key) != expected_value:

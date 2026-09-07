@@ -42,7 +42,7 @@ def render(inp):
     A("| Evidence Review | `%s` / `%s` |" % (inp["evidence_review_classification"], inp["evidence_review_document"]))
     A("| Review date | %s |" % inp["review_date"])
     A("| Candidate classification | `%s` |" % inp["candidate_classification"])
-    A("| Formal OPT-01 | `%s` (unchanged; independent) |" % inp["opt01_status"])
+    A("| Formal OPT-01 | `%s` |" % inp["opt01_status"])
     A("")
     A("## 0. Factual issues")
     A("")
@@ -94,7 +94,6 @@ def render(inp):
     A("|---|---|")
     for k, v in sorted(inp["frozen_profile"].items()):
         A("| %s | `%s` |" % (k, v))
-    A("| runtime environment | `%s` |" % inp["runtime_environment"])
     A("")
     A("## 3. Matrix gate")
     A("")
