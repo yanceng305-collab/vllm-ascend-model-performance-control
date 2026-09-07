@@ -1,0 +1,378 @@
+{
+  "candidate_classification": "FINAL_RECOMMENDED_PROFILE_CANDIDATE",
+  "cells": {
+    "16K": {
+      "aggregation_status": "PASS",
+      "baseline_tok_s": 957.94,
+      "cell_name": "16K-1K",
+      "cv_pct": 0.07577597000446847,
+      "d024_achievement_pct": 116.25450893698637,
+      "d024_target_80_tok_s": 1332.0360768452983,
+      "delta_vs_baseline_pct": 102.06797920537815,
+      "h100_reference_tok_s": 4379.6,
+      "input_len": 16384,
+      "max_tok_s": 1937.61,
+      "mean_tok_s": 1935.6899999999998,
+      "min_tok_s": 1934.05,
+      "output_len": 1024,
+      "recomputed_from_raw": true,
+      "runs": {
+        "run2": {
+          "failed_requests": 0,
+          "mean_itl_ms": 78.09,
+          "mean_tpot_ms": 78.09,
+          "mean_ttft_ms": 432808.83,
+          "output_token_throughput": 113.85,
+          "p99_itl_ms": 1487.15,
+          "p99_tpot_ms": 80.09,
+          "p99_ttft_ms": 540634.43,
+          "request_throughput": 0.11,
+          "successful_requests": 256,
+          "total_token_throughput": 1935.41
+        },
+        "run3": {
+          "failed_requests": 0,
+          "mean_itl_ms": 78.16,
+          "mean_tpot_ms": 78.16,
+          "mean_ttft_ms": 433234.12,
+          "output_token_throughput": 113.77,
+          "p99_itl_ms": 1487.14,
+          "p99_tpot_ms": 80.14,
+          "p99_ttft_ms": 542595.1,
+          "request_throughput": 0.11,
+          "successful_requests": 256,
+          "total_token_throughput": 1934.05
+        },
+        "run4": {
+          "failed_requests": 0,
+          "mean_itl_ms": 77.99,
+          "mean_tpot_ms": 77.99,
+          "mean_ttft_ms": 432154.95,
+          "output_token_throughput": 113.98,
+          "p99_itl_ms": 1486.51,
+          "p99_tpot_ms": 80.2,
+          "p99_ttft_ms": 539728.71,
+          "request_throughput": 0.11,
+          "successful_requests": 256,
+          "total_token_throughput": 1937.61
+        }
+      },
+      "stddev_pop_tok_s": 1.4667878737794955,
+      "target_met": true,
+      "total_token_throughput_tok_s": {
+        "run2": 1935.41,
+        "run3": 1934.05,
+        "run4": 1937.61
+      },
+      "validation_status": "PASS"
+    },
+    "1K": {
+      "aggregation_status": "PASS",
+      "baseline_tok_s": 676.6,
+      "cell_name": "1K-1K",
+      "cv_pct": 1.0172735608399237,
+      "d024_achievement_pct": 117.89189995170506,
+      "d024_target_80_tok_s": 817.7593205257837,
+      "delta_vs_baseline_pct": 78.10966597694353,
+      "h100_reference_tok_s": 2688.71,
+      "input_len": 1024,
+      "max_tok_s": 1222.32,
+      "mean_tok_s": 1205.09,
+      "min_tok_s": 1194.81,
+      "output_len": 1024,
+      "recomputed_from_raw": true,
+      "runs": {
+        "run2": {
+          "failed_requests": 0,
+          "mean_itl_ms": 103.16,
+          "mean_tpot_ms": 103.16,
+          "mean_ttft_ms": 3754.81,
+          "output_token_throughput": 599.07,
+          "p99_itl_ms": 104.39,
+          "p99_tpot_ms": 107.52,
+          "p99_ttft_ms": 9350.11,
+          "request_throughput": 0.59,
+          "successful_requests": 256,
+          "total_token_throughput": 1198.14
+        },
+        "run3": {
+          "failed_requests": 0,
+          "mean_itl_ms": 103.61,
+          "mean_tpot_ms": 103.61,
+          "mean_ttft_ms": 3624.43,
+          "output_token_throughput": 597.41,
+          "p99_itl_ms": 104.19,
+          "p99_tpot_ms": 106.07,
+          "p99_ttft_ms": 9296.9,
+          "request_throughput": 0.58,
+          "successful_requests": 256,
+          "total_token_throughput": 1194.81
+        },
+        "run4": {
+          "failed_requests": 0,
+          "mean_itl_ms": 101.12,
+          "mean_tpot_ms": 101.12,
+          "mean_ttft_ms": 3686.17,
+          "output_token_throughput": 611.16,
+          "p99_itl_ms": 101.75,
+          "p99_tpot_ms": 103.86,
+          "p99_ttft_ms": 9327.88,
+          "request_throughput": 0.6,
+          "successful_requests": 256,
+          "total_token_throughput": 1222.32
+        }
+      },
+      "stddev_pop_tok_s": 12.259061954325835,
+      "target_met": true,
+      "total_token_throughput_tok_s": {
+        "run2": 1198.14,
+        "run3": 1194.81,
+        "run4": 1222.32
+      },
+      "validation_status": "PASS"
+    },
+    "4K": {
+      "aggregation_status": "PASS",
+      "baseline_tok_s": 820.76,
+      "cell_name": "4K-1K",
+      "cv_pct": 0.1133254886928471,
+      "d024_achievement_pct": 105.48895232704558,
+      "d024_target_80_tok_s": 1235.880444893832,
+      "delta_vs_baseline_pct": 98.55337329629448,
+      "h100_reference_tok_s": 4063.45,
+      "input_len": 4096,
+      "max_tok_s": 1631.8,
+      "mean_tok_s": 1629.6466666666665,
+      "min_tok_s": 1627.29,
+      "output_len": 1024,
+      "recomputed_from_raw": true,
+      "runs": {
+        "run2": {
+          "failed_requests": 0,
+          "mean_itl_ms": 112.03,
+          "mean_tpot_ms": 112.03,
+          "mean_ttft_ms": 74073.16,
+          "output_token_throughput": 326.36,
+          "p99_itl_ms": 1453.87,
+          "p99_tpot_ms": 186.03,
+          "p99_ttft_ms": 138934.62,
+          "request_throughput": 0.32,
+          "successful_requests": 256,
+          "total_token_throughput": 1631.8
+        },
+        "run3": {
+          "failed_requests": 0,
+          "mean_itl_ms": 112.14,
+          "mean_tpot_ms": 112.14,
+          "mean_ttft_ms": 74115.26,
+          "output_token_throughput": 325.97,
+          "p99_itl_ms": 1453.64,
+          "p99_tpot_ms": 186.67,
+          "p99_ttft_ms": 138668.63,
+          "request_throughput": 0.32,
+          "successful_requests": 256,
+          "total_token_throughput": 1629.85
+        },
+        "run4": {
+          "failed_requests": 0,
+          "mean_itl_ms": 112.33,
+          "mean_tpot_ms": 112.33,
+          "mean_ttft_ms": 74195.73,
+          "output_token_throughput": 325.46,
+          "p99_itl_ms": 1452.86,
+          "p99_tpot_ms": 187.49,
+          "p99_ttft_ms": 138446.37,
+          "request_throughput": 0.32,
+          "successful_requests": 256,
+          "total_token_throughput": 1627.29
+        }
+      },
+      "stddev_pop_tok_s": 1.8468050489666927,
+      "target_met": true,
+      "total_token_throughput_tok_s": {
+        "run2": 1631.8,
+        "run3": 1629.85,
+        "run4": 1627.29
+      },
+      "validation_status": "PASS"
+    },
+    "64K": {
+      "aggregation_status": "PASS",
+      "baseline_tok_s": 927.59,
+      "cell_name": "64K-1K",
+      "cv_pct": 0.38151834817643693,
+      "d024_achievement_pct": 91.91749465060724,
+      "d024_target_80_tok_s": 1537.3526066734075,
+      "delta_vs_baseline_pct": 90.42572688364471,
+      "h100_reference_tok_s": 5054.66,
+      "input_len": 65536,
+      "max_tok_s": 1772.28,
+      "mean_tok_s": 1766.3700000000001,
+      "min_tok_s": 1756.94,
+      "output_len": 1024,
+      "recomputed_from_raw": true,
+      "runs": {
+        "run2": {
+          "failed_requests": 0,
+          "mean_itl_ms": 46.29,
+          "mean_tpot_ms": 46.29,
+          "mean_ttft_ms": 2064983.47,
+          "output_token_throughput": 27.27,
+          "p99_itl_ms": 46.22,
+          "p99_tpot_ms": 47.43,
+          "p99_ttft_ms": 2432340.6,
+          "request_throughput": 0.03,
+          "successful_requests": 256,
+          "total_token_throughput": 1772.28
+        },
+        "run3": {
+          "failed_requests": 0,
+          "mean_itl_ms": 46.3,
+          "mean_tpot_ms": 46.3,
+          "mean_ttft_ms": 2068356.75,
+          "output_token_throughput": 27.03,
+          "p99_itl_ms": 46.19,
+          "p99_tpot_ms": 47.44,
+          "p99_ttft_ms": 2435187.5,
+          "request_throughput": 0.03,
+          "successful_requests": 256,
+          "total_token_throughput": 1756.94
+        },
+        "run4": {
+          "failed_requests": 0,
+          "mean_itl_ms": 46.33,
+          "mean_tpot_ms": 46.33,
+          "mean_ttft_ms": 2067988.68,
+          "output_token_throughput": 27.23,
+          "p99_itl_ms": 46.25,
+          "p99_tpot_ms": 47.44,
+          "p99_ttft_ms": 2434978.08,
+          "request_throughput": 0.03,
+          "successful_requests": 256,
+          "total_token_throughput": 1769.89
+        }
+      },
+      "stddev_pop_tok_s": 6.739025646684129,
+      "target_met": true,
+      "total_token_throughput_tok_s": {
+        "run2": 1772.28,
+        "run3": 1756.94,
+        "run4": 1769.89
+      },
+      "validation_status": "PASS"
+    }
+  },
+  "dispatch_control_sha": "2711b6ed366d84187a1102b60186d42c5ba198cd",
+  "evidence_integrity": {
+    "control_sha_match": true,
+    "manifest_present": true,
+    "pinned_tooling_hashes": [
+      {
+        "file": "scripts/bench_common.py",
+        "sha256": "a0379ed92b2ea39fe39fdeeb3fc2e98af906fea1107c4510a185fd58c7fdc1f3"
+      },
+      {
+        "file": "scripts/extract_bench_metrics.py",
+        "sha256": "afea7ed17455086220a639abfc5b13c62214fa5c4c52e36548e039bd3b7c98f1"
+      },
+      {
+        "file": "scripts/validate_full_matrix_candidate.py",
+        "sha256": "02b7d3da3344e09eb3555f3bef1773b2387c7adc095c7abe6240b88caeea927f"
+      },
+      {
+        "file": "scripts/validate_matrix_candidate.py",
+        "sha256": "a852e16c239340b78eaf22bfe72ab5709368e7aef69e9f572b4b456967d02470"
+      }
+    ],
+    "sha256sums_ok": true
+  },
+  "evidence_review_classification": "FULL_MATRIX_CANDIDATE_EVIDENCE_REVIEW_PASS",
+  "evidence_review_document": "docs/vllm-ascend-performance/models/glm-5.2-w8a8/results/EVIDENCE-REVIEW-PROFILE-CANDIDATE-FULL-MATRIX-20260907.md",
+  "formal_status_note": "NOT_YET_FORMALLY_ACCEPTED",
+  "frozen_profile": {
+    "async_scheduling": true,
+    "cudagraph_mode": "FULL_DECODE_ONLY",
+    "data_parallel_size": 2,
+    "expert_parallel": true,
+    "gpu_memory_utilization": 0.95,
+    "max_cudagraph_capture_size": 96,
+    "max_model_len": 67000,
+    "max_num_batched_tokens": 4096,
+    "max_num_seqs": 48,
+    "mtp": "OFF",
+    "multistream_overlap_shared_expert": true,
+    "prefix_cache": false,
+    "tensor_parallel_size": 8
+  },
+  "hardware": {
+    "A3_cards": 8,
+    "A3_tflops_per_card": 752,
+    "A3_total_tflops": 6016,
+    "H100_cards": 16,
+    "H100_tflops_per_card": 989,
+    "H100_total_tflops": 15824,
+    "decision": "D-024",
+    "target_achievement_minimum": 0.8
+  },
+  "matrix": {
+    "matrix_validation_status": "PASS",
+    "measured_runs_count": 12,
+    "profile_expected_values_match": true,
+    "profile_identical_across_cells": true,
+    "runtime_identity_identical_across_cells": true,
+    "warmup_runs_discarded_count": 4
+  },
+  "model": "GLM-5.2-W8A8",
+  "opt01_status": "BLOCKED_PENDING_BASELINE_VALUE_VERIFICATION",
+  "release": {
+    "asset_digest": "sha256:01eb1b5f7163fe52956483fae2316851e4fcdaaa064c43301af3c69deb94ee03",
+    "asset_id": 543798263,
+    "asset_name": "fullmatrix-evidence.tar.gz",
+    "asset_size": 53550,
+    "published_at": "2026-09-04T04:41:56Z",
+    "release_id": 382481190,
+    "release_name": "GLM52-W8A8 FULL-MATRIX CANDIDATE VALIDATION: PASS",
+    "sidecar_digest": "sha256:bea018e159b2df844df896643e30e985b9b07d9eb9545543bc1341dbaaf644bc",
+    "sidecar_id": 543798262,
+    "sidecar_name": "fullmatrix-evidence.tar.gz.sha256",
+    "sidecar_size": 93,
+    "tag": "glm52-od-profile-full-matrix-20260903",
+    "tag_object_commit": "2711b6ed366d84187a1102b60186d42c5ba198cd"
+  },
+  "result_state": "READY_FOR_FORMAL_REVIEW",
+  "result_type": "PROFILE_CANDIDATE_FULL_MATRIX",
+  "review_date": "2026-09-07",
+  "runtime_environment": {
+    "ASCEND_RT_VISIBLE_DEVICES": "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15",
+    "HCCL_BUFFSIZE": "200",
+    "HCCL_OP_EXPANSION_MODE": "AIV",
+    "OMP_NUM_THREADS": "1",
+    "OMP_PROC_BIND": "false",
+    "PYTORCH_NPU_ALLOC_CONF": "expandable_segments:True",
+    "VLLM_ASCEND_BALANCE_SCHEDULING": "1",
+    "VLLM_ASCEND_ENABLE_MLAPO": "1",
+    "_unset": [
+      "ASCEND_LAUNCH_BLOCKING",
+      "LD_PRELOAD",
+      "VLLM_ASCEND_ENABLE_FLASHCOMM1",
+      "VLLM_ASCEND_FLASHCOMM2_PARALLEL_SIZE",
+      "VLLM_VERSION"
+    ]
+  },
+  "runtime_identity": {
+    "fields": {
+      "container": "model-test-zyg-a3",
+      "image": "quay.io/ascend/vllm-ascend:nightly-releases-v0.24.0rc-a3",
+      "log": "/workspace/glm52_od_64k_candidate.log",
+      "model_path": "/data/tiankuan/zyg/model/GLM-5.2-w8a8",
+      "pid_host": "3164838",
+      "port": "8000",
+      "vllm": "0.24.0",
+      "vllm_ascend_plugin": "ascend"
+    },
+    "identical_across_cells": true
+  },
+  "schema": "candidate-result-input",
+  "task_id": "GLM52-W8A8-PROFILE-CANDIDATE-FULL-MATRIX-VALIDATION",
+  "version": 2
+}

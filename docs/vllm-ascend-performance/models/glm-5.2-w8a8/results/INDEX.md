@@ -72,3 +72,15 @@ Notes:
 
 - Manual runtime observation (2026-09-02): see [MANUAL-RUNTIME-OBSERVATION-20260902.md](../MANUAL-RUNTIME-OBSERVATION-20260902.md) — non-formal; manual 16K exploratory microgate **COMPLETED** (Run2 960.45 tok/s; delta vs 957.94 = +0.262%; **MANUAL EXPLORATORY MICROGATE: NO_MATERIAL_GAIN**; not formal OPT-01 screening); `max_num_batched_tokens` remains UNVERIFIED.
 - Official upstream reference (commit `6443b2a38b95390e4f5174ff7ad2f8c3751e040f`, GLM5.2.md) verified 2026-09-02: `--max-num-batched-tokens 4096` is a REFERENCE CANDIDATE ONLY, NOT a found effective value.
+
+## Profile-Candidate Full-Matrix Formal Result (2026-09-07)
+
+| Record | Link | Outcome |
+|---|---|---|
+| Machine-generated Candidate Result | [RESULT-GLM52-W8A8-PROFILE-CANDIDATE-FULL-MATRIX-20260907](RESULT-GLM52-W8A8-PROFILE-CANDIDATE-FULL-MATRIX-20260907.md) | `PROFILE_CANDIDATE_FULL_MATRIX`; `READY_FOR_FORMAL_REVIEW`; `FINAL_RECOMMENDED_PROFILE_CANDIDATE`; **NOT YET FORMALLY ACCEPTED** |
+| Canonical machine input | [CANDIDATE-RESULT-INPUT-GLM52-W8A8-FULL-MATRIX-20260907](CANDIDATE-RESULT-INPUT-GLM52-W8A8-FULL-MATRIX-20260907.json) | Machine-generated input authority; not Evidence and not an Acceptance artifact |
+
+`CANDIDATE_RESULT_CONTROL_SHA`: `688b87e927b24a008075335a782a62fe4dff104d`
+Evidence `DISPATCH_CONTROL_SHA`: `2711b6ed366d84187a1102b60186d42c5ba198cd`
+Evidence Review remains `FULL_MATRIX_CANDIDATE_EVIDENCE_REVIEW_PASS`; Formal OPT-01 remains
+`BLOCKED_PENDING_BASELINE_VALUE_VERIFICATION`. No Formal Acceptance was performed.
