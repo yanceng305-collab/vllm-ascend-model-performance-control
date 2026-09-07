@@ -297,7 +297,9 @@ A3PerfRunner is authorized to use **GitHub Release Assets** as an immutable Evid
 7. **Determinism**: derived JSON has no timestamps; same raw input => byte-identical derived JSON (regression-tested).
 8. Formal OPT-01 remains BLOCKED_PENDING_BASELINE_VALUE_VERIFICATION; untouched by this Decision.
 
-**Rationale**: eliminates (a) post-dispatch script drift, (b) reliance on a tee'd log that may lack the CLI argv, (c) Run1 cross-contamination of the mean, (d) the per-cell validator claiming cross-cell scope it does not verify, (e) hand-transcribed baseline/delta/achievement values, (f) non-deterministic derived Evidence.## D-026 Machine-Generated Full-Matrix Profile Candidate Result Gate
+**Rationale**: eliminates (a) post-dispatch script drift, (b) reliance on a tee'd log that may lack the CLI argv, (c) Run1 cross-contamination of the mean, (d) the per-cell validator claiming cross-cell scope it does not verify, (e) hand-transcribed baseline/delta/achievement values, (f) non-deterministic derived Evidence.
+
+## D-026 Machine-Generated Full-Matrix Profile Candidate Result Gate
 
 **Effective**: 2026-09-07
 
@@ -349,6 +351,6 @@ A3PerfRunner is authorized to use **GitHub Release Assets** as an immutable Evid
 6. Formal OPT-01 remains `BLOCKED_PENDING_BASELINE_VALUE_VERIFICATION`, independent of and not
    unlocked by any Profile Candidate Result.
 
-**Rationale**: D-025 Evidence proves the candidate profile; D-026 supplies the machine-gencional
+**Rationale**: D-025 Evidence proves the candidate profile; D-026 supplies the machine-generated
 tooling that turns that into a single Full-Matrix Profile Candidate Result with a FAIL-CLOSED
 pre-commit validator, without touching the immutable baseline workflow.

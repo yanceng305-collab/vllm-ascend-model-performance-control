@@ -109,7 +109,7 @@ per-cell, non-deterministic date).
 
 | Step | Command |
 |---|---|
-| 1. canonical machine input | `python scripts/build_candidate_result_input.py --evidence-dir <EVD> --matrix-config docs/.../candidate-matrix-config.json --release-json <release-meta.json> --dispatch-sha <40hex> --evidence-review-classification FULL_MATRIX_CANDIDATE_EVIDENCE_REVIEW_PASS --review-date YYYY-MM-DD --out candidate-result-input.json` |
+| 1. canonical machine input | `python scripts/build_candidate_result_input.py --evidence-dir <EVD> --matrix-config docs/.../candidate-matrix-config.json --release-json <release-meta.json> --tag-ref-json <tag-ref.json> --dispatch-sha <40hex> --evidence-review-classification FULL_MATRIX_CANDIDATE_EVIDENCE_REVIEW_PASS --review-date YYYY-MM-DD --out candidate-result-input.json` |
 | 2. generate ONE Full-Matrix Result | `python scripts/generate_candidate_result.py --input candidate-result-input.json --out RESULT-GLM52-W8A8-PROFILE-CANDIDATE-FULL-MATRIX-XXXX.md` |
 | 3. pre-commit FAIL-CLOSED validate | `python scripts/validate_candidate_result.py --result <md> --input <input.json> [--release-json <new-metadata>.json]` |
 | 4. tests | `python scripts/test_candidate_result_tooling.py` (TEST A-P; 0 skip) |

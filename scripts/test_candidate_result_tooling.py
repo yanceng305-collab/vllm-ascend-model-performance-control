@@ -24,6 +24,7 @@ TEST P  old baseline tooling regression
 0 skip; any FAIL exits 1.
 """
 import io
+import shutil
 import json
 import subprocess
 import sys
@@ -34,6 +35,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = REPO_ROOT / "scripts"
 EVD = SCRIPTS / "fixtures" / "fullmatrix-evidence"
 REL = SCRIPTS / "fixtures" / "fullmatrix-release.json"
+TAGREF = SCRIPTS / "fixtures" / "fullmatrix-tag-ref.json"
 MATRIX_CONFIG = REPO_ROOT / "docs/vllm-ascend-performance/models/glm-5.2-w8a8/candidate-matrix-config.json"
 DISPATCH = "2711b6ed366d84187a1102b60186d42c5ba198cd"
 CLASS = "FULL_MATRIX_CANDIDATE_EVIDENCE_REVIEW_PASS"
@@ -58,15 +60,17 @@ def py(args, cwd=None):
     return subprocess.run([sys.executable] + args, capture_output=True, text=True, cwd=cwd)
 
 
-def build_input(out):
+def build_input(out, ev=EVD, rel=REL, tagref=TAGREF, review_date=DATE,
+                review_class=CLASS, dispatch=DISPATCH):
     return py(["scripts/build_candidate_result_input.py",
-               "--evidence-dir", str(EVD),
+               "--evidence-dir", str(ev),
                "--matrix-config", str(MATRIX_CONFIG),
-               "--release-json", str(REL),
-               "--dispatch-sha", DISPATCH,
+               "--release-json", str(rel),
+               "--tag-ref-json", str(tagref),
+               "--dispatch-sha", dispatch,
                "--evidence-review-doc", DOC,
-               "--evidence-review-classification", CLASS,
-               "--review-date", DATE,
+               "--evidence-review-classification", review_class,
+               "--review-date", review_date,
                "--out", str(out)], cwd=str(REPO_ROOT))
 
 
@@ -75,10 +79,14 @@ def gen(inp, out):
               cwd=str(REPO_ROOT))
 
 
-def validate(md, inp, rel=None):
+def validate(md, inp, rel=None, tagref=None, formal=False):
     args = ["scripts/validate_candidate_result.py", "--result", str(md), "--input", str(inp)]
     if rel:
         args += ["--release-json", str(rel)]
+    if tagref:
+        args += ["--tag-ref-json", str(tagref)]
+    if formal:
+        args.append("--formal")
     return py(args, cwd=str(REPO_ROOT))
 
 
@@ -86,6 +94,230 @@ def mutate(src, dst, old, new):
     t = read(src)
     assert old in t, "pattern missing: %s" % old[:60]
     write(dst, t.replace(old, new))
+
+
+_EVSEQ = {"i": 0}
+
+
+def copy_ev(tmp, name=None):
+    if name is None:
+        _EVSEQ['i'] += 1
+        name = 'ev_%d' % _EVSEQ['i']
+    dst = Path(tmp) / name
+    shutil.copytree(EVD, dst)
+    return dst
+
+
+def assert_builder_fails(ev, **kw):
+    out = Path(ev).parent / "should-not-exist.json"
+    r = build_input(out, ev=ev, **kw)
+    assert r.returncode != 0, "builder must FAIL (rc=0)"
+    assert not out.exists(), "no input may be produced on FAIL"
+
+
+# --- Q .. AL : authority / input-level negative tests (builder side) ---
+
+def q_mat_status(tmp):
+    ev = copy_ev(tmp)
+    p = ev / "matrix-validation.json"
+    d = jread(p)
+    d["status"] = "FAIL"
+    write(p, json.dumps(d, indent=2))
+    assert_builder_fails(ev)
+
+
+def r_measured(tmp):
+    ev = copy_ev(tmp)
+    p = ev / "matrix-validation.json"
+    d = jread(p)
+    d["measured_runs_count"] = 11
+    write(p, json.dumps(d, indent=2))
+    assert_builder_fails(ev)
+
+
+def s_warmup(tmp):
+    ev = copy_ev(tmp)
+    p = ev / "matrix-validation.json"
+    d = jread(p)
+    d["warmup_runs_discarded_count"] = 3
+    write(p, json.dumps(d, indent=2))
+    assert_builder_fails(ev)
+
+
+def t_cell_validation(tmp):
+    ev = copy_ev(tmp)
+    p = ev / "cell-1K" / "validation.json"
+    d = jread(p)
+    d["status"] = "FAIL"
+    write(p, json.dumps(d, indent=2))
+    assert_builder_fails(ev)
+
+
+def u_cell_agg(tmp):
+    ev = copy_ev(tmp)
+    p = ev / "cell-1K" / "aggregation.json"
+    d = jread(p)
+    d["status"] = "FAIL"
+    write(p, json.dumps(d, indent=2))
+    assert_builder_fails(ev)
+
+
+def v_agg_ach(tmp):
+    ev = copy_ev(tmp)
+    p = ev / "cell-1K" / "aggregation.json"
+    d = jread(p)
+    d["d024_achievement_pct"] = d["d024_achievement_pct"] + 1.0
+    write(p, json.dumps(d, indent=2))
+    assert_builder_fails(ev)
+
+
+def w_agg_delta(tmp):
+    ev = copy_ev(tmp)
+    p = ev / "cell-1K" / "aggregation.json"
+    d = jread(p)
+    d["delta_vs_baseline_pct"] = d["delta_vs_baseline_pct"] + 0.5
+    write(p, json.dumps(d, indent=2))
+    assert_builder_fails(ev)
+
+
+def x_agg_t80(tmp):
+    ev = copy_ev(tmp)
+    p = ev / "cell-1K" / "aggregation.json"
+    d = jread(p)
+    d["d024_target_80_tok_s"] = d["d024_target_80_tok_s"] + 5.0
+    write(p, json.dumps(d, indent=2))
+    assert_builder_fails(ev)
+
+
+def y_profile(tmp):
+    ev = copy_ev(tmp)
+    p = ev / "cell-1K" / "profile-snapshot.json"
+    d = jread(p)
+    d["gpu_memory_utilization"] = 0.97
+    write(p, json.dumps(d, indent=2))
+    assert_builder_fails(ev)
+
+
+def z_identity(tmp):
+    ev = copy_ev(tmp)
+    p = ev / "cell-64K" / "runtime-identity.txt"
+    t = read(p)
+    write(p, t.replace("pid_host=3164838", "pid_host=9999999"))
+    assert_builder_fails(ev)
+
+
+def aa_sums(tmp):
+    ev = copy_ev(tmp)
+    p = ev / "SHA256SUMS.txt"
+    lines = read(p).splitlines()
+    h, rest = lines[0].split(None, 1)
+    lines[0] = "0" + h[1:] + "  " + rest
+    write(p, "\n".join(lines) + "\n")
+    assert_builder_fails(ev)
+
+
+def ab_manifest(tmp):
+    ev = copy_ev(tmp)
+    (ev / "MANIFEST.txt").unlink()
+    assert_builder_fails(ev)
+
+
+def ac_config(tmp):
+    ev = copy_ev(tmp)
+    cfg = jread(MATRIX_CONFIG)
+    cfg["hardware"]["A3_total_tflops"] = 6048
+    p = Path(tmp) / "cfg-bad.json"
+    write(p, json.dumps(cfg, indent=2))
+    r = py(["scripts/build_candidate_result_input.py",
+            "--evidence-dir", str(ev), "--matrix-config", str(p),
+            "--release-json", str(REL), "--tag-ref-json", str(TAGREF),
+            "--dispatch-sha", DISPATCH, "--evidence-review-doc", DOC,
+            "--evidence-review-classification", CLASS, "--review-date", DATE,
+            "--out", str(Path(tmp) / "nope.json")], cwd=str(REPO_ROOT))
+    assert r.returncode != 0
+
+
+def ad_bad_input_profile(tmp, inp, md):
+    d = jread(inp)
+    d["matrix"]["profile_identical_across_cells"] = False
+    p = Path(tmp) / "bad-input.json"
+    write(p, json.dumps(d, indent=2))
+    m2 = Path(tmp) / "bad-result.md"
+    assert gen(p, m2).returncode == 0
+    r = validate(m2, p)
+    assert r.returncode != 0, "validator must fail on bad input even if result matches"
+
+
+def ae_bad_input_matrix(tmp, inp, md):
+    d = jread(inp)
+    d["matrix"]["matrix_validation_status"] = "FAIL"
+    p = Path(tmp) / "bad-input2.json"
+    write(p, json.dumps(d, indent=2))
+    m2 = Path(tmp) / "bad-result2.md"
+    assert gen(p, m2).returncode == 0
+    assert validate(m2, p).returncode != 0
+
+
+def ag_tagref(tmp):
+    ev = copy_ev(tmp)
+    tr = jread(TAGREF)
+    tr["object"] = {"sha": "f" * 40, "type": "commit"}
+    p = Path(tmp) / "tag-fake.json"
+    write(p, json.dumps(tr, indent=2))
+    r = build_input(Path(tmp) / "o.json", ev=ev, tagref=p)
+    assert r.returncode != 0
+
+
+def ah_fresh(tmp, inp, md):
+    rel_bad = Path(tmp) / "rel-fresh.json"
+    d = jread(REL)
+    d["assets"] = [dict(a) for a in d["assets"]]
+    a0 = d["assets"][0]
+    a0["digest"] = "0" + a0["digest"][1:]
+    write(rel_bad, json.dumps(d, indent=2))
+    r = validate(md, inp, rel=rel_bad, tagref=TAGREF, formal=True)
+    assert r.returncode != 0, "fresh digest mismatch must fail formal gate"
+
+
+def ai_review_class(tmp):
+    ev = copy_ev(tmp)
+    doc_bad = Path(tmp) / "doc-bad.md"
+    t = read(Path(REPO_ROOT) / DOC)
+    t = t.replace("FULL_MATRIX_CANDIDATE_EVIDENCE_REVIEW_PASS",
+                  "FULL_MATRIX_CANDIDATE_EVIDENCE_REVIEW_FAIL")
+    write(doc_bad, t)
+    r = py(["scripts/build_candidate_result_input.py",
+            "--evidence-dir", str(ev), "--matrix-config", str(MATRIX_CONFIG),
+            "--release-json", str(REL), "--tag-ref-json", str(TAGREF),
+            "--dispatch-sha", DISPATCH,
+            "--evidence-review-doc", str(doc_bad),
+            "--evidence-review-classification", CLASS, "--review-date", DATE,
+            "--out", str(Path(tmp) / "o.json")], cwd=str(REPO_ROOT))
+    assert r.returncode != 0
+
+
+def aj_review_date(tmp):
+    ev = copy_ev(tmp)
+    out = Path(tmp) / 'o-aj.json'
+    r = build_input(out, ev=ev, review_date="2026-09-04")
+    assert r.returncode != 0, 'builder must fail on review-date mismatch'
+    assert not out.exists()
+
+
+def ak_model_path(tmp):
+    ev = copy_ev(tmp)
+    p2 = ev / "cell-1K" / "runtime-identity.txt"
+    t = read(p2)
+    write(p2, t.replace("model_path=/data/tiankuan/zyg/model/GLM-5.2-w8a8", "model_path=/data/wrong/model"))
+    assert_builder_fails(ev)
+
+
+def al_env(tmp):
+    ev = copy_ev(tmp)
+    p3 = ev / "environment.txt"
+    t = read(p3)
+    write(p3, t.replace("HCCL_BUFFSIZE=200", "HCCL_BUFFSIZE=201"))
+    assert_builder_fails(ev)
 
 
 def main():
@@ -126,8 +358,8 @@ def main():
             assert read(md2) == read(md)
 
         def c():
-            r = validate(md, inp, rel=REL)
-            assert r.returncode == 0, r.stdout[-160:] + r.stderr[-160:]
+            r = validate(md, inp, rel=REL, tagref=TAGREF, formal=True)
+            assert r.returncode == 0, r.stdout[-200:] + r.stderr[-200:]
 
         def d():
             m2 = w / "d.md"
@@ -227,7 +459,67 @@ def main():
         it("N", n_case)
         it("O", o_case)
         it("P", p_case)
-        print("SUMMARY: %d failed / 16" % len(failed))
+
+        def ad_bad_input():
+            d = jread(inp)
+            d["matrix"]["profile_identical_across_cells"] = False
+            bad = w / "bad-input.json"
+            write(bad, json.dumps(d, indent=2))
+            m2 = w / "bad-result.md"
+            assert gen(bad, m2).returncode == 0
+            assert validate(m2, bad).returncode != 0
+
+        def ae_bad_input():
+            d = jread(inp)
+            d["matrix"]["matrix_validation_status"] = "FAIL"
+            bad = w / "bad-input2.json"
+            write(bad, json.dumps(d, indent=2))
+            m2 = w / "bad-result2.md"
+            assert gen(bad, m2).returncode == 0
+            assert validate(m2, bad).returncode != 0
+
+        def af_bad_input():
+            d = jread(inp)
+            d["cells"]["64K"]["d024_achievement_pct"] = 93.0
+            bad = w / "bad-input3.json"
+            write(bad, json.dumps(d, indent=2))
+            m2 = w / "bad-result3.md"
+            assert gen(bad, m2).returncode == 0
+            assert validate(m2, bad).returncode != 0
+
+        def ah_fresh():
+            rel_bad = w / "rel-fresh.json"
+            d = jread(REL)
+            d["assets"] = [dict(a) for a in d["assets"]]
+            a0 = d["assets"][0]
+            a0["digest"] = "0" + a0["digest"][1:]
+            write(rel_bad, json.dumps(d, indent=2))
+            r = validate(md, inp, rel=rel_bad, tagref=TAGREF, formal=True)
+            assert r.returncode != 0
+
+        it("Q", lambda: q_mat_status(w))
+        it("R", lambda: r_measured(w))
+        it("S", lambda: s_warmup(w))
+        it("T", lambda: t_cell_validation(w))
+        it("U", lambda: u_cell_agg(w))
+        it("V", lambda: v_agg_ach(w))
+        it("W", lambda: w_agg_delta(w))
+        it("X", lambda: x_agg_t80(w))
+        it("Y", lambda: y_profile(w))
+        it("Z", lambda: z_identity(w))
+        it("AA", lambda: aa_sums(w))
+        it("AB", lambda: ab_manifest(w))
+        it("AC", lambda: ac_config(w))
+        it("AD", lambda: ad_bad_input())
+        it("AE", lambda: ae_bad_input())
+        it("AF", lambda: af_bad_input())
+        it("AG", lambda: ag_tagref(w))
+        it("AH", lambda: ah_fresh())
+        it("AI", lambda: ai_review_class(w))
+        it("AJ", lambda: aj_review_date(w))
+        it("AK", lambda: ak_model_path(w))
+        it("AL", lambda: al_env(w))
+        print("SUMMARY: %d failed / 38 total (A-P + Q-AL)" % len(failed))
         return 1 if failed else 0
 
 

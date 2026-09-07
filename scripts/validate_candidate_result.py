@@ -40,16 +40,131 @@ def fmt(v):
     return str(v)
 
 
+def input_eligibility_failures(inp):
+    """Fail any hand-made bad candidate-result-input.json on its own."""
+    pf = []
+    if inp.get("evidence_review_classification") != "FULL_MATRIX_CANDIDATE_EVIDENCE_REVIEW_PASS":
+        pf.append("input: evidence_review_classification != PASS")
+    if inp.get("result_type") != "PROFILE_CANDIDATE_FULL_MATRIX":
+        pf.append("input: result_type != PROFILE_CANDIDATE_FULL_MATRIX")
+    if inp.get("result_state") != "READY_FOR_FORMAL_REVIEW":
+        pf.append("input: result_state != READY_FOR_FORMAL_REVIEW")
+    if inp.get("formal_status_note") != "NOT_YET_FORMALLY_ACCEPTED":
+        pf.append("input: formal_status_note mismatch")
+    if inp.get("opt01_status") != "BLOCKED_PENDING_BASELINE_VALUE_VERIFICATION":
+        pf.append("input: opt01_status mismatch")
+    ei2 = inp.get("evidence_integrity", {})
+    for k in ("sha256sums_ok", "manifest_present", "control_sha_match"):
+        if ei2.get(k) is not True:
+            pf.append("input: evidence_integrity.%s != true" % k)
+    mx = inp.get("matrix", {})
+    if mx.get("matrix_validation_status") != "PASS":
+        pf.append("input: matrix_validation_status != PASS")
+    if mx.get("measured_runs_count") != 12:
+        pf.append("input: measured_runs_count != 12")
+    if mx.get("warmup_runs_discarded_count") != 4:
+        pf.append("input: warmup_runs_discarded_count != 4")
+    for k in ("profile_identical_across_cells", "profile_expected_values_match",
+              "runtime_identity_identical_across_cells"):
+        if mx.get(k) is not True:
+            pf.append("input: matrix.%s != true" % k)
+    for cell in CELLS:
+        c = inp.get("cells", {}).get(cell)
+        if not c:
+            pf.append("input: cell %s missing" % cell)
+            continue
+        if c.get("validation_status") != "PASS" or c.get("aggregation_status") != "PASS":
+            pf.append("input: cell %s status != PASS" % cell)
+        if c.get("target_met") is not True:
+            pf.append("input: cell %s target_met != true" % cell)
+        if float(c.get("d024_achievement_pct", 0)) < 80.0:
+            pf.append("input: cell %s achievement < 80" % cell)
+    return pf
+
+
+def recompute_from_input(inp):
+    """Independent recompute of every derived cell value from raw runs + config."""
+    probs = []
+    hw = inp.get("hardware", {})
+    if hw.get("A3_total_tflops") != 6016 or hw.get("H100_total_tflops") != 15824:
+        probs.append("input hardware D-024 not exact 6016/15824")
+    for cell in CELLS:
+        c = inp.get("cells", {}).get(cell)
+        if not c:
+            continue
+        t = [c["runs"][r]["total_token_throughput"] for r in ("run2", "run3", "run4")]
+        mean = statistics.fmean(t)
+        sd = statistics.pstdev(t)
+        cv = (sd / mean * 100.0) if mean else 0.0
+        b = float(c["baseline_tok_s"])
+        h = float(c["h100_reference_tok_s"])
+        delta = (mean / b - 1.0) * 100.0
+        ach = (mean / 6016.0) / (h / 15824.0) * 100.0
+        t80 = h / 15824.0 * 6016.0 * 0.80
+        met = ach >= 80.0
+        for key, stored, mine in (("mean", c["mean_tok_s"], mean),
+                                  ("min", c["min_tok_s"], min(t)),
+                                  ("max", c["max_tok_s"], max(t)),
+                                  ("std", c["stddev_pop_tok_s"], sd),
+                                  ("cv", c["cv_pct"], cv),
+                                  ("delta", c["delta_vs_baseline_pct"], delta),
+                                  ("ach", c["d024_achievement_pct"], ach),
+                                  ("t80", c["d024_target_80_tok_s"], t80)):
+            if abs(float(stored) - mine) > 1e-6:
+                probs.append("input recompute %s %s %.9f != %.9f" % (cell, key, st, mine))
+        if met != c.get("target_met"):
+            probs.append("input recompute %s target_met mismatch" % cell)
+    return probs
+
+
+def fresh_provenance_failures(inp, rel, tagref):
+    """Formal mode: fresh GitHub snapshots must equal the input provenance."""
+    pf = []
+    r = inp.get("release", {})
+    m = re.match(r"([0-9a-f]{40})", tagref.get("ref", "").split("/")[-1] or "")
+    tag_obj = ""
+    obj = tagref.get("object") or {}
+    tag_obj = obj.get("sha", "")
+    if tag_obj != r.get("tag_object_commit"):
+        pf.append("tag-ref object sha != input tag_object_commit")
+    if rel.get("id") != r.get("release_id"):
+        pf.append("fresh release id mismatch")
+    if rel.get("id") != r.get("release_id"):
+        pass
+    assets = {a["name"]: a for a in rel.get("assets", [])}
+    asset = assets.get("fullmatrix-evidence.tar.gz")
+    if not asset:
+        pf.append("fresh release missing asset")
+    else:
+        for k in ("id", "name", "size", "digest"):
+            if asset.get(k) != r.get("asset_%s" % k, r.get("asset_id") if k == "id" else None):
+                pf.append("fresh asset %s mismatch" % k)
+    if rel.get("tag_name") != r.get("tag"):
+        pf.append("fresh tag mismatch")
+    return pf
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--result", required=True)
     ap.add_argument("--input", required=True)
-    ap.add_argument("--release-json", default=None)
+    ap.add_argument("--release-json", default=None,
+                    help="fresh GitHub release metadata JSON (digest authority)")
+    ap.add_argument("--tag-ref-json", default=None,
+                    help="fresh GitHub tag-ref JSON (tag object authority)")
+    ap.add_argument("--formal", action="store_true",
+                    help="pre-commit formal mode: both fresh snapshots REQUIRED")
     args = ap.parse_args(argv)
 
     inp = read_json(args.input)
     content = io.open(args.result, encoding="utf-8").read()
-    problems = []
+    problems = input_eligibility_failures(inp)
+    problems += recompute_from_input(inp)
+    if args.formal and (not args.release_json or not args.tag_ref_json):
+        problems.append("--formal requires --release-json and --tag-ref-json")
+    elif args.formal:
+        problems += fresh_provenance_failures(inp, read_json(args.release_json),
+                                              read_json(args.tag_ref_json))
 
     # .1 type / identity
     if kv(content, "Result Type") != "PROFILE_CANDIDATE_FULL_MATRIX":
