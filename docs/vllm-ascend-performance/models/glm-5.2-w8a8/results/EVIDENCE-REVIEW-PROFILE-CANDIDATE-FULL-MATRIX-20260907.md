@@ -1,6 +1,6 @@
 # Control Evidence Review: GLM52-W8A8 PROFILE-CANDIDATE FULL-MATRIX VALIDATION
 
-**Reviewer**: PerfControl · **Date**: 2026-09-04
+**Reviewer**: PerfControl · **Date**: 2026-09-07
 **Task**: `GLM52-W8A8-PROFILE-CANDIDATE-FULL-MATRIX-VALIDATION`
 **Dispatch Control SHA**: `2711b6ed366d84187a1102b60186d42c5ba198cd` (live verified; tag object commit equals it)
 
@@ -61,6 +61,7 @@ Latencies (run2): see per-cell info below.
 ## 5. Anomalies
 
 - PID prose mismatch resolved — evidence single PID 3164838; no re-run.
+- `CONTROL_REPLY_PROVENANCE_TRANSCRIPTION_DISCREPANCY` - chat prose only (earlier hand-typed SHAs in chat replies); GitHub remote and committed Review artifacts authoritative; no benchmark rerun required.
 - Manifest prose PASS-vs-not wording: artifact `matrix-validation.json` status=PASS and the
   independent re-run also exit 0 → evidence artifact is authoritative (prose only).
 

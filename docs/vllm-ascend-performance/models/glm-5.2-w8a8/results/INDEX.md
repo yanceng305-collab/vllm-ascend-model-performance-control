@@ -46,13 +46,13 @@
 - Optimization Tasks will produce separate OPT Results compared against these immutable corrected baseline Results
 - Per Decision D-019: Baseline execution mode complete (USER-VERIFIED KNOWN-GOOD BASELINE → FAST PREFLIGHT → RUN FROZEN COMMANDS → EVIDENCE → RESULT → OPTIMIZATION)
 
-## Profile-Candidate Full-Matrix Evidence Review (2026-09-04)
+## Profile-Candidate Full-Matrix Evidence Review (2026-09-07)
 
 | Record | Link | Outcome |
 |---|---|---|
-| Evidence Review: Profile-Candidate Full-Matrix Validation | [EVIDENCE-REVIEW-PROFILE-CANDIDATE-FULL-MATRIX-20260904](EVIDENCE-REVIEW-PROFILE-CANDIDATE-FULL-MATRIX-20260904.md) | **FULL_MATRIX_CANDIDATE_EVIDENCE_REVIEW_PASS** — candidate `0.95 / 67000 = FINAL_RECOMMENDED_PROFILE_CANDIDATE`; no Formal Result yet |
+| Evidence Review: Profile-Candidate Full-Matrix Validation | [EVIDENCE-REVIEW-PROFILE-CANDIDATE-FULL-MATRIX-20260907](EVIDENCE-REVIEW-PROFILE-CANDIDATE-FULL-MATRIX-20260907.md) | **FULL_MATRIX_CANDIDATE_EVIDENCE_REVIEW_PASS** — candidate `0.95 / 67000 = FINAL_RECOMMENDED_PROFILE_CANDIDATE`; no Formal Result yet |
 
-Details (machine): Release `glm52-od-profile-full-matrix-20260903`, asset digest `01eb1b5f7163fe52956483fae2316851e4fcdaaa064c43301af3c69deb94ee03`; means 1205.09 / 1629.65 / 1935.69 / 1766.37; achievements 117.9/105.5/116.3/91.8% (all >= 80%); 12 measured / 4 warmup discarded; profile identical + matches frozen task; OPT-01 remains `BLOCKED_PENDING_BASELINE_VALUE_VERIFICATION`.
+Details (machine): Release `glm52-od-profile-full-matrix-20260903`, asset digest `01eb1b5f7163fe52956483fae2316851e4fcdaaa064c43301af3c69deb94ee03`; means 1205.09 / 1629.65 / 1935.69 / 1766.37; achievements 117.9/105.5/116.3/91.9% (all >= 80%); 12 measured / 4 warmup discarded; profile identical + matches frozen task; OPT-01 remains `BLOCKED_PENDING_BASELINE_VALUE_VERIFICATION`.
 
 ## Read-Only Preflight Observations (Non-Formal)
 

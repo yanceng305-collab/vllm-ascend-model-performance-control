@@ -66,7 +66,7 @@
 
 ## Next Steps
 
-0. **Profile-level candidate Full-Matrix Evidence Review PASS (2026-09-04)**: Task
+0. **Profile-level candidate Full-Matrix Evidence Review PASS (2026-09-07)**: Task
    `GLM52-W8A8-PROFILE-CANDIDATE-FULL-MATRIX-VALIDATION` Evidence reviewed at dispatch SHA
    `2711b6ed366d84187a1102b60186d42c5ba198cd` (Release `glm52-od-profile-full-matrix-20260903`, asset digest
    `01eb1b5f7163fe52956483fae2316851e4fcdaaa064c43301af3c69deb94ee03`): Release provenance /
