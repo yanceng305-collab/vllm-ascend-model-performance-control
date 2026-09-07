@@ -14,12 +14,17 @@ import re
 import statistics
 import sys
 
+from candidate_json import load_json
+
 CELLS = ("1K", "4K", "16K", "64K")
+EXPECTED_UNSETS = sorted(("VLLM_VERSION", "LD_PRELOAD",
+                          "VLLM_ASCEND_ENABLE_FLASHCOMM1",
+                          "VLLM_ASCEND_FLASHCOMM2_PARALLEL_SIZE",
+                          "ASCEND_LAUNCH_BLOCKING"))
 
 
 def read_json(p):
-    with io.open(p, encoding="utf-8") as f:
-        return json.load(f)
+    return load_json(p)
 
 
 def kv(content, label):
@@ -86,8 +91,15 @@ def recompute_from_input(inp):
     """Independent recompute of every derived cell value from raw runs + config."""
     probs = []
     hw = inp.get("hardware", {})
-    if hw.get("A3_total_tflops") != 6016 or hw.get("H100_total_tflops") != 15824:
-        probs.append("input hardware D-024 not exact 6016/15824")
+    expected = {"A3_cards": 8, "A3_tflops_per_card": 752, "A3_total_tflops": 6016,
+                "H100_cards": 16, "H100_tflops_per_card": 989, "H100_total_tflops": 15824,
+                "target_achievement_minimum": 0.80, "decision": "D-024"}
+    for key, want in expected.items():
+        if hw.get(key) != want:
+            probs.append("input D-024 %s != %r" % (key, want))
+    unset = inp.get("runtime_environment", {}).get("_unset")
+    if unset != EXPECTED_UNSETS:
+        probs.append("input runtime_environment._unset != exact expected set")
     for cell in CELLS:
         c = inp.get("cells", {}).get(cell)
         if not c:
@@ -111,7 +123,7 @@ def recompute_from_input(inp):
                                   ("ach", c["d024_achievement_pct"], ach),
                                   ("t80", c["d024_target_80_tok_s"], t80)):
             if abs(float(stored) - mine) > 1e-6:
-                probs.append("input recompute %s %s %.9f != %.9f" % (cell, key, st, mine))
+                probs.append("input recompute %s %s %.9f != %.9f" % (cell, key, float(stored), mine))
         if met != c.get("target_met"):
             probs.append("input recompute %s target_met mismatch" % cell)
     return probs
@@ -121,30 +133,41 @@ def fresh_provenance_failures(inp, rel, tagref):
     """Formal mode: fresh GitHub snapshots must equal the input provenance."""
     pf = []
     r = inp.get("release", {})
-    m = re.match(r"([0-9a-f]{40})", tagref.get("ref", "").split("/")[-1] or "")
+    if tagref.get("ref") != "refs/tags/" + str(r.get("tag")):
+        pf.append("fresh tag-ref name mismatch")
     tag_obj = ""
     obj = tagref.get("object") or {}
     tag_obj = obj.get("sha", "")
     if tag_obj != r.get("tag_object_commit"):
         pf.append("tag-ref object sha != input tag_object_commit")
+    if tag_obj != inp.get("dispatch_control_sha"):
+        pf.append("tag-ref object sha != dispatch_control_sha")
+    if obj.get("type") != "commit":
+        pf.append("tag-ref object type != commit")
     if rel.get("id") != r.get("release_id"):
         pf.append("fresh release id mismatch")
-    if rel.get("id") != r.get("release_id"):
-        pass
+    for key, input_key in (("tag_name", "tag"), ("name", "release_name"), ("published_at", "published_at")):
+        if rel.get(key) != r.get(input_key):
+            pf.append("fresh release %s mismatch" % key)
     assets = {a["name"]: a for a in rel.get("assets", [])}
     asset = assets.get("fullmatrix-evidence.tar.gz")
     if not asset:
         pf.append("fresh release missing asset")
     else:
         for k in ("id", "name", "size", "digest"):
-            if asset.get(k) != r.get("asset_%s" % k, r.get("asset_id") if k == "id" else None):
+            if asset.get(k) != r.get("asset_%s" % k):
                 pf.append("fresh asset %s mismatch" % k)
-    if rel.get("tag_name") != r.get("tag"):
-        pf.append("fresh tag mismatch")
+    side = assets.get("fullmatrix-evidence.tar.gz.sha256")
+    if not side:
+        pf.append("fresh release missing sidecar")
+    else:
+        for k in ("id", "name", "size", "digest"):
+            if side.get(k) != r.get("sidecar_%s" % k):
+                pf.append("fresh sidecar %s mismatch" % k)
     return pf
 
 
-def main(argv=None):
+def _main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--result", required=True)
     ap.add_argument("--input", required=True)
@@ -156,15 +179,23 @@ def main(argv=None):
                     help="pre-commit formal mode: both fresh snapshots REQUIRED")
     args = ap.parse_args(argv)
 
-    inp = read_json(args.input)
-    content = io.open(args.result, encoding="utf-8").read()
-    problems = input_eligibility_failures(inp)
-    problems += recompute_from_input(inp)
+    try:
+        inp = read_json(args.input)
+        content = io.open(args.result, encoding="utf-8").read()
+        problems = input_eligibility_failures(inp)
+        problems += recompute_from_input(inp)
+    except (OSError, ValueError, KeyError, TypeError, IndexError) as exc:
+        print("FORMAL_CANDIDATE_RESULT_VALIDATION_FAILED")
+        print(" - machine validation blocker: %s" % exc)
+        return 1
     if args.formal and (not args.release_json or not args.tag_ref_json):
         problems.append("--formal requires --release-json and --tag-ref-json")
     elif args.formal:
-        problems += fresh_provenance_failures(inp, read_json(args.release_json),
-                                              read_json(args.tag_ref_json))
+        try:
+            problems += fresh_provenance_failures(inp, read_json(args.release_json),
+                                                  read_json(args.tag_ref_json))
+        except (OSError, ValueError, KeyError, TypeError, IndexError) as exc:
+            problems.append("fresh provenance blocker: %s" % exc)
 
     # .1 type / identity
     if kv(content, "Result Type") != "PROFILE_CANDIDATE_FULL_MATRIX":
@@ -210,6 +241,9 @@ def main(argv=None):
         problems.append("asset line mismatch")
     if kvp(content, "published") != r["published_at"]:
         problems.append("published mismatch")
+    m_side = re.search(r"^\| sidecar \| `([^`]+)` \(([0-9]+) bytes\) \| *$", content, re.M)
+    if not m_side or m_side.group(1) != r["sidecar_name"] or int(m_side.group(2)) != r["sidecar_size"]:
+        problems.append("sidecar line mismatch")
     if args.release_json:
         auth = read_json(args.release_json)
         a = next((x for x in auth.get("assets", []) if x["name"] == "fullmatrix-evidence.tar.gz"), None)
@@ -328,6 +362,16 @@ def main(argv=None):
             if got != want:
                 problems.append("cell %s latency mismatch" % cell)
 
+    # Runtime identity and environment are factual Result fields.
+    identity = inp["runtime_identity"]["fields"]
+    for key, want in sorted(identity.items()):
+        if kv(content, key) != str(want):
+            problems.append("runtime identity %s mismatch" % key)
+    for key, want in sorted(inp.get("runtime_environment", {}).items()):
+        expected_value = ",".join(want) if key == "_unset" else str(want)
+        if kv(content, key) != expected_value:
+            problems.append("runtime environment %s mismatch" % key)
+
     # D-024 block
     hw = inp["hardware"]
     m3 = re.match(r"(\d+) x (\d+) = (\d+)", kvp(content, "A3") or "")
@@ -336,6 +380,10 @@ def main(argv=None):
     m4 = re.match(r"(\d+) x (\d+) = (\d+)", kvp(content, "H100") or "")
     if not m4 or [int(x) for x in m4.groups()] != [hw["H100_cards"], hw["H100_tflops_per_card"], hw["H100_total_tflops"]]:
         problems.append("H100 D-024 block mismatches")
+    if kvp(content, "target min") != str(hw["target_achievement_minimum"]):
+        problems.append("D-024 target minimum mismatch")
+    if kv(content, "decision") != hw["decision"]:
+        problems.append("D-024 decision mismatch")
 
     if problems:
         print("FORMAL_CANDIDATE_RESULT_VALIDATION_FAILED")
@@ -344,6 +392,15 @@ def main(argv=None):
         return 1
     print("FORMAL_CANDIDATE_RESULT_VALIDATION_PASS")
     return 0
+
+
+def main(argv=None):
+    try:
+        return _main(argv)
+    except (OSError, ValueError, KeyError, TypeError, IndexError) as exc:
+        print("FORMAL_CANDIDATE_RESULT_VALIDATION_FAILED")
+        print(" - machine validation blocker: %s" % exc)
+        return 1
 
 
 if __name__ == "__main__":

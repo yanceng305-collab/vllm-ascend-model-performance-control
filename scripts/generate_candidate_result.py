@@ -16,11 +16,11 @@ import io
 import sys
 from pathlib import Path
 
+from candidate_json import load_json
+
 
 def read_json(p):
-    with io.open(p, encoding="utf-8") as f:
-        import json
-        return json.load(f)
+    return load_json(p)
 
 
 def render(inp):
@@ -62,6 +62,7 @@ def render(inp):
     A("| asset | `%s` (%s bytes) |" % (r["asset_name"], r["asset_size"]))
     A("| asset digest | `%s` |" % r["asset_digest"])
     A("| sidecar id | %s |" % r["sidecar_id"])
+    A("| sidecar | `%s` (%s bytes) |" % (r["sidecar_name"], r["sidecar_size"]))
     A("| sidecar digest | `%s` |" % r["sidecar_digest"])
     A("")
     ei = inp["evidence_integrity"]
@@ -84,7 +85,8 @@ def render(inp):
     A("| var | value |")
     A("|---|---|")
     for k, v in sorted(inp.get("runtime_environment", {}).items()):
-        A("| %s | `%s` |" % (k, v))
+        shown = ",".join(v) if k == "_unset" else v
+        A("| %s | `%s` |" % (k, shown))
     A("")
     A("## 2d. Frozen profile (candidate)")
     A("")
@@ -145,6 +147,7 @@ def render(inp):
     A("| A3 | %s x %s = %s |" % (hw["A3_cards"], hw["A3_tflops_per_card"], hw["A3_total_tflops"]))
     A("| H100 | %s x %s = %s |" % (hw["H100_cards"], hw["H100_tflops_per_card"], hw["H100_total_tflops"]))
     A("| target min | %s |" % hw["target_achievement_minimum"])
+    A("| decision | `%s` |" % hw["decision"])
     A("")
     A("## 7. Candidate statement")
     A("")
@@ -156,7 +159,7 @@ def render(inp):
     return body
 
 
-def main(argv=None):
+def _main(argv=None):
     import argparse
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--input", required=True)
@@ -168,6 +171,14 @@ def main(argv=None):
         io.open(args.out, "w", encoding="utf-8", newline="\n").write(body)
     print(body, end="")
     return 0
+
+
+def main(argv=None):
+    try:
+        return _main(argv)
+    except (OSError, ValueError, KeyError, TypeError, IndexError) as exc:
+        print("CANDIDATE_RESULT_GENERATION_FAILED: %s" % exc, file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":

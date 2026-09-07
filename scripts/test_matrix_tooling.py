@@ -31,6 +31,7 @@ import re
 import statistics
 import sys
 import tempfile
+import shutil
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -49,6 +50,26 @@ MATRIX_CONFIG = (
 )
 CFG = bc.load_matrix_config(MATRIX_CONFIG)
 CELLS = ["1K", "4K", "16K", "64K"]
+
+
+class FixedTestDirectory:
+    """Use a workspace-writable directory in the Windows sandbox."""
+
+    _counter = 0
+
+    def __enter__(self):
+        FixedTestDirectory._counter += 1
+        self.path = Path(r"E:\模型推理\_matrix_tooling_test_%d" % FixedTestDirectory._counter)
+        self.path.mkdir(parents=True, exist_ok=True)
+        for child in self.path.iterdir():
+            if child.is_dir():
+                shutil.rmtree(child, ignore_errors=True)
+            else:
+                child.unlink(missing_ok=True)
+        return str(self.path)
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
 
 
 def read_bytes(path):
@@ -171,7 +192,7 @@ def test_a_real_fixture():
 # ==================== TEST B: byte-identical double extraction ===================
 
 def test_b_deterministic():
-    with tempfile.TemporaryDirectory() as tmp:
+    with FixedTestDirectory() as tmp:
         out1 = Path(tmp) / "m1.json"
         out2 = Path(tmp) / "m2.json"
         r1 = quiet(lambda: extractor.main([str(FIXTURE), "--out", str(out1), "--strict"]))
@@ -189,7 +210,7 @@ def test_b_deterministic():
 
 def test_c_missing_throughput():
     """Malformed log (Total token throughput removed) -> extractor --strict real FAIL."""
-    with tempfile.TemporaryDirectory() as tmp:
+    with FixedTestDirectory() as tmp:
         bad = Path(tmp) / "bad.log"
         out = Path(tmp) / "bad.metrics.json"
         write_text(bad, bench_log_text(0.0, drop_ttt=True))
@@ -206,7 +227,7 @@ def test_c_missing_throughput():
 
 def test_d_contract_gate():
     values = {"run1": 99999.0, "run2": 1000.0, "run3": 1100.0, "run4": 1200.0}
-    with tempfile.TemporaryDirectory() as tmp:
+    with FixedTestDirectory() as tmp:
         # correct cell must PASS
         good = make_cell(tmp, "64K", ttt_map=values)
         assert quiet(lambda: per_cell.main(["--cell-dir", str(good), "--cell", "64K",
@@ -238,7 +259,7 @@ def test_d_contract_gate():
 
 def test_e_aggregation():
     values = {"run1": 99999.0, "run2": 1000.0, "run3": 1100.0, "run4": 1200.0}
-    with tempfile.TemporaryDirectory() as tmp:
+    with FixedTestDirectory() as tmp:
         cell = make_cell(tmp, "64K", ttt_map=values)
         out = Path(tmp) / "out"
         rc1 = quiet(lambda: per_cell.main(["--cell-dir", str(cell), "--cell", "64K",
@@ -296,7 +317,7 @@ def test_e_aggregation():
 # ==================== TEST F: matrix profile consistency ======================
 
 def test_f_matrix_gate():
-    with tempfile.TemporaryDirectory() as tmp:
+    with FixedTestDirectory() as tmp:
         root = Path(tmp)
         for cell in CELLS:
             values = {"run1": 99999.0, "run2": 1000.0, "run3": 1100.0, "run4": 1200.0}
@@ -352,7 +373,7 @@ assert got == argv and got and got[0] == "vllm", "command artifact corruption"
 def test_g_prompt_command_contract():
     """Prompt-step artifact generation == executed argv; pinned $CONTROL_DIR invocations."""
     import subprocess as sp
-    with tempfile.TemporaryDirectory() as tmp:
+    with FixedTestDirectory() as tmp:
         values = {"run1": 99999.0, "run2": 1000.0, "run3": 1100.0, "run4": 1200.0}
         cell = make_cell(tmp, "64K", ttt_map=values)  # gives logs + role + metrics (command files overwritten below)
         base_url = "http://127.0.0.1:8000"

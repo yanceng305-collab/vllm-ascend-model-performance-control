@@ -28,6 +28,8 @@ import statistics
 import sys
 from pathlib import Path
 
+from candidate_json import DuplicateJSONKey, load_json
+
 CELLS = ("1K", "4K", "16K", "64K")
 MEAS = ("run2", "run3", "run4")
 PROFILE_KEYS = ("gpu_memory_utilization", "max_model_len", "max_cudagraph_capture_size",
@@ -50,8 +52,7 @@ def die(msg):
 
 
 def read_json(p):
-    with io.open(p, encoding="utf-8") as fh:
-        return json.load(fh)
+    return load_json(p)
 
 
 def read_text(p):
@@ -92,15 +93,17 @@ def parse_env(text):
     unsets = []
     for line in text.splitlines():
         s = line.strip()
-        m = re.match(r"^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)(?:=(.*))?$", s)
-        if not m:
-            continue
-        key, val = m.group(1), m.group(2)
-        if val is None:
+        unset = re.match(r"^unset\s+([A-Za-z_][A-Za-z0-9_]*)\s*$", s)
+        if unset:
+            key = unset.group(1)
             env.pop(key, None)
-            unsets.append(key)
+            if key not in unsets:
+                unsets.append(key)
             continue
-        env[key] = val.strip().strip('"').strip("'")
+        m = re.match(r"^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)=(.*)$", s)
+        if m:
+            key, val = m.group(1), m.group(2)
+            env[key] = val.strip().strip('"').strip("'")
     return env, unsets
 
 
@@ -192,14 +195,25 @@ def build(ev_dir, cfg, rel_dict, tagref_dict, dispatch, doc_path, cli_class, cli
     asset = assets.get("fullmatrix-evidence.tar.gz")
     side = assets.get("fullmatrix-evidence.tar.gz.sha256")
     hard_require(asset and side, "release JSON missing assets")
-    hard_require(rel.get("tag_name") == "glm52-od-profile-full-matrix-20260903",
+    expected_tag = "glm52-od-profile-full-matrix-20260903"
+    hard_require(tagref.get("ref") == "refs/tags/" + expected_tag,
+                 "tag-ref ref != expected exact tag ref")
+    hard_require(tagref.get("object", {}).get("type") == "commit",
+                 "tag-ref object type != commit")
+    hard_require(rel.get("tag_name") == expected_tag,
                  "release tag != expected tag")
+    for key in ("id", "name", "published_at"):
+        hard_require(rel.get(key) is not None, "release missing %s" % key)
+    for key in ("id", "name", "size", "digest"):
+        hard_require(asset.get(key) is not None, "primary asset missing %s" % key)
+        hard_require(side.get(key) is not None, "sidecar asset missing %s" % key)
     release = {"release_id": rel.get("id"), "tag": rel.get("tag_name"),
                "release_name": rel.get("name"), "published_at": rel.get("published_at"),
                "tag_object_commit": tag_obj,
                "asset_id": asset["id"], "asset_name": asset["name"],
                "asset_size": asset["size"], "asset_digest": asset["digest"],
-               "sidecar_id": side["id"], "sidecar_digest": side["digest"]}
+               "sidecar_id": side["id"], "sidecar_name": side["name"],
+               "sidecar_size": side["size"], "sidecar_digest": side["digest"]}
 
     # 7) Evidence Review document parse
     doc = parse_review_doc(doc_path, dispatch, rel.get("tag_name"), asset["digest"])
@@ -225,8 +239,9 @@ def build(ev_dir, cfg, rel_dict, tagref_dict, dispatch, doc_path, cli_class, cli
         want = str(expected_env[k])
         got = env_parsed.get(k)
         hard_require(got == want, "env %s = %r expected %r" % (k, got, want))
-    for u in expected_env.get("_unset", []):
-        hard_require(u not in env_parsed, "expected unset %s present" % u)
+    expected_unsets = list(expected_env.get("_unset", []))
+    hard_require(set(unsets) == set(expected_unsets),
+                 "explicit unset set %r != expected %r" % (sorted(unsets), sorted(expected_unsets)))
 
     # model_path gate (identity vs config expected)
     hard_require(fields["model_path"] == cfg["frozen_profile"].get("model_path"),
@@ -317,7 +332,9 @@ def build(ev_dir, cfg, rel_dict, tagref_dict, dispatch, doc_path, cli_class, cli
         "frozen_profile": {k: cfg["frozen_profile"][k] for k in PROFILE_KEYS},
         "runtime_identity": {"fields": fields,
                              "identical_across_cells": True},
-        "runtime_environment": {k: env_parsed.get(k) for k in ENV_KEYS},
+        "runtime_environment": dict(
+            {k: env_parsed.get(k) for k in ENV_KEYS},
+            _unset=sorted(expected_unsets)),
         "matrix": {"matrix_validation_status": "PASS",
                    "measured_runs_count": 12, "warmup_runs_discarded_count": 4,
                    "profile_identical_across_cells": True,
@@ -326,7 +343,7 @@ def build(ev_dir, cfg, rel_dict, tagref_dict, dispatch, doc_path, cli_class, cli
         "cells": cells,
         "hardware": {k: hw[k] for k in ("A3_cards", "A3_tflops_per_card", "A3_total_tflops",
                                         "H100_cards", "H100_tflops_per_card",
-                                        "H100_total_tflops", "target_achievement_minimum")},
+            "H100_total_tflops", "target_achievement_minimum", "decision")},
         "opt01_status": "BLOCKED_PENDING_BASELINE_VALUE_VERIFICATION",
         "candidate_classification": "FINAL_RECOMMENDED_PROFILE_CANDIDATE",
         "result_state": "READY_FOR_FORMAL_REVIEW",
@@ -350,17 +367,22 @@ def main(argv=None):
     ap.add_argument("--out", default=None)
     args = ap.parse_args(argv)
 
-    cfg = read_json(args.matrix_config)
-    rel = read_json(args.release_json)
-    tagref = read_json(args.tag_ref_json)
-    result = build(args.evidence_dir, cfg, rel, tagref, args.dispatch_sha,
-                   args.evidence_review_doc, args.evidence_review_classification,
-                   args.review_date)
-    out = json.dumps(result, indent=2, sort_keys=True) + "\n"
-    if args.out:
-        io.open(args.out, "w", encoding="utf-8", newline="\n").write(out)
-    print(out, end="")
-    return 0
+    try:
+        cfg = read_json(args.matrix_config)
+        rel = read_json(args.release_json)
+        tagref = read_json(args.tag_ref_json)
+        result = build(args.evidence_dir, cfg, rel, tagref, args.dispatch_sha,
+                       args.evidence_review_doc, args.evidence_review_classification,
+                       args.review_date)
+        out = json.dumps(result, indent=2, sort_keys=True) + "\n"
+        if args.out:
+            io.open(args.out, "w", encoding="utf-8", newline="\n").write(out)
+        print(out, end="")
+        return 0
+    except SystemExit:
+        raise
+    except (OSError, ValueError, KeyError, TypeError, IndexError) as exc:
+        die(str(exc))
 
 
 if __name__ == "__main__":

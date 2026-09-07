@@ -324,7 +324,7 @@ A3PerfRunner is authorized to use **GitHub Release Assets** as an immutable Evid
 
 2. **New Candidate tooling (Control-only, machine)**:
    - `scripts/build_candidate_result_input.py` -> deterministic `candidate-result-input.json`
-     (schema `candidate-result-input` v1), built only from the reviewed Evidence
+      (schema `candidate-result-input` v2), built only from the reviewed Evidence
      (D-025 layout) + `candidate-matrix-config.json` (D-024/normalization) + a GitHub release
      metadata JSON (provenance). No performance number is hand-typed.
    - `scripts/generate_candidate_result.py` -> renders ONE Full-Matrix Profile Candidate Result
@@ -333,8 +333,9 @@ A3PerfRunner is authorized to use **GitHub Release Assets** as an immutable Evid
      compares every factual field to the input, re-computes derived values (mean/min/max/std/CV,
      delta, D-024 achievement, 80% target), optionally cross-checks the release digest against a
      fresh GitHub metadata snapshot, and exits non-zero on any mismatch (blocks commit).
-   - `scripts/test_candidate_result_tooling.py` -> mandated TEST A-P, 16/16 PASS with 0 skip,
-     exercising the real pipeline (fixture: immutable fullmatrix-evidence + fullmatrix-release.json).
+    - `scripts/test_candidate_result_tooling.py` -> TEST A-BB, with semantic
+      fail-closed negative assertions, 54/54 PASS with 0 skip, exercising the
+      real pipeline (fixture: immutable fullmatrix-evidence + fullmatrix-release.json).
 
 3. **Pipeline separation (four stages, unchanged):**
    Evidence Review PASS -> machine Candidate Result generation & validation -> Formal Review ->
