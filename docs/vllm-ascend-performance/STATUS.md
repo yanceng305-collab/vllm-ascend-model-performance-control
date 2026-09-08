@@ -6,7 +6,9 @@
 
 **Accepted GLM profile:** `0.95 / 67000`
 
-**Formal OPT-01:** `BLOCKED_PENDING_BASELINE_VALUE_VERIFICATION`
+**Formal OPT-01:** `SUPERSEDED_BY_ACCEPTED_PROFILE`
+
+**OPT-01 disposition reason:** superseded by formally accepted GLM-5.2-W8A8 profile `0.95 / 67000`; independent `max_num_batched_tokens` attribution is no longer planned.
 
 **Blocking status:** `GLM: BASELINE_MEASURED_BELOW_TARGET; DeepSeek/MiniMax: STAGE0A_DISCOVERY_PENDING`
 

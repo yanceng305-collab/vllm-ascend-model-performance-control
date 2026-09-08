@@ -102,3 +102,16 @@ Candidate remains `0.95 / 67000 = FINAL_RECOMMENDED_PROFILE_CANDIDATE`. Formal O
 
 The machine Result remains immutable with generation-time state `READY_FOR_FORMAL_REVIEW`.
 Formal OPT-01 remains `BLOCKED_PENDING_BASELINE_VALUE_VERIFICATION` and is not unlocked by this acceptance.
+
+## Formal OPT-01 Disposition (2026-09-08)
+
+- Previous state: `BLOCKED_PENDING_BASELINE_VALUE_VERIFICATION`
+- Current disposition: `SUPERSEDED_BY_ACCEPTED_PROFILE`
+- Superseding authority: `FORMAL_CANDIDATE_ACCEPTANCE_PASS`
+- Accepted profile: `GLM-5.2-W8A8 0.95 / 67000`
+- Independent `max_num_batched_tokens` attribution: `NOT PERFORMED`
+- OPT-01 result: `NOT PASS`
+- Further execution: `NOT PLANNED`
+
+This is a governance retirement disposition, not an OPT-01 performance pass or
+independent attribution claim.

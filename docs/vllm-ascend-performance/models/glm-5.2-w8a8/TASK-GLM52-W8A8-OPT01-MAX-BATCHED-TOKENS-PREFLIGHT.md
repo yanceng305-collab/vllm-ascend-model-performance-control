@@ -1,5 +1,13 @@
 # TASK-GLM52-W8A8-OPT01-MAX-BATCHED-TOKENS-PREFLIGHT
 
+**Current OPT-01 disposition (2026-09-08)**: `SUPERSEDED_BY_ACCEPTED_PROFILE`
+
+**Further execution**: `NOT PLANNED`
+
+**Reason**: the formally accepted GLM-5.2-W8A8 Full-Matrix Profile `0.95 / 67000`
+now governs deployment/performance selection; this does not constitute an
+independent PASS for `max_num_batched_tokens`.
+
 **Task ID**: GLM52-W8A8-OPT01-MAX-BATCHED-TOKENS-PREFLIGHT  
 **Task Type**: READ-ONLY Baseline Value Observation  
 **Status**: COMPLETED (read-only; no server state changed)  
