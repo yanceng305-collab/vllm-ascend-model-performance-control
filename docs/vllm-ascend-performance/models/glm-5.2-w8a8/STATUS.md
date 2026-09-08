@@ -2,6 +2,14 @@
 
 **Status**: `BASELINE ESTABLISHED` (Evidence-backed baseline matrix formally accepted 2026-09-02, corrected 2026-09-02)
 
+**Current profile governance:** `FORMAL_CANDIDATE_ACCEPTANCE_PASS`
+
+**Accepted profile:** `0.95 / 67000`
+
+**Acceptance scope:** `PROFILE_CANDIDATE_FULL_MATRIX`
+
+**Formal OPT-01:** `BLOCKED_PENDING_BASELINE_VALUE_VERIFICATION`
+
 **Execution mode**: USER-VERIFIED KNOWN-GOOD BASELINE → FAST PREFLIGHT → RUN FROZEN COMMANDS → EVIDENCE → RESULT → **OPTIMIZATION** (current phase)
 
 **Current baseline**: vLLM 0.24.0+empty / Image nightly-releases-v0.24.0rc-a3
