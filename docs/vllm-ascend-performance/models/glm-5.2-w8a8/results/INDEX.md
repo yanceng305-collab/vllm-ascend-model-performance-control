@@ -93,3 +93,12 @@ Evidence Review remains `FULL_MATRIX_CANDIDATE_EVIDENCE_REVIEW_PASS`; Formal OPT
 
 Candidate remains `0.95 / 67000 = FINAL_RECOMMENDED_PROFILE_CANDIDATE`. Formal OPT-01 remains
 `BLOCKED_PENDING_BASELINE_VALUE_VERIFICATION`. Next stage: `FORMAL_CANDIDATE_ACCEPTANCE`.
+
+## Formal Candidate Acceptance (2026-09-08)
+
+| Record | Link | Outcome |
+|---|---|---|
+| Formal Acceptance | [FORMAL-ACCEPTANCE-GLM52-W8A8-PROFILE-CANDIDATE-FULL-MATRIX-20260908](FORMAL-ACCEPTANCE-GLM52-W8A8-PROFILE-CANDIDATE-FULL-MATRIX-20260908.md) | `FORMAL_CANDIDATE_ACCEPTANCE_PASS`; accepted profile `0.95 / 67000`; scope `PROFILE_CANDIDATE_FULL_MATRIX` |
+
+The machine Result remains immutable with generation-time state `READY_FOR_FORMAL_REVIEW`.
+Formal OPT-01 remains `BLOCKED_PENDING_BASELINE_VALUE_VERIFICATION` and is not unlocked by this acceptance.
